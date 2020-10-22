@@ -14,9 +14,9 @@ This project is a Flutter application.
 
 3. Use Debugger Tools in Chrome. Copy the following strings into the main.dart file:
 
-![alt text](https://github.com/bennyboer/bbb_app/raw/master/doc/url.png)
+![alt text](https://raw.githubusercontent.com/bennyboer/bbb_app/main/doc/url.png)
 
-![alt text](https://github.com/bennyboer/bbb_app/raw/master/doc/offer.png)
+![alt text](https://raw.githubusercontent.com/bennyboer/bbb_app/main/doc/offer.png)
 
 4. Run the Flutter App with Debugger in Android Studio.
 
