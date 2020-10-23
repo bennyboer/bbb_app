@@ -33,7 +33,7 @@ class _MainViewState extends State<MainView> {
 
   /// Build the main views application bar.
   Widget _buildAppBar() => AppBar(
-        title: Text("BBB"),
+        title: Text(_meetingInfo.conferenceName),
         leading: IconButton(
           icon: Icon(Icons.people),
           tooltip: 'Meeting info',

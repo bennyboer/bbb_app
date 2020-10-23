@@ -118,6 +118,8 @@ class _StartViewState extends State<StartView> {
           MaterialPageRoute(builder: (context) => MainView(meetingInfo)),
         );
       } catch (e) {
+        print(e.toString()); // TODO Remove
+
         Scaffold.of(context).showSnackBar(
           SnackBar(content: Text("Could not join the meeting")),
         );
@@ -129,6 +131,7 @@ class _StartViewState extends State<StartView> {
 
   /// Try to join the meeting specified with the passed [meetingUrl].
   Future<MeetingInfo> tryJoinMeeting(String meetingUrl) async {
-    return await MeetingInfoLoaders().loader.load(meetingUrl);
+    return await MeetingInfoLoaders().loader.load(meetingUrl, null,
+        "Test user"); // TODO Include name and password in the form
   }
 }
