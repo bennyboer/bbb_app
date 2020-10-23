@@ -1,6 +1,6 @@
+import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/view/meeting_info/meeting_info_view.dart';
 import 'package:bbb_app/src/view/settings/settings_view.dart';
-import 'package:bbb_app/src/view/start/meeting_info.dart';
 import 'package:flutter/material.dart';
 
 /// The main view including the current presentation/webcams/screenshare.

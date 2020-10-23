@@ -1,6 +1,7 @@
 import 'package:bbb_app/src/broadcast/app_state_notifier.dart';
+import 'package:bbb_app/src/connect/meeting/load/meeting_info_loaders.dart';
+import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/view/main/main_view.dart';
-import 'package:bbb_app/src/view/start/meeting_info.dart';
 import 'package:day_night_switcher/day_night_switcher.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -100,7 +101,7 @@ class _StartViewState extends State<StartView> {
   }
 
   /// Submit the form and validate input fields.
-  void _submitForm(BuildContext context) async {
+  Future<void> _submitForm(BuildContext context) async {
     if (_formKey.currentState.validate()) {
       final String meetingURL = _meetingURLController.text;
 
@@ -126,12 +127,8 @@ class _StartViewState extends State<StartView> {
     }
   }
 
-  /// Try to join the meeting specified with the passed [meetingURL].
-  Future<MeetingInfo> tryJoinMeeting(String meetingURL) {
-    // TODO
-    print("Trying to join a meeting lul");
-
-    return Future.delayed(
-        Duration(seconds: 3), () => Future.value(MeetingInfo(meetingURL, "")));
+  /// Try to join the meeting specified with the passed [meetingUrl].
+  Future<MeetingInfo> tryJoinMeeting(String meetingUrl) async {
+    return await MeetingInfoLoaders().loader.load(meetingUrl);
   }
 }
