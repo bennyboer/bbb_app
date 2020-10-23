@@ -17,6 +17,9 @@ class _StartViewState extends State<StartView> {
   /// Key of this form used to validate the form later.
   final _formKey = GlobalKey<FormState>();
 
+  /// Controller for the user name text field.
+  final TextEditingController _usernameTextField = TextEditingController();
+
   /// Controller for the meeting URL text field.
   final TextEditingController _meetingURLController = TextEditingController();
 
@@ -62,10 +65,26 @@ class _StartViewState extends State<StartView> {
       key: _formKey,
       child: Column(
         children: [
+          _buildUsernameTextField(),
           _buildURLTextField(),
           _buildJoinButton(context),
         ],
       ),
+    );
+  }
+
+  /// Build the user name text field.
+  Widget _buildUsernameTextField() {
+    return TextFormField(
+      decoration: InputDecoration(
+        hintText: "Username",
+        border: InputBorder.none,
+        filled: true,
+        prefixIcon: Icon(Icons.label),
+      ),
+      style: TextStyle(fontSize: 20.0),
+      validator: (value) => value.isEmpty ? "Please specify a user name" : null,
+      controller: _usernameTextField,
     );
   }
 
@@ -104,6 +123,7 @@ class _StartViewState extends State<StartView> {
   Future<void> _submitForm(BuildContext context) async {
     if (_formKey.currentState.validate()) {
       final String meetingURL = _meetingURLController.text;
+      final String username = _usernameTextField.text;
 
       // Show a snack bar until all information to join the meeting has been loaded
       var snackBarController = Scaffold.of(context).showSnackBar(SnackBar(
@@ -111,15 +131,13 @@ class _StartViewState extends State<StartView> {
       ));
 
       try {
-        MeetingInfo meetingInfo = await tryJoinMeeting(meetingURL);
+        MeetingInfo meetingInfo = await tryJoinMeeting(meetingURL, username);
 
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => MainView(meetingInfo)),
         );
       } catch (e) {
-        print(e.toString()); // TODO Remove
-
         Scaffold.of(context).showSnackBar(
           SnackBar(content: Text("Could not join the meeting")),
         );
@@ -129,9 +147,10 @@ class _StartViewState extends State<StartView> {
     }
   }
 
-  /// Try to join the meeting specified with the passed [meetingUrl].
-  Future<MeetingInfo> tryJoinMeeting(String meetingUrl) async {
-    return await MeetingInfoLoaders().loader.load(meetingUrl, null,
-        "Test user"); // TODO Include name and password in the form
+  /// Try to join the meeting specified with the passed [meetingUrl] and [username].
+  Future<MeetingInfo> tryJoinMeeting(String meetingUrl, String username) async {
+    return await MeetingInfoLoaders()
+        .loader
+        .load(meetingUrl, null, username); // TODO Implement password support
   }
 }

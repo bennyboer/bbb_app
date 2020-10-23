@@ -8,16 +8,21 @@ This project is a Flutter application.
 
 ### How to run this first minimal example
 
-1. Start a BBB session in Chrome.
+1. Start a BBB session in Chrome (You may use bbb-ext.cs.hm.edu).
 
 2. Login to the same BBB session in another Browser and start sharing your webcam.
 
-3. Use Debugger Tools in Chrome. Copy the following strings into the main.dart file:
+3. Use Debugger Tools in Chrome. Find the `cameraId`:
 
-![alt text](https://raw.githubusercontent.com/bennyboer/bbb_app/main/doc/url.png)
+![alt text](doc/camera2.png)
 
-![alt text](https://raw.githubusercontent.com/bennyboer/bbb_app/main/doc/offer.png)
+4. Copy the cameraId to the `main_view.dart` file:
 
-4. Run the Flutter App with Debugger in Android Studio.
+![alt text](doc/camera.png)
 
-5. Execute a Hot Reload in Android Studio. Then you should see the video stream in the app.
+5. Run the Flutter App with Debugger in Android Studio/IntelliJ IDEA or `flutter run`.
+
+6. You need to specify the BBB Meeting URL and a username in the home screen.
+Then you should be able to join the meeting and see the webcam.
+
+
