@@ -33,6 +33,8 @@ dependencies:
   shared_preferences_macos:
   shared_preferences_web:
   http: ^0.12.1
+  day_night_switcher: ^0.1.1+1
+  provider: ^4.3.2+2
 
   # Required for MediaRecorder example
   path_provider:
