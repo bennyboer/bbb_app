@@ -3,11 +3,11 @@ import 'dart:core';
 
 import 'package:bbb_app/src/broadcast/app_state_notifier.dart';
 import 'package:bbb_app/src/utils/websocket.dart';
+import 'package:bbb_app/src/view/start/start_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:provider/provider.dart';
 
-import 'file:///C:/repo/bbb_app/lib/src/view/start/start_view.dart';
 
 SimpleWebSocket _socket;
 RTCPeerConnection _pc;
