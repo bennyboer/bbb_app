@@ -21,7 +21,7 @@ class _StartViewState extends State<StartView> {
   final TextEditingController _usernameTextField = TextEditingController();
 
   /// Controller for the meeting URL text field.
-  final TextEditingController _meetingURLController = TextEditingController();
+  final TextEditingController _meetingURLController = TextEditingController(/*text: ""*/);
 
   @override
   Widget build(BuildContext context) {

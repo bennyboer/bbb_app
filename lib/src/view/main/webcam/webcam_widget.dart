@@ -30,7 +30,11 @@ class _WebCamWidgetState extends State<WebCamWidget> {
   RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
 
   @override
-  Widget build(BuildContext context) => RTCVideoView(_remoteRenderer);
+  Widget build(BuildContext context) {
+        return RTCVideoView(_remoteRenderer);
+
+
+  }
 
   @override
   void initState() {
@@ -66,6 +70,9 @@ class _WebCamWidgetState extends State<WebCamWidget> {
 
     final uri =
         Uri.parse(widget.meetingInfo.joinUrl).replace(path: "bbb-webrtc-sfu");
+
+    print(uri);
+
     _socket = SimpleWebSocket(uri.toString());
 
     print('connect to ${uri.toString()}');
@@ -77,7 +84,11 @@ class _WebCamWidgetState extends State<WebCamWidget> {
 
     _socket.onMessage = (message) {
       print('Received data: ' + message);
-      onMessage(json.decode(message));
+      try {
+        onMessage(json.decode(message));
+      } on FormatException catch (e) {
+        print('invalid JSON received on websocket: ' + message);
+      }
     };
 
     _socket.onClose = (int code, String reason) {
@@ -115,7 +126,7 @@ class _WebCamWidgetState extends State<WebCamWidget> {
         {
           print("############################################## playStart");
           print(_pc.getRemoteStreams());
-          _remoteRenderer.srcObject = _pc.getRemoteStreams()[1];
+          setState(() {_remoteRenderer.srcObject = _pc.getRemoteStreams()[1]; });
         }
         break;
 

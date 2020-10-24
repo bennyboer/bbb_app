@@ -39,7 +39,7 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
       joinUrl: joinUrl,
       sessionToken: sessionToken,
       cookie: _cookie,
-      authToken: enterJson["authtoken"],
+      authToken: enterJson["authToken"],
       conference: enterJson["conference"],
       room: enterJson["room"],
       conferenceName: enterJson["confname"],

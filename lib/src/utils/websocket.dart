@@ -52,15 +52,11 @@ class SimpleWebSocket {
         return true;
       };
 
-
       HttpClientRequest request = await client.getUrl(Uri.parse(url));
       request.headers.add('Connection', 'Upgrade');
       request.headers.add('Upgrade', 'websocket');
       request.headers.add('Sec-WebSocket-Version', '13');
       request.headers.add('Sec-WebSocket-Key', key.toLowerCase());
-
-      // request.headers.add('Cookie', '');
-
 
       HttpClientResponse response = await request.close();
       Socket socket = await response.detachSocket();
