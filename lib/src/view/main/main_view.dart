@@ -30,7 +30,7 @@ class MainView extends StatefulWidget {
 /// State of the main view.
 class _MainViewState extends State<MainView> {
 
-  List<String>_videoStreamWidgets = new List<String>(); //TODO better name
+  List<String>_cameraIdList = new List<String>();
 
   @override
   void initState() {
@@ -51,29 +51,18 @@ class _MainViewState extends State<MainView> {
             padding: const EdgeInsets.all(8),
             scrollDirection: Axis.vertical,
             shrinkWrap: true,
-            itemCount: _videoStreamWidgets.length,
+            itemCount: _cameraIdList.length,
             itemBuilder: (BuildContext context, int index) {
               return Container(
                   width: 300,
                   height: 400,
                   child: WebCamWidget(
                       widget.meetingInfo,
-                      _videoStreamWidgets[index],
+                      _cameraIdList[index],
                     )
               );
             }
         ),
-          /*ListView(
-            children: _videoStreamWidgets,
-            scrollDirection: Axis.vertical,
-            shrinkWrap: true,
-          ),*/
-            // Expanded(
-            //   child: WebCamWidget(
-            //     widget.meetingInfo,
-            //     "w_qxlatkazzq6r_+kYLL7uMVz48H4lL9sp6KbCfRRl4qrkl7CSj6WA11YI=", // TODO Find camera ID dynamically
-            //   ),
-            // ),
         ],
       ),
     );
@@ -179,8 +168,8 @@ class _MainViewState extends State<MainView> {
                     {
                       if (jsonMsg['fields']['stream'] != null) {
                         print("adding new video stream...");
-                        setState(() { _videoStreamWidgets.add(jsonMsg['fields']['stream']); });
-                        print(_videoStreamWidgets);
+                        setState(() { _cameraIdList.add(jsonMsg['fields']['stream']); });
+                        print(_cameraIdList);
                       }
                     }
                     break;
@@ -205,7 +194,7 @@ class _MainViewState extends State<MainView> {
   }
 
   void _sendConnectMsg() {
-    String msg = "{\"msg\":\"connect\",\"version\":\"1\",\"support\":[\"1\",\"pre2\",\"pre1\"]}";
+    String msg = "{\"msg\":\"connect\",\"version\":\"1\",\"support\":[\"1\",\"pre2\",\"pre1\"]}"; //TODO what are this params?
     JsonEncoder encoder = new JsonEncoder();
     widget._mainWebsocket.send("[" + encoder.convert(msg) + "]");
   }
