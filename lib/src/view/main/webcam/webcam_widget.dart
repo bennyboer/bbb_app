@@ -31,9 +31,7 @@ class _WebCamWidgetState extends State<WebCamWidget> {
 
   @override
   Widget build(BuildContext context) {
-        return RTCVideoView(_remoteRenderer);
-
-
+    return RTCVideoView(_remoteRenderer);
   }
 
   @override
@@ -126,7 +124,9 @@ class _WebCamWidgetState extends State<WebCamWidget> {
         {
           print("############################################## playStart");
           print(_pc.getRemoteStreams());
-          setState(() {_remoteRenderer.srcObject = _pc.getRemoteStreams()[1]; });
+          setState(() {
+            _remoteRenderer.srcObject = _pc.getRemoteStreams()[1];
+          });
         }
         break;
 
