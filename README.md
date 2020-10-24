@@ -12,17 +12,9 @@ This project is a Flutter application.
 
 2. Login to the same BBB session in another Browser and start sharing your webcam.
 
-3. Use Debugger Tools in Chrome. Find the `cameraId`:
+3. Run the Flutter App with Debugger in Android Studio/IntelliJ IDEA or `flutter run`.
 
-![alt text](doc/camera2.png)
-
-4. Copy the cameraId to the `main_view.dart` file:
-
-![alt text](doc/camera.png)
-
-5. Run the Flutter App with Debugger in Android Studio/IntelliJ IDEA or `flutter run`.
-
-6. You need to specify the BBB Meeting URL and a username in the home screen.
+4. You need to specify the BBB Meeting URL and a username in the home screen.
 Then you should be able to join the meeting and see the webcam.
 
 
