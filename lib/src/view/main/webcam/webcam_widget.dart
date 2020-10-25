@@ -125,7 +125,7 @@ class _WebCamWidgetState extends State<WebCamWidget> {
           print("############################################## playStart");
           print(_pc.getRemoteStreams());
           setState(() {
-            _remoteRenderer.srcObject = _pc.getRemoteStreams()[1];
+            _remoteRenderer.srcObject = _pc.getRemoteStreams()[1]; //TODO why index 1?
           });
         }
         break;

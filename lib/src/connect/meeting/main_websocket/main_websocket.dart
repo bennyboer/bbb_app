@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -17,6 +18,8 @@ class MainWebSocket {
   /// Available alphanumeric characters (including capitals).
   static String _ALPHANUMERIC_WITH_CAPS =
       "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+
+  static int _PINGINTERVALSECONDS = 10;
 
   /// Random number generator to use.
   Random _rng = Random();
@@ -38,6 +41,9 @@ class MainWebSocket {
 
   /// Updater for the cameraId list.
   CameraIdListUpdater _cameraIdListUpdater;
+
+  /// Timer for regularly sending ping message on websocket.
+  Timer _pingTimer;
 
   /// Create main web socket connection.
   MainWebSocket(
@@ -64,6 +70,7 @@ class MainWebSocket {
 
     _webSocket.onClose = (int code, String reason) {
       print("mainWebsocket closed by server [$code => $reason]!");
+      _pingTimer.cancel();
     };
 
     _webSocket.connect();
@@ -136,6 +143,7 @@ class MainWebSocket {
             } else if (msg == "connected") {
               _sendValidateAuthTokenMsg();
               _sendSubMsg("video-streams");
+              _startPing();
             }
           }
         });
@@ -181,14 +189,26 @@ class MainWebSocket {
     });
   }
 
+  /// Regularly send a ping message to keep the connection alive.
+  _startPing() {
+    if(_pingTimer == null) {
+      _pingTimer = new Timer.periodic(new Duration(seconds: _PINGINTERVALSECONDS), (t) {
+        _sendJSONEncodedMessage({
+          "msg": "method",
+          "method": "ping",
+          "params": [],
+          "id": "${msgIdCounter++}",
+        });
+      });
+    }
+  }
+
   /// Send a message over the websocket.
   void _sendJSONEncodedMessage(Map<String, dynamic> msgMap) {
     final String msg = json.encode(msgMap).replaceAll("\"", "\\\"");
 
     _webSocket.send("[\"$msg\"]");
   }
-
-  // TODO Ping with ID
 
   /// Get random digits with the given [length].
   String _getRandomDigits(int length) {
