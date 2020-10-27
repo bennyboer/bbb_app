@@ -1,19 +1,45 @@
+import 'dart:async';
+
+import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
 import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
 import 'package:flutter/material.dart';
 
 /// Widget showing the meeting participants and chat (or a link to the chat).
 class MeetingInfoView extends StatefulWidget {
+  /// The meetings main websocket connection.
+  MainWebSocket _mainWebSocket;
+
+  MeetingInfoView(this._mainWebSocket);
+
   @override
   State<StatefulWidget> createState() => _MeetingInfoViewState();
-
-  MeetingInfoView(this._userMap);
-
-  Map<String, UserModel> _userMap = {};
-
 }
 
 /// State of the meeting info view.
 class _MeetingInfoViewState extends State<MeetingInfoView> {
+  /// Map of users currently in the meeting.
+  Map<String, UserModel> _userMap = {};
+
+  /// Subscription to user changes.
+  StreamSubscription _userChangesStreamSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _userMap = widget._mainWebSocket.userModule.userMap;
+    _userChangesStreamSubscription =
+        widget._mainWebSocket.userModule.changes.listen((userMap) {
+      setState(() => _userMap = userMap);
+    });
+  }
+
+  @override
+  void dispose() {
+    _userChangesStreamSubscription.cancel();
+
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,22 +47,20 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
       appBar: _buildAppBar(),
       body: Column(
         children: [
-          ListView.builder
-            (
+          ListView.builder(
               padding: const EdgeInsets.all(8),
               scrollDirection: Axis.vertical,
               shrinkWrap: true,
-              itemCount: widget._userMap.length,
+              itemCount: _userMap.length,
               itemBuilder: (BuildContext context, int index) {
-                String key = widget._userMap.keys.elementAt(index);
-                UserModel user = widget._userMap[key];
-                if(user.connectionStatus == "online") {
+                String key = _userMap.keys.elementAt(index);
+                UserModel user = _userMap[key];
+                if (user.connectionStatus == "online") {
                   return new Text(user.name);
                 } else {
                   return new SizedBox();
                 }
-              }
-          )
+              })
         ],
       ),
     );

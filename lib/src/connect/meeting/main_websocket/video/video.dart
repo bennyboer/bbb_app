@@ -66,4 +66,7 @@ class VideoModule extends Module {
   /// Get a stream of camera IDs lists that are updated when new camera IDs pop up
   /// or are removed.
   Stream<List<String>> get cameraIDsStream => _videoStreamController.stream;
+
+  /// Get the currently listed camera IDs.
+  List<String> get cameraIDs => _cameraIDs;
 }

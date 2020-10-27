@@ -75,4 +75,7 @@ class UserModule extends Module {
 
   /// Get changes of the current meetings users.
   Stream<Map<String, UserModel>> get changes => _userStreamController.stream;
+
+  /// Get the current user map.
+  Map<String, UserModel> get userMap => _userMap;
 }

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
-import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
 import 'package:bbb_app/src/view/main/webcam/webcam_widget.dart';
 import 'package:bbb_app/src/view/meeting_info/meeting_info_view.dart';
 import 'package:bbb_app/src/view/settings/settings_view.dart';
@@ -27,14 +26,8 @@ class _MainViewState extends State<MainView> {
   /// List of camera Ids we currently display.
   List<String> _cameraIdList = [];
 
-  /// List of users in the meeting.
-  Map<String, UserModel> _userMap = {};
-
   /// Subscription to camera IDs list changes.
   StreamSubscription _cameraIdsStreamSubscription;
-
-  /// Subscription to user changes.
-  StreamSubscription _userChangesStreamSubscription;
 
   @override
   void initState() {
@@ -42,23 +35,19 @@ class _MainViewState extends State<MainView> {
 
     _mainWebSocket = MainWebSocket(widget._meetingInfo);
 
+    _cameraIdList = _mainWebSocket.videoModule.cameraIDs;
     _cameraIdsStreamSubscription =
         _mainWebSocket.videoModule.cameraIDsStream.listen((cameraIds) {
       setState(() => _cameraIdList = cameraIds);
-    });
-
-    _userChangesStreamSubscription =
-        _mainWebSocket.userModule.changes.listen((userMap) {
-      setState(() => _userMap = userMap);
     });
   }
 
   @override
   void dispose() {
     _cameraIdsStreamSubscription.cancel();
-    _userChangesStreamSubscription.cancel();
 
     _mainWebSocket.disconnect();
+    super.dispose();
   }
 
   @override
@@ -101,7 +90,7 @@ class _MainViewState extends State<MainView> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) => MeetingInfoView(_userMap)),
+                  builder: (context) => MeetingInfoView(_mainWebSocket)),
             );
           },
         ),
