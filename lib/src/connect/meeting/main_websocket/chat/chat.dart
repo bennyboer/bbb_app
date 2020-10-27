@@ -13,9 +13,7 @@ class ChatModule extends Module {
     String chatID = defaultChatID,
     @required String internUserID,
     @required String message,
-  }) async {
-    
-  }
+  }) async {}
 
   @override
   void processMessage(Map<String, dynamic> msg) {
@@ -25,5 +23,10 @@ class ChatModule extends Module {
   @override
   void onConnected() {
     // TODO: Subscribe to the chat topic
+  }
+
+  @override
+  Future<void> onDisconnect() async {
+    // Do nothing
   }
 }

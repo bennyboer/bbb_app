@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
@@ -28,17 +30,35 @@ class _MainViewState extends State<MainView> {
   /// List of users in the meeting.
   Map<String, UserModel> _userMap = {};
 
+  /// Subscription to camera IDs list changes.
+  StreamSubscription _cameraIdsStreamSubscription;
+
+  /// Subscription to user changes.
+  StreamSubscription _userChangesStreamSubscription;
+
   @override
   void initState() {
     super.initState();
 
-    _mainWebSocket = MainWebSocket(
-      widget._meetingInfo,
-      cameraIdListUpdater: (cameraIdList) =>
-          setState(() => _cameraIdList = cameraIdList),
-      userMapUpdater: (userMap) =>
-          setState(() => _userMap = userMap),
-    );
+    _mainWebSocket = MainWebSocket(widget._meetingInfo);
+
+    _cameraIdsStreamSubscription =
+        _mainWebSocket.videoModule.cameraIDsStream.listen((cameraIds) {
+      setState(() => _cameraIdList = cameraIds);
+    });
+
+    _userChangesStreamSubscription =
+        _mainWebSocket.userModule.changes.listen((userMap) {
+      setState(() => _userMap = userMap);
+    });
+  }
+
+  @override
+  void dispose() {
+    _cameraIdsStreamSubscription.cancel();
+    _userChangesStreamSubscription.cancel();
+
+    _mainWebSocket.disconnect();
   }
 
   @override
@@ -47,6 +67,9 @@ class _MainViewState extends State<MainView> {
       appBar: _buildAppBar(),
       body: Column(
         children: [
+          RaisedButton(
+              child: Text("Test"),
+              onPressed: () => _mainWebSocket.disconnect()),
           Text("Your username is: ${widget._meetingInfo.fullUserName}"),
           Text("Having ${_cameraIdList.length} cameras active"),
           ListView.builder(
@@ -77,7 +100,8 @@ class _MainViewState extends State<MainView> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => MeetingInfoView(_userMap)),
+              MaterialPageRoute(
+                  builder: (context) => MeetingInfoView(_userMap)),
             );
           },
         ),
