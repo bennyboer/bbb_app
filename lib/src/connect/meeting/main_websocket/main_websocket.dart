@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
 import 'package:bbb_app/src/utils/websocket.dart';
@@ -53,13 +55,18 @@ class MainWebSocket {
   /// Timer for regularly sending ping message on websocket.
   Timer _pingTimer;
 
+  /// Modules the web socket is delegating messages to.
+  Map<String, Module> _modules;
+
   /// Create main web socket connection.
   MainWebSocket(
     this._meetingInfo, {
-      CameraIdListUpdater cameraIdListUpdater,
-        UserMapUpdater userMapUpdater,
-      }) :_cameraIdListUpdater = cameraIdListUpdater,
+    CameraIdListUpdater cameraIdListUpdater,
+    UserMapUpdater userMapUpdater,
+  })  : _cameraIdListUpdater = cameraIdListUpdater,
         _userMapUpdater = userMapUpdater {
+    _setupModules();
+
     final uri = Uri.parse(_meetingInfo.joinUrl)
         .replace(queryParameters: null)
         .replace(
@@ -84,6 +91,15 @@ class MainWebSocket {
     };
 
     _webSocket.connect();
+  }
+
+  /// Set up the web socket modules.
+  void _setupModules() {
+    final MessageSender messageSender = (msg) => _sendJSONEncodedMessage(msg);
+
+    _modules = {
+      "chat": new ChatModule(messageSender),
+    };
   }
 
   /// Process incoming [message].
@@ -169,11 +185,23 @@ class MainWebSocket {
                 default:
                   break;
               }
-            } else if (msg == "connected") {
+            }
+
+            if (msg == "connected") {
               _sendValidateAuthTokenMsg();
               _sendSubMsg("video-streams");
               _sendSubMsg("users");
               _startPing();
+
+              // Delegate incoming message to the modules.
+              for (MapEntry<String, Module> moduleEntry in _modules.entries) {
+                moduleEntry.value.onConnected();
+              }
+            } else {
+              // Delegate incoming message to the modules.
+              for (MapEntry<String, Module> moduleEntry in _modules.entries) {
+                moduleEntry.value.processMessage(jsonMsg);
+              }
             }
           }
         });
@@ -184,37 +212,28 @@ class MainWebSocket {
   }
 
   void _handleUsersMsg(jsonMsg) {
+    if (jsonMsg['id'] != null) {
+      print("adding new user...");
 
-      if (jsonMsg['id'] != null) {
-        print("adding new user...");
+      String id = jsonMsg['id'];
+      String name = jsonMsg['fields']['name'];
+      String sortName = jsonMsg['fields']['sortName'];
+      String internalId = jsonMsg['fields']['intId'];
+      String color = jsonMsg['fields']['color'];
+      String role = jsonMsg['fields']['role'];
+      bool isPresenter = jsonMsg['fields']['presenter'];
+      String connectionStatus = jsonMsg['fields']['connectionStatus'];
 
-        String id = jsonMsg['id'];
-        String name = jsonMsg['fields']['name'];
-        String sortName = jsonMsg['fields']['sortName'];
-        String internalId = jsonMsg['fields']['intId'];
-        String color = jsonMsg['fields']['color'];
-        String role = jsonMsg['fields']['role'];
-        bool isPresenter = jsonMsg['fields']['presenter'];
-        String connectionStatus = jsonMsg['fields']['connectionStatus'];
+      _userMap[id] = UserModel(id, name, sortName, internalId, color, role,
+          isPresenter, connectionStatus);
+      print(_userMap);
 
-        _userMap[id] = UserModel(
-            id,
-            name,
-            sortName,
-            internalId,
-            color,
-            role,
-            isPresenter,
-            connectionStatus);
-        print(_userMap);
-
-        // Publish changed user list to the caller
-        if (_userMapUpdater != null) {
-          _userMapUpdater(_userMap);
-        }
+      // Publish changed user list to the caller
+      if (_userMapUpdater != null) {
+        _userMapUpdater(_userMap);
       }
+    }
   }
-
 
   /// Send the connect message to the server.
   void _sendConnectMsg() {
@@ -254,8 +273,9 @@ class MainWebSocket {
 
   /// Regularly send a ping message to keep the connection alive.
   _startPing() {
-    if(_pingTimer == null) {
-      _pingTimer = new Timer.periodic(new Duration(seconds: _PINGINTERVALSECONDS), (t) {
+    if (_pingTimer == null) {
+      _pingTimer =
+          new Timer.periodic(new Duration(seconds: _PINGINTERVALSECONDS), (t) {
         _sendJSONEncodedMessage({
           "msg": "method",
           "method": "ping",
@@ -297,4 +317,7 @@ class MainWebSocket {
           .codeUnitAt(_rng.nextInt(_ALPHANUMERIC_WITH_CAPS.length)),
     ));
   }
+
+  /// Get the chat module of the websocket.
+  ChatModule get chatModule => _modules["chat"];
 }
