@@ -3,9 +3,11 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
+import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
 import 'package:bbb_app/src/utils/websocket.dart';
 
 typedef CameraIdListUpdater = void Function(List<String> cameraIds);
+typedef UserMapUpdater = void Function(Map<String, UserModel> users);
 
 /// Main websocket connection to the BBB web server.
 class MainWebSocket {
@@ -30,6 +32,9 @@ class MainWebSocket {
   /// List of camera Ids we currently have fetched from the web socket.
   List<String> _cameraIdList = [];
 
+  /// List of users we currently have fetched from the web socket.
+  Map<String, UserModel> _userMap = {};
+
   /// Lookup of the camera ID by a stream ID.
   Map<String, String> cameraIdByStreamIdLookup = {};
 
@@ -42,14 +47,19 @@ class MainWebSocket {
   /// Updater for the cameraId list.
   CameraIdListUpdater _cameraIdListUpdater;
 
+  /// Updater for the user list.
+  UserMapUpdater _userMapUpdater;
+
   /// Timer for regularly sending ping message on websocket.
   Timer _pingTimer;
 
   /// Create main web socket connection.
   MainWebSocket(
     this._meetingInfo, {
-    CameraIdListUpdater cameraIdListUpdater,
-  }) : _cameraIdListUpdater = cameraIdListUpdater {
+      CameraIdListUpdater cameraIdListUpdater,
+        UserMapUpdater userMapUpdater,
+      }) :_cameraIdListUpdater = cameraIdListUpdater,
+        _userMapUpdater = userMapUpdater {
     final uri = Uri.parse(_meetingInfo.joinUrl)
         .replace(queryParameters: null)
         .replace(
@@ -116,6 +126,25 @@ class MainWebSocket {
                     }
                     break;
 
+                  case 'users':
+                    {
+                      _handleUsersMsg(jsonMsg);
+                    }
+                    break;
+
+                  default:
+                    break;
+                }
+              }
+            } else if (msg == "changed") {
+              if (jsonMsg['collection'] != null) {
+                switch (jsonMsg['collection']) {
+                  case 'users':
+                    {
+                      _handleUsersMsg(jsonMsg);
+                    }
+                    break;
+
                   default:
                     break;
                 }
@@ -143,6 +172,7 @@ class MainWebSocket {
             } else if (msg == "connected") {
               _sendValidateAuthTokenMsg();
               _sendSubMsg("video-streams");
+              _sendSubMsg("users");
               _startPing();
             }
           }
@@ -152,6 +182,39 @@ class MainWebSocket {
       }
     }
   }
+
+  void _handleUsersMsg(jsonMsg) {
+
+      if (jsonMsg['id'] != null) {
+        print("adding new user...");
+
+        String id = jsonMsg['id'];
+        String name = jsonMsg['fields']['name'];
+        String sortName = jsonMsg['fields']['sortName'];
+        String internalId = jsonMsg['fields']['intId'];
+        String color = jsonMsg['fields']['color'];
+        String role = jsonMsg['fields']['role'];
+        bool isPresenter = jsonMsg['fields']['presenter'];
+        String connectionStatus = jsonMsg['fields']['connectionStatus'];
+
+        _userMap[id] = UserModel(
+            id,
+            name,
+            sortName,
+            internalId,
+            color,
+            role,
+            isPresenter,
+            connectionStatus);
+        print(_userMap);
+
+        // Publish changed user list to the caller
+        if (_userMapUpdater != null) {
+          _userMapUpdater(_userMap);
+        }
+      }
+  }
+
 
   /// Send the connect message to the server.
   void _sendConnectMsg() {

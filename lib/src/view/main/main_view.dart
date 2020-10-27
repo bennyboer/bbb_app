@@ -1,5 +1,6 @@
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
+import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
 import 'package:bbb_app/src/view/main/webcam/webcam_widget.dart';
 import 'package:bbb_app/src/view/meeting_info/meeting_info_view.dart';
 import 'package:bbb_app/src/view/settings/settings_view.dart';
@@ -24,6 +25,9 @@ class _MainViewState extends State<MainView> {
   /// List of camera Ids we currently display.
   List<String> _cameraIdList = [];
 
+  /// List of users in the meeting.
+  Map<String, UserModel> _userMap = {};
+
   @override
   void initState() {
     super.initState();
@@ -32,6 +36,8 @@ class _MainViewState extends State<MainView> {
       widget._meetingInfo,
       cameraIdListUpdater: (cameraIdList) =>
           setState(() => _cameraIdList = cameraIdList),
+      userMapUpdater: (userMap) =>
+          setState(() => _userMap = userMap),
     );
   }
 
@@ -71,7 +77,7 @@ class _MainViewState extends State<MainView> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => MeetingInfoView()),
+              MaterialPageRoute(builder: (context) => MeetingInfoView(_userMap)),
             );
           },
         ),
