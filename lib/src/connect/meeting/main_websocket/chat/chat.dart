@@ -14,7 +14,7 @@ class ChatModule extends Module {
     @required String internUserID,
     @required String message,
   }) async {
-    // TODO
+    
   }
 
   @override

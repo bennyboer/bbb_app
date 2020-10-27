@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/util/util.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
 import 'package:bbb_app/src/utils/websocket.dart';
@@ -13,20 +13,7 @@ typedef UserMapUpdater = void Function(Map<String, UserModel> users);
 
 /// Main websocket connection to the BBB web server.
 class MainWebSocket {
-  /// Available digits.
-  static String _DIGITS = "1234567890";
-
-  /// Available alphanumeric characters (excluding capitals).
-  static String _ALPHANUMERIC = "abcdefghijklmnopqrstuvwxyz1234567890";
-
-  /// Available alphanumeric characters (including capitals).
-  static String _ALPHANUMERIC_WITH_CAPS =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
-
   static int _PINGINTERVALSECONDS = 10;
-
-  /// Random number generator to use.
-  Random _rng = Random();
 
   /// Info of the meeting to create main websocket connection for.
   MeetingInfo _meetingInfo;
@@ -71,7 +58,7 @@ class MainWebSocket {
         .replace(queryParameters: null)
         .replace(
             path:
-                "html5client/sockjs/${_getRandomDigits(3)}/${_getRandomAlphanumeric(8)}/websocket");
+                "html5client/sockjs/${MainWebSocketUtil.getRandomDigits(3)}/${MainWebSocketUtil.getRandomAlphanumeric(8)}/websocket");
 
     _webSocket = SimpleWebSocket(uri.toString());
     print("connect to ${uri.toString()}");
@@ -265,7 +252,7 @@ class MainWebSocket {
 
     _sendJSONEncodedMessage({
       "msg": "sub",
-      "id": _getRandomAlphanumericWithCaps(17),
+      "id": MainWebSocketUtil.getRandomAlphanumericWithCaps(17),
       "name": topic,
       "params": [],
     });
@@ -291,31 +278,6 @@ class MainWebSocket {
     final String msg = json.encode(msgMap).replaceAll("\"", "\\\"");
 
     _webSocket.send("[\"$msg\"]");
-  }
-
-  /// Get random digits with the given [length].
-  String _getRandomDigits(int length) {
-    return String.fromCharCodes(Iterable.generate(
-      length,
-      (_) => _DIGITS.codeUnitAt(_rng.nextInt(_DIGITS.length)),
-    ));
-  }
-
-  /// Get a random string of alphanumeric characters with the given [length].
-  String _getRandomAlphanumeric(int length) {
-    return String.fromCharCodes(Iterable.generate(
-      length,
-      (_) => _ALPHANUMERIC.codeUnitAt(_rng.nextInt(_ALPHANUMERIC.length)),
-    ));
-  }
-
-  /// Get a random string of alphanumeric characters (including capitals) with the given [length].
-  String _getRandomAlphanumericWithCaps(int length) {
-    return String.fromCharCodes(Iterable.generate(
-      length,
-      (_) => _ALPHANUMERIC_WITH_CAPS
-          .codeUnitAt(_rng.nextInt(_ALPHANUMERIC_WITH_CAPS.length)),
-    ));
   }
 
   /// Get the chat module of the websocket.
