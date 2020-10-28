@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/group.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/message.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/chat/user_typing_info.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
 
 /// BBB Chat representation.
@@ -15,8 +16,8 @@ class ChatModule extends Module {
   /// Topic where new group chats are published over.
   static const String _groupChatTopic = "group-chat";
 
-  /// Maximum duration to wait until cancelling waiting for a pending message send confirmation.
-  static const Duration _maxSendMsgConfirmWaitDuration = Duration(seconds: 10);
+  /// Topic where "user is typing" status updates are published.
+  static const String _usersTypingTopic = "users-typing";
 
   /// Default ID of the sender (the currently logged in internal user ID).
   final String _defaultSenderId;
@@ -35,6 +36,10 @@ class ChatModule extends Module {
   StreamController<ChatGroup> _chatGroupController =
       StreamController.broadcast();
 
+  /// Controller publishing currently typing user status updates.
+  StreamController<UserTypingInfo> _userTypingStatusController =
+      StreamController.broadcast();
+
   /// Messages already received.
   Map<String, List<ChatMessage>> _messages = {};
 
@@ -43,6 +48,13 @@ class ChatModule extends Module {
 
   /// Message confirmation completer.
   Map<String, Completer<void>> _msgConfirmCompleters = {};
+
+  /// Users currently typing (mapped per chat ID).
+  Map<String, Set<String>> _usersTypingMap = {};
+
+  /// Users currently typing info (mapped per typing message ID).
+  /// Used to remove typing user status easily again.
+  Map<String, UserTypingInfo> _usersTypingInfoMap = {};
 
   ChatModule(
     MessageSender messageSender,
@@ -74,6 +86,31 @@ class ChatModule extends Module {
     });
 
     return waitForSentMsgConfirmation(msgId);
+  }
+
+  /// Start that the current user is typing for the passed chatID.
+  void startUserTyping([String chatID]) {
+    sendMessage({
+      "msg": "method",
+      "method": "startUserTyping",
+      "params": [
+        chatID == null
+            ? "public"
+            : _chatGroups
+                .firstWhere((element) => element.id == chatID)
+                .participantIDs
+                .firstWhere((element) => element != _defaultSenderId),
+      ],
+    });
+  }
+
+  /// Stop that the current user is typing.
+  void stopUserTyping() {
+    sendMessage({
+      "msg": "method",
+      "method": "stopUserTyping",
+      "params": [],
+    });
   }
 
   /// Wait until the passed send message with the passed [msgId] arrives from the main web socket as
@@ -109,7 +146,57 @@ class ChatModule extends Module {
         String chatID = fields["chatId"];
         String name = fields["name"];
 
-        _onNewGroupChat(chatID, name);
+        Set<String> participantIDs = Set();
+        for (String userID in fields["users"]) {
+          participantIDs.add(userID);
+        }
+
+        _onNewGroupChat(chatID, name, participantIDs);
+      } else if (collectionName == "users-typing") {
+        String id = msg["id"];
+
+        Map<String, dynamic> fields = msg["fields"];
+
+        String userID = fields["userId"];
+        String name = fields["name"];
+        String isTypingTo = fields["isTypingTo"];
+
+        // Find ID of the chat we are typing to
+        String chatID;
+        if (isTypingTo == "public") {
+          chatID = defaultChatID;
+        } else {
+          chatID = _chatGroups
+              .firstWhere(
+                  (element) => element.participantIDs.contains(isTypingTo))
+              .id;
+        }
+
+        if (userID != _defaultSenderId) {
+          UserTypingInfo info = UserTypingInfo(id, chatID, userID, name);
+          _usersTypingInfoMap[id] = info;
+
+          _usersTypingMap.putIfAbsent(chatID, () => Set()).add(name);
+
+          _userTypingStatusController.add(info);
+        }
+      }
+    } else if (method == "removed") {
+      String collectionName = msg["collection"];
+
+      if (collectionName == "users-typing") {
+        String id = msg["id"];
+
+        // Remove typing user
+        UserTypingInfo info = _usersTypingInfoMap.remove(id);
+        if (info != null) {
+          Set<String> usersTyping = _usersTypingMap[info.chatID];
+          if (usersTyping != null) {
+            usersTyping.remove(info.userName);
+          }
+        }
+
+        _userTypingStatusController.add(info);
       }
     }
   }
@@ -139,8 +226,8 @@ class ChatModule extends Module {
   }
 
   /// Called on a new incoming chat group.
-  void _onNewGroupChat(String chatID, String name) {
-    ChatGroup group = ChatGroup(chatID, name);
+  void _onNewGroupChat(String chatID, String name, Set<String> participantIDs) {
+    ChatGroup group = ChatGroup(chatID, name, participantIDs);
 
     _chatGroups.add(group);
     _chatGroupController.add(group);
@@ -155,6 +242,7 @@ class ChatModule extends Module {
   @override
   void onConnected() {
     subscribe(_groupChatTopic);
+    subscribe(_usersTypingTopic);
   }
 
   @override
@@ -175,11 +263,20 @@ class ChatModule extends Module {
   Stream<ChatMessage> get messageStream => _chatMessageController.stream;
 
   /// Get already received messages for the passed chat ID.
-  List<ChatMessage> getMessages(String chatID) => _messages[chatID];
+  List<ChatMessage> getMessages(String chatID) =>
+      _messages.putIfAbsent(chatID, () => []);
 
   /// Get a stream of incoming chat groups.
   Stream<ChatGroup> get chatGroupStream => _chatGroupController.stream;
 
   /// Get already received chat groups.
   List<ChatGroup> get chatGroups => _chatGroups;
+
+  /// Get a stream of currently typing users.
+  Stream<UserTypingInfo> get userTypingStatusStream =>
+      _userTypingStatusController.stream;
+
+  /// Get already received user typing info for the passed [chatID].
+  Set<String> getUserTypingInfo(String chatID) =>
+      _usersTypingMap.putIfAbsent(chatID, () => Set());
 }

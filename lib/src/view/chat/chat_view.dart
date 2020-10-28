@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/group.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/message.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/chat/user_typing_info.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
@@ -34,8 +34,14 @@ class _ChatViewState extends State<ChatView> {
   /// Messages of the chat.
   List<ChatMessage> _messages = [];
 
+  /// List of currently typing users.
+  List<String> _currentlyTypingUsers = [];
+
   /// Subscription to incoming chat messages.
   StreamSubscription<ChatMessage> _chatMessageStreamSubscription;
+
+  /// Subscription to user is typing status updates.
+  StreamSubscription<UserTypingInfo> _userTypingInfoStreamSubscription;
 
   /// Controller for the text field.
   final TextEditingController _textFieldController = TextEditingController();
@@ -43,8 +49,8 @@ class _ChatViewState extends State<ChatView> {
   /// Scroll controller of the chat list.
   final ScrollController _scrollController = ScrollController();
 
-  /// Whether initial scroll is needed.
-  bool _needScroll = true;
+  /// Timer started, when the current user types.
+  Timer _userTypingTimer;
 
   @override
   void initState() {
@@ -59,16 +65,57 @@ class _ChatViewState extends State<ChatView> {
           _messages.add(msg);
         });
 
-        SchedulerBinding.instance.addPostFrameCallback((_) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent + 100,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        });
+        _scrollToEnd();
       }
     });
 
+    _currentlyTypingUsers = List.of(widget._mainWebSocket.chatModule
+        .getUserTypingInfo(widget._chatGroup.id));
+    _currentlyTypingUsers.sort();
+    _userTypingInfoStreamSubscription = widget
+        ._mainWebSocket.chatModule.userTypingStatusStream
+        .listen((userTypingInfo) {
+      if (userTypingInfo.chatID == widget._chatGroup.id) {
+        bool keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
+        // Prevent the keyboard from closing
+        if (!keyboardOpen) {
+          setState(() {
+            _currentlyTypingUsers = List.of(widget._mainWebSocket.chatModule
+                .getUserTypingInfo(widget._chatGroup.id));
+            _currentlyTypingUsers.sort();
+
+            if (_scrollController.offset >=
+                _scrollController.position.maxScrollExtent) {
+              _scrollToEnd();
+            }
+          });
+        }
+      }
+    });
+
+    _textFieldController.addListener(() {
+      if (_userTypingTimer != null) {
+        _userTypingTimer.cancel();
+      } else {
+        widget._mainWebSocket.chatModule.startUserTyping(
+          widget._chatGroup.id == ChatModule.defaultChatID
+              ? null
+              : widget._chatGroup.id,
+        );
+      }
+
+      _userTypingTimer = Timer(Duration(seconds: 3), () {
+        widget._mainWebSocket.chatModule.stopUserTyping();
+        _userTypingTimer = null;
+      });
+    });
+
+    _scrollToEnd();
+  }
+
+  /// Scroll to the end of the chat.
+  void _scrollToEnd() {
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent + 100,
@@ -81,6 +128,7 @@ class _ChatViewState extends State<ChatView> {
   @override
   void dispose() {
     _chatMessageStreamSubscription.cancel();
+    _userTypingInfoStreamSubscription.cancel();
 
     _scrollController.dispose();
     super.dispose();
@@ -109,6 +157,17 @@ class _ChatViewState extends State<ChatView> {
               },
             ),
           ),
+          if (_currentlyTypingUsers.isNotEmpty)
+            Container(
+              padding: EdgeInsets.all(5),
+              color: null,
+              child: Text(
+                _currentlyTypingUsers.length == 1
+                    ? "${_currentlyTypingUsers.join(", ")} is currently typing..."
+                    : "${_currentlyTypingUsers.join(", ")} are currently typing...",
+                style: TextStyle(fontStyle: FontStyle.italic),
+              ),
+            ),
           Container(
             color: Theme.of(context).chipTheme.backgroundColor,
             child: Row(
@@ -149,13 +208,7 @@ class _ChatViewState extends State<ChatView> {
       chatID: widget._chatGroup.id,
     ));
 
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent + 100,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    });
+    _scrollToEnd();
   }
 
   /// Build widget to display a chat message.
