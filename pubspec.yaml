@@ -36,6 +36,7 @@ dependencies:
   html: ^0.14.0+4
   day_night_switcher: ^0.1.1+1
   provider: ^4.3.2+2
+  intl: ^0.16.1
 
   # Required for MediaRecorder example
   path_provider:

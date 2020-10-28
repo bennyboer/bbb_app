@@ -28,7 +28,10 @@ abstract class Module {
   /// Subscribe to the passed [topic].
   /// Returns the subscription ID with which we have subscribed to the topic.
   /// The subscription ID is needed to unsubscribe later.
-  String subscribe(String topic) {
+  String subscribe(
+    String topic, {
+    List<dynamic> params = const [],
+  }) {
     final String subscriptionID =
         MainWebSocketUtil.getRandomAlphanumericWithCaps(17);
 
@@ -36,7 +39,7 @@ abstract class Module {
       "msg": "sub",
       "id": subscriptionID,
       "name": topic,
-      "params": [],
+      "params": params,
     });
 
     return subscriptionID;

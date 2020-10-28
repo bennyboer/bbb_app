@@ -56,7 +56,7 @@ class UserModule extends Module {
       bool isPresenter = jsonMsg['fields']['presenter'];
       String connectionStatus = jsonMsg['fields']['connectionStatus'];
 
-      _userMap[id] = UserModel(
+      _userMap[internalId] = UserModel(
         id,
         name,
         sortName,

@@ -1,16 +1,16 @@
 /// A chat message representation.
 class ChatMessage {
   /// ID of the chat.
-  String _chatID;
+  final String _chatID;
 
   /// Intern user ID of the sender.
-  String _senderID;
+  final String _senderID;
 
   /// Content of the message.
-  String _content;
+  final String _content;
 
   /// Timestamp of the message.
-  DateTime _timestamp;
+  final DateTime _timestamp;
 
   ChatMessage(
     this._content, {

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bbb_app/src/connect/meeting/main_websocket/chat/group.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/message.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
 
@@ -10,6 +11,9 @@ class ChatModule extends Module {
 
   /// Topic of chat messages to subscribe to.
   static const String _groupChatMessageTopic = "group-chat-msg";
+
+  /// Topic where new group chats are published over.
+  static const String _groupChatTopic = "group-chat";
 
   /// Maximum duration to wait until cancelling waiting for a pending message send confirmation.
   static const Duration _maxSendMsgConfirmWaitDuration = Duration(seconds: 10);
@@ -27,11 +31,18 @@ class ChatModule extends Module {
   StreamController<ChatMessage> _chatMessageController =
       StreamController.broadcast();
 
+  /// Controller publishing chat groups.
+  StreamController<ChatGroup> _chatGroupController =
+      StreamController.broadcast();
+
   /// Messages already received.
-  List<ChatMessage> _messages = [];
+  Map<String, List<ChatMessage>> _messages = {};
+
+  /// Already received chat groups.
+  List<ChatGroup> _chatGroups = [];
 
   /// Message confirmation completer.
-  Map<String, Completer<void>> _msgConfirmCompleters;
+  Map<String, Completer<void>> _msgConfirmCompleters = {};
 
   ChatModule(
     MessageSender messageSender,
@@ -85,46 +96,90 @@ class ChatModule extends Module {
         Map<String, dynamic> fields = msg["fields"];
 
         String chatID = fields["chatId"];
-        int timestamp = fields["timestamp"];
+        DateTime timestamp =
+            new DateTime.fromMillisecondsSinceEpoch(fields["timestamp"]);
         String senderID = fields["sender"];
         String content = fields["message"];
-        String correlationId = fields["correlationId"];
+        String correlationID = fields["correlationId"];
 
-        if (_msgConfirmCompleters.containsKey(correlationId)) {
-          Completer<void> completer =
-              _msgConfirmCompleters.remove(correlationId);
-          completer.complete(null); // Confirmation that message has been sent
-        }
+        _onChatMessage(chatID, timestamp, senderID, content, correlationID);
+      } else if (collectionName == "group-chat") {
+        Map<String, dynamic> fields = msg["fields"];
 
-        ChatMessage message = ChatMessage(
-          content,
-          chatID: chatID,
-          senderID: senderID,
-          timestamp: new DateTime.fromMillisecondsSinceEpoch(timestamp),
-        );
+        String chatID = fields["chatId"];
+        String name = fields["name"];
 
-        print(
-            "Incoming message: ${message.content} (From ${message.timestamp.toString()}");
-
-        _messages.add(message);
-        _chatMessageController.add(message);
+        _onNewGroupChat(chatID, name);
       }
     }
   }
 
+  /// Called when a chat message has been received.
+  void _onChatMessage(
+    String chatID,
+    DateTime timestamp,
+    String senderID,
+    String content,
+    String correlationID,
+  ) {
+    if (_msgConfirmCompleters.containsKey(correlationID)) {
+      Completer<void> completer = _msgConfirmCompleters.remove(correlationID);
+      completer.complete(null); // Confirmation that message has been sent
+    }
+
+    ChatMessage message = ChatMessage(
+      content,
+      chatID: chatID,
+      senderID: senderID,
+      timestamp: timestamp,
+    );
+
+    _messages.putIfAbsent(chatID, () => []).add(message);
+    _chatMessageController.add(message);
+  }
+
+  /// Called on a new incoming chat group.
+  void _onNewGroupChat(String chatID, String name) {
+    ChatGroup group = ChatGroup(chatID, name);
+
+    _chatGroups.add(group);
+    _chatGroupController.add(group);
+
+    // Subscribe to messages of the chat group
+    List<dynamic> params = chatID != defaultChatID
+        ? [_chatGroups.map((e) => "${e.id}").toList(growable: false)]
+        : [];
+    subscribe(_groupChatMessageTopic, params: params);
+  }
+
   @override
   void onConnected() {
-    subscribe(_groupChatMessageTopic);
+    subscribe(_groupChatTopic);
   }
 
   @override
   Future<void> onDisconnect() async {
-    // Do nothing
+    // Close stream controllers
+    _chatMessageController.close();
+    _chatGroupController.close();
+
+    // Complete pending message sending completers (if any)
+    for (MapEntry<String, Completer<void>> entry
+        in _msgConfirmCompleters.entries) {
+      entry.value.completeError(
+          "Chat module lost connection and thus could not receive confirmation whether a previously sent chat message has been received");
+    }
   }
 
   /// Get a stream of incoming messages.
   Stream<ChatMessage> get messageStream => _chatMessageController.stream;
 
-  /// Get already received messages.
-  List<ChatMessage> get messages => _messages;
+  /// Get already received messages for the passed chat ID.
+  List<ChatMessage> getMessages(String chatID) => _messages[chatID];
+
+  /// Get a stream of incoming chat groups.
+  Stream<ChatGroup> get chatGroupStream => _chatGroupController.stream;
+
+  /// Get already received chat groups.
+  List<ChatGroup> get chatGroups => _chatGroups;
 }

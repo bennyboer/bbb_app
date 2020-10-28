@@ -4,6 +4,7 @@ import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/view/main/main_view.dart';
 import 'package:day_night_switcher/day_night_switcher.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
 // Start view of the app where you'll be able to enter a meeting using the invitation link.
@@ -22,6 +23,12 @@ class _StartViewState extends State<StartView> {
 
   /// Controller for the meeting URL text field.
   final TextEditingController _meetingURLController = TextEditingController(/*text: ""*/);
+
+  @override
+  void initState() {
+    super.initState();
+    initializeDateFormatting();
+  }
 
   @override
   Widget build(BuildContext context) {

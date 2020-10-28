@@ -90,7 +90,7 @@ class _MainViewState extends State<MainView> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) => MeetingInfoView(_mainWebSocket)),
+                  builder: (context) => MeetingInfoView(widget._meetingInfo, _mainWebSocket)),
             );
           },
         ),
