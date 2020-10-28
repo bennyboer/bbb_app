@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/message.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
-import 'package:flutter/widgets.dart';
 
 /// BBB Chat representation.
 class ChatModule extends Module {
@@ -12,6 +11,18 @@ class ChatModule extends Module {
   /// Topic of chat messages to subscribe to.
   static const String _groupChatMessageTopic = "group-chat-msg";
 
+  /// Maximum duration to wait until cancelling waiting for a pending message send confirmation.
+  static const Duration _maxSendMsgConfirmWaitDuration = Duration(seconds: 10);
+
+  /// Default ID of the sender (the currently logged in internal user ID).
+  final String _defaultSenderId;
+
+  /// Name of the current user.
+  final String _userName;
+
+  /// Message counter.
+  int _messageCounter = 1;
+
   /// Controller publishing chat messages.
   StreamController<ChatMessage> _chatMessageController =
       StreamController.broadcast();
@@ -19,15 +30,48 @@ class ChatModule extends Module {
   /// Messages already received.
   List<ChatMessage> _messages = [];
 
-  ChatModule(messageSender) : super(messageSender);
+  /// Message confirmation completer.
+  Map<String, Completer<void>> _msgConfirmCompleters;
+
+  ChatModule(
+    MessageSender messageSender,
+    this._defaultSenderId,
+    this._userName,
+  ) : super(messageSender);
 
   /// Send a chat message.
-  Future<void> sendGroupChatMsg({
-    String chatID = defaultChatID,
-    @required String internUserID,
-    @required String message,
-  }) async {
-    // TODO
+  Future<void> sendGroupChatMsg(ChatMessage msg) async {
+    final String senderID = msg.senderID ?? _defaultSenderId;
+
+    final String msgId = "$senderID-${_messageCounter++}";
+
+    sendMessage({
+      "msg": "method",
+      "method": "sendGroupChatMsg",
+      "params": [
+        msg.chatID ?? defaultChatID,
+        {
+          "color": 0,
+          "correlationId": msgId,
+          "sender": {
+            "id": senderID,
+            "name": _userName,
+          },
+          "message": msg.content,
+        },
+      ],
+    });
+
+    return waitForSentMsgConfirmation(msgId);
+  }
+
+  /// Wait until the passed send message with the passed [msgId] arrives from the main web socket as
+  /// confirmation that is has been received.
+  Future<void> waitForSentMsgConfirmation(String msgId) async {
+    Completer<void> _completer = new Completer<void>();
+    _msgConfirmCompleters[msgId] = _completer;
+
+    return _completer.future;
   }
 
   @override
@@ -44,11 +88,18 @@ class ChatModule extends Module {
         int timestamp = fields["timestamp"];
         String senderID = fields["sender"];
         String content = fields["message"];
+        String correlationId = fields["correlationId"];
+
+        if (_msgConfirmCompleters.containsKey(correlationId)) {
+          Completer<void> completer =
+              _msgConfirmCompleters.remove(correlationId);
+          completer.complete(null); // Confirmation that message has been sent
+        }
 
         ChatMessage message = ChatMessage(
+          content,
           chatID: chatID,
           senderID: senderID,
-          content: content,
           timestamp: new DateTime.fromMillisecondsSinceEpoch(timestamp),
         );
 

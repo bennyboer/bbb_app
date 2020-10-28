@@ -70,7 +70,11 @@ class MainWebSocket {
       "ping": new PingModule(messageSender),
       "video": new VideoModule(messageSender),
       "user": new UserModule(messageSender),
-      "chat": new ChatModule(messageSender),
+      "chat": new ChatModule(
+        messageSender,
+        _meetingInfo.internalUserID,
+        _meetingInfo.fullUserName,
+      ),
     };
   }
 

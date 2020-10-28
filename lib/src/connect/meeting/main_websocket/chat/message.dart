@@ -12,14 +12,13 @@ class ChatMessage {
   /// Timestamp of the message.
   DateTime _timestamp;
 
-  ChatMessage({
-    String chatID,
+  ChatMessage(
+    this._content, {
     String senderID,
-    String content,
+    String chatID,
     DateTime timestamp,
   })  : this._chatID = chatID,
         this._senderID = senderID,
-        this._content = content,
         this._timestamp = timestamp;
 
   String get content => _content;
