@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
+import 'package:bbb_app/src/locale/app_localizations.dart';
 import 'package:bbb_app/src/view/main/webcam/webcam_widget.dart';
 import 'package:bbb_app/src/view/meeting_info/meeting_info_view.dart';
 import 'package:bbb_app/src/view/settings/settings_view.dart';
@@ -85,19 +86,21 @@ class _MainViewState extends State<MainView> {
         title: Text(widget._meetingInfo.conferenceName),
         leading: IconButton(
           icon: Icon(Icons.people),
-          tooltip: "Meeting info",
+          tooltip: AppLocalizations.of(context).get("meeting-info.title"),
           onPressed: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) => MeetingInfoView(widget._meetingInfo, _mainWebSocket)),
+                builder: (context) =>
+                    MeetingInfoView(widget._meetingInfo, _mainWebSocket),
+              ),
             );
           },
         ),
         actions: [
           IconButton(
             icon: Icon(Icons.settings),
-            tooltip: "Settings",
+            tooltip: AppLocalizations.of(context).get("settings.title"),
             onPressed: () {
               Navigator.push(
                 context,

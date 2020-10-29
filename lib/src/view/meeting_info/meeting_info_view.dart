@@ -5,6 +5,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/chat/group.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
+import 'package:bbb_app/src/locale/app_localizations.dart';
 import 'package:bbb_app/src/view/chat/chat_view.dart';
 import 'package:flutter/material.dart';
 
@@ -68,7 +69,8 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
         children: [
           Padding(
             padding: EdgeInsets.all(10),
-            child: Text("Nachrichten"),
+            child:
+                Text(AppLocalizations.of(context).get("meeting-info.messages")),
           ),
           ListView.builder(
             scrollDirection: Axis.vertical,
@@ -79,7 +81,7 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
 
               return new ListTile(
                 title: Text(group.id == ChatModule.defaultChatID
-                    ? "Public chat"
+                    ? AppLocalizations.of(context).get("chat.public")
                     : group.name),
                 onTap: () {
                   Navigator.push(
@@ -97,7 +99,8 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
           ),
           Padding(
             padding: EdgeInsets.all(10),
-            child: Text("Teilnehmer"),
+            child: Text(
+                AppLocalizations.of(context).get("meeting-info.participant")),
           ),
           _buildUsers(context),
         ],
@@ -105,26 +108,26 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
     );
   }
 
-
   Widget _buildUsers(BuildContext context) {
-
     List<UserModel> currentUser = [];
     _userMap.values.forEach((u) {
-      if(u.internalId == widget._meetingInfo.internalUserID) {
+      if (u.internalId == widget._meetingInfo.internalUserID) {
         currentUser.add(u);
       }
     });
 
     List<UserModel> moderators = [];
     _userMap.values.forEach((u) {
-      if(u.role == UserModel.ROLE_MODERATOR && u.internalId != widget._meetingInfo.internalUserID) {
+      if (u.role == UserModel.ROLE_MODERATOR &&
+          u.internalId != widget._meetingInfo.internalUserID) {
         moderators.add(u);
       }
     });
 
     List<UserModel> nonModerators = [];
     _userMap.values.forEach((u) {
-      if(u.role != UserModel.ROLE_MODERATOR && u.internalId != widget._meetingInfo.internalUserID) {
+      if (u.role != UserModel.ROLE_MODERATOR &&
+          u.internalId != widget._meetingInfo.internalUserID) {
         nonModerators.add(u);
       }
     });
@@ -146,14 +149,13 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
             return new SizedBox();
           }
         });
-
   }
 
   Widget _buildUserEntry(UserModel user, BuildContext context) {
+    final bool isCurrentUser =
+        user.internalId == widget._meetingInfo.internalUserID;
 
-    final bool isCurrentUser = user.internalId == widget._meetingInfo.internalUserID;
-
-    final Widget bubble =  Container(
+    final Widget bubble = Container(
       width: 50,
       height: 50,
       margin: EdgeInsets.symmetric(horizontal: 15),
@@ -180,20 +182,19 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
       padding: EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
-          bubble, Text(user.isPresenter ? "(P) " + user.name : user.name),
+          bubble,
+          Text(user.isPresenter ? "(P) " + user.name : user.name),
         ],
       ),
     );
-
   }
-
 
   /// Build the views application bar.
   Widget _buildAppBar() => AppBar(
-      title: Text("Meeting Info"),
+      title: Text(AppLocalizations.of(context).get("meeting-info.title")),
       leading: IconButton(
         icon: Icon(Icons.arrow_back_ios),
-        tooltip: "Back",
+        tooltip: AppLocalizations.of(context).get("back"),
         onPressed: () {
           Navigator.pop(context);
         },

@@ -1,6 +1,7 @@
 import 'package:bbb_app/src/broadcast/app_state_notifier.dart';
 import 'package:bbb_app/src/connect/meeting/load/meeting_info_loaders.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
+import 'package:bbb_app/src/locale/app_localizations.dart';
 import 'package:bbb_app/src/view/main/main_view.dart';
 import 'package:day_night_switcher/day_night_switcher.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +23,7 @@ class _StartViewState extends State<StartView> {
   final TextEditingController _usernameTextField = TextEditingController();
 
   /// Controller for the meeting URL text field.
-  final TextEditingController _meetingURLController = TextEditingController(/*text: ""*/);
+  final TextEditingController _meetingURLController = TextEditingController();
 
   @override
   void initState() {
@@ -40,7 +41,7 @@ class _StartViewState extends State<StartView> {
             children: [
               Expanded(child: SizedBox(), flex: 1),
               Text(
-                "BigBlueButton",
+                AppLocalizations.of(context).get("bigbluebutton"),
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 32.0),
               ),
               Expanded(child: SizedBox(), flex: 1),
@@ -84,13 +85,15 @@ class _StartViewState extends State<StartView> {
   Widget _buildUsernameTextField() {
     return TextFormField(
       decoration: InputDecoration(
-        hintText: "Username",
+        hintText: AppLocalizations.of(context).get("login.username"),
         border: InputBorder.none,
         filled: true,
         prefixIcon: Icon(Icons.label),
       ),
       style: TextStyle(fontSize: 20.0),
-      validator: (value) => value.isEmpty ? "Please specify a user name" : null,
+      validator: (value) => value.isEmpty
+          ? AppLocalizations.of(context).get("login.username-missing")
+          : null,
       controller: _usernameTextField,
     );
   }
@@ -99,14 +102,15 @@ class _StartViewState extends State<StartView> {
   Widget _buildURLTextField() {
     return TextFormField(
       decoration: InputDecoration(
-        hintText: "BBB meeting URL",
+        hintText: AppLocalizations.of(context).get("login.url"),
         border: InputBorder.none,
         filled: true,
         prefixIcon: Icon(Icons.link),
       ),
       style: TextStyle(fontSize: 20.0),
-      validator: (value) =>
-          value.isEmpty ? "Please specify a meeting URL to join" : null,
+      validator: (value) => value.isEmpty
+          ? AppLocalizations.of(context).get("login.url-missing")
+          : null,
       controller: _meetingURLController,
     );
   }
@@ -120,7 +124,10 @@ class _StartViewState extends State<StartView> {
         height: 75.0,
         child: ElevatedButton(
           onPressed: () => _submitForm(context),
-          child: new Text("Join", style: TextStyle(fontSize: 20.0)),
+          child: new Text(
+            AppLocalizations.of(context).get("login.join"),
+            style: TextStyle(fontSize: 20.0),
+          ),
         ),
       ),
     );
@@ -134,7 +141,7 @@ class _StartViewState extends State<StartView> {
 
       // Show a snack bar until all information to join the meeting has been loaded
       var snackBarController = Scaffold.of(context).showSnackBar(SnackBar(
-        content: Text("Trying to join the meeting..."),
+        content: Text(AppLocalizations.of(context).get("login.join-trying")),
       ));
 
       try {
@@ -146,7 +153,11 @@ class _StartViewState extends State<StartView> {
         );
       } catch (e) {
         Scaffold.of(context).showSnackBar(
-          SnackBar(content: Text("Could not join the meeting")),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context).get("login.join-failed"),
+            ),
+          ),
         );
       }
 

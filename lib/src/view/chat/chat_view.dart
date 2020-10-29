@@ -7,9 +7,11 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/chat/user_typing_info
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
+import 'package:bbb_app/src/locale/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
+import 'package:sprintf/sprintf.dart';
 
 /// Widget displaying the chat.
 class ChatView extends StatefulWidget {
@@ -148,7 +150,9 @@ class _ChatViewState extends State<ChatView> {
               controller: _scrollController,
               itemBuilder: (BuildContext context, int index) {
                 ChatMessage message = _messages[index];
-                UserModel sender = widget._mainWebSocket.userModule.userMap.values.firstWhere((u) => u.internalId == message.senderID);
+                UserModel sender = widget
+                    ._mainWebSocket.userModule.userMap.values
+                    .firstWhere((u) => u.internalId == message.senderID);
 
                 return _buildChatMessageWidget(
                   message,
@@ -163,9 +167,13 @@ class _ChatViewState extends State<ChatView> {
               padding: EdgeInsets.all(5),
               color: null,
               child: Text(
-                _currentlyTypingUsers.length == 1
-                    ? "${_currentlyTypingUsers.join(", ")} is currently typing..."
-                    : "${_currentlyTypingUsers.join(", ")} are currently typing...",
+                sprintf(
+                    (_currentlyTypingUsers.length == 1
+                        ? AppLocalizations.of(context)
+                            .get("chat.currently-typing-singular")
+                        : AppLocalizations.of(context)
+                            .get("chat.currently-typing-plural")),
+                    [_currentlyTypingUsers.join(", ")]),
                 style: TextStyle(fontStyle: FontStyle.italic),
               ),
             ),
@@ -178,7 +186,8 @@ class _ChatViewState extends State<ChatView> {
                     maxLines: 5,
                     minLines: 1,
                     decoration: InputDecoration(
-                      hintText: "Text to send",
+                      hintText:
+                          AppLocalizations.of(context).get("chat.text-to-send"),
                       border: InputBorder.none,
                       filled: false,
                       prefixIcon: Icon(Icons.message),
@@ -204,12 +213,14 @@ class _ChatViewState extends State<ChatView> {
 
   /// Send a message.
   Future<void> _sendMessage(String message) async {
-    await widget._mainWebSocket.chatModule.sendGroupChatMsg(ChatMessage(
-      message,
-      chatID: widget._chatGroup.id,
-    ));
+    if (message.isNotEmpty) {
+      await widget._mainWebSocket.chatModule.sendGroupChatMsg(ChatMessage(
+        message,
+        chatID: widget._chatGroup.id,
+      ));
 
-    _scrollToEnd();
+      _scrollToEnd();
+    }
   }
 
   /// Build widget to display a chat message.
@@ -295,11 +306,11 @@ class _ChatViewState extends State<ChatView> {
   /// Build the views application bar.
   Widget _buildAppBar() => AppBar(
       title: Text(widget._chatGroup.id == ChatModule.defaultChatID
-          ? "Public chat"
+          ? AppLocalizations.of(context).get("chat.public")
           : widget._chatGroup.name),
       leading: IconButton(
         icon: Icon(Icons.arrow_back_ios),
-        tooltip: "Back",
+        tooltip: AppLocalizations.of(context).get("back"),
         onPressed: () {
           Navigator.pop(context);
         },
