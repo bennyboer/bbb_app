@@ -45,28 +45,37 @@ class UserModule extends Module {
 
   void _handleUsersMsg(jsonMsg) {
     if (jsonMsg['id'] != null) {
-      print("adding new user...");
 
-      String id = jsonMsg['id'];
-      String name = jsonMsg['fields']['name'];
-      String sortName = jsonMsg['fields']['sortName'];
-      String internalId = jsonMsg['fields']['intId'];
-      String color = jsonMsg['fields']['color'];
-      String role = jsonMsg['fields']['role'];
-      bool isPresenter = jsonMsg['fields']['presenter'];
-      String connectionStatus = jsonMsg['fields']['connectionStatus'];
+      UserModel u = _userMap.putIfAbsent(jsonMsg['id'], () => UserModel());
 
-      _userMap[internalId] = UserModel(
-        id,
-        name,
-        sortName,
-        internalId,
-        color,
-        role,
-        isPresenter,
-        connectionStatus,
-      );
-      print(_userMap);
+      // UserModel u = _userMap.values.firstWhere((u) => u.id == jsonMsg['id'], orElse: () => UserModel());
+
+      //TODO create some nicer mapper
+
+      u.id = jsonMsg['id'];
+
+      if(jsonMsg['fields']['name'] != null)
+        u.name = jsonMsg['fields']['name'];
+
+      if(jsonMsg['fields']['sortName'] != null)
+        u.sortName = jsonMsg['fields']['sortName'];
+
+      if(jsonMsg['fields']['intId'] != null)
+        u.internalId = jsonMsg['fields']['intId'];
+
+      if(jsonMsg['fields']['color'] != null)
+        u.color = jsonMsg['fields']['color'];
+
+      if(jsonMsg['fields']['role'] != null)
+        u.role = jsonMsg['fields']['role'];
+
+      if(jsonMsg['fields']['presenter'] != null)
+        u.isPresenter = jsonMsg['fields']['presenter'];
+
+      if(jsonMsg['fields']['connectionStatus'] != null)
+        u.connectionStatus = jsonMsg['fields']['connectionStatus'];
+
+      _userMap[u.id] = u; //this has to id, not internal ID (internalID is not included in all received messages relating this user)
 
       // Publish changed user map
       _userStreamController.add(_userMap);

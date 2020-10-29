@@ -99,25 +99,94 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
             padding: EdgeInsets.all(10),
             child: Text("Teilnehmer"),
           ),
-          ListView.builder(
-            padding: const EdgeInsets.all(8),
-            scrollDirection: Axis.vertical,
-            shrinkWrap: true,
-            itemCount: _userMap.length,
-            itemBuilder: (BuildContext context, int index) {
-              String key = _userMap.keys.elementAt(index);
-              UserModel user = _userMap[key];
-              if (user.connectionStatus == "online") {
-                return new Text(user.name);
-              } else {
-                return new SizedBox();
-              }
-            },
-          )
+          _buildUsers(context),
         ],
       ),
     );
   }
+
+
+  Widget _buildUsers(BuildContext context) {
+
+    List<UserModel> currentUser = [];
+    _userMap.values.forEach((u) {
+      if(u.internalId == widget._meetingInfo.internalUserID) {
+        currentUser.add(u);
+      }
+    });
+
+    List<UserModel> moderators = [];
+    _userMap.values.forEach((u) {
+      if(u.role == UserModel.ROLE_MODERATOR && u.internalId != widget._meetingInfo.internalUserID) {
+        moderators.add(u);
+      }
+    });
+
+    List<UserModel> nonModerators = [];
+    _userMap.values.forEach((u) {
+      if(u.role != UserModel.ROLE_MODERATOR && u.internalId != widget._meetingInfo.internalUserID) {
+        nonModerators.add(u);
+      }
+    });
+
+    moderators.sort((a, b) => a.sortName.compareTo(b.sortName));
+    nonModerators.sort((a, b) => a.sortName.compareTo(b.sortName));
+
+    var allUsers = currentUser + moderators + nonModerators;
+
+    return ListView.builder(
+        scrollDirection: Axis.vertical,
+        shrinkWrap: true,
+        itemCount: allUsers.length,
+        itemBuilder: (BuildContext context, int index) {
+          UserModel user = allUsers[index];
+          if (user.connectionStatus == UserModel.CONNECTIONSTATUS_ONLINE) {
+            return _buildUserEntry(user, context);
+          } else {
+            return new SizedBox();
+          }
+        });
+
+  }
+
+  Widget _buildUserEntry(UserModel user, BuildContext context) {
+
+    final bool isCurrentUser = user.internalId == widget._meetingInfo.internalUserID;
+
+    final Widget bubble =  Container(
+      width: 50,
+      height: 50,
+      margin: EdgeInsets.symmetric(horizontal: 15),
+      decoration: BoxDecoration(
+        borderRadius: user.role == UserModel.ROLE_MODERATOR
+            ? BorderRadius.circular(10)
+            : BorderRadius.circular(99999),
+        color: isCurrentUser
+            ? Theme.of(context).disabledColor
+            : Theme.of(context).accentColor,
+      ),
+      child: Center(
+        child: Text(
+          user.name.length > 2 ? user.name.substring(0, 2) : user.name,
+          style: TextStyle(
+              color: isCurrentUser
+                  ? Theme.of(context).textTheme.bodyText1.color
+                  : Theme.of(context).accentTextTheme.bodyText1.color),
+        ),
+      ),
+    );
+
+    return new Container(
+      padding: EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          bubble, Text(user.isPresenter ? "(P) " + user.name : user.name),
+        ],
+      ),
+    );
+
+  }
+
 
   /// Build the views application bar.
   Widget _buildAppBar() => AppBar(

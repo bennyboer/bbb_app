@@ -1,21 +1,24 @@
 class UserModel {
 
-  String id;
+  static String ROLE_MODERATOR = "MODERATOR";
+  static String CONNECTIONSTATUS_ONLINE = "online";
 
-  String name;
 
-  String sortName;
+  String id = "";
 
-  String internalId;
+  String name = "";
 
-  String color;
+  String sortName = "";
 
-  String role;
+  String internalId = "";
 
-  bool isPresenter;
+  String color = "";
 
-  String connectionStatus;
+  String role = "VIEWER";
 
-  UserModel(this.id, this.name, this.sortName, this.internalId, this.color,
-      this.role, this.isPresenter, this.connectionStatus);
+  bool isPresenter = false;
+
+  String connectionStatus = "offline";
+
+  UserModel();
 }
