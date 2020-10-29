@@ -250,6 +250,7 @@ class ChatModule extends Module {
     // Close stream controllers
     _chatMessageController.close();
     _chatGroupController.close();
+    _userTypingStatusController.close();
 
     // Complete pending message sending completers (if any)
     for (MapEntry<String, Completer<void>> entry
