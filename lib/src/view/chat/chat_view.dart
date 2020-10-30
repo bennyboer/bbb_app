@@ -284,7 +284,7 @@ class _ChatViewState extends State<ChatView> {
       height: 50,
       margin: EdgeInsets.symmetric(horizontal: 15),
       decoration: BoxDecoration(
-        borderRadius: user.isPresenter
+        borderRadius: user.role == UserModel.ROLE_MODERATOR
             ? BorderRadius.circular(10)
             : BorderRadius.circular(99999),
         color: isCurrentUser
