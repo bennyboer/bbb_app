@@ -72,8 +72,7 @@ class MainWebSocket {
       "user": new UserModule(messageSender),
       "chat": new ChatModule(
         messageSender,
-        _meetingInfo.internalUserID,
-        _meetingInfo.fullUserName,
+        _meetingInfo,
       ),
     };
   }

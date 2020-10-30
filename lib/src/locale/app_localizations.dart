@@ -114,6 +114,11 @@ class AppLocalizations {
       en: "%s are currently typing",
       de: "%s schreiben gerade",
     ));
+    _addLocalization(_Localization(
+      "meeting-info.create-private-chat",
+      en: "Create private chat",
+      de: "Privaten Chat erstellen",
+    ));
 
     _isInitialized = true;
   }

@@ -4,6 +4,9 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/chat/group.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/message.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/user_typing_info.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/util/util.dart';
+import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
+import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
 
 /// BBB Chat representation.
 class ChatModule extends Module {
@@ -19,11 +22,8 @@ class ChatModule extends Module {
   /// Topic where "user is typing" status updates are published.
   static const String _usersTypingTopic = "users-typing";
 
-  /// Default ID of the sender (the currently logged in internal user ID).
-  final String _defaultSenderId;
-
-  /// Name of the current user.
-  final String _userName;
+  /// Info for the current meeting.
+  final MeetingInfo _meetingInfo;
 
   /// Message counter.
   int _messageCounter = 1;
@@ -58,13 +58,12 @@ class ChatModule extends Module {
 
   ChatModule(
     MessageSender messageSender,
-    this._defaultSenderId,
-    this._userName,
+    this._meetingInfo,
   ) : super(messageSender);
 
   /// Send a chat message.
   Future<void> sendGroupChatMsg(ChatMessage msg) async {
-    final String senderID = msg.senderID ?? _defaultSenderId;
+    final String senderID = msg.senderID ?? _meetingInfo.internalUserID;
 
     final String msgId = "$senderID-${_messageCounter++}";
 
@@ -78,7 +77,7 @@ class ChatModule extends Module {
           "correlationId": msgId,
           "sender": {
             "id": senderID,
-            "name": _userName,
+            "name": _meetingInfo.fullUserName,
           },
           "message": msg.content,
         },
@@ -99,7 +98,8 @@ class ChatModule extends Module {
             : _chatGroups
                 .firstWhere((element) => element.id == chatID)
                 .participantIDs
-                .firstWhere((element) => element != _defaultSenderId),
+                .firstWhere(
+                    (element) => element != _meetingInfo.internalUserID),
       ],
     });
   }
@@ -110,6 +110,50 @@ class ChatModule extends Module {
       "msg": "method",
       "method": "stopUserTyping",
       "params": [],
+    });
+  }
+
+  /// Create a private chat group with the passed [other] user.
+  void createGroupChat(UserModel other) {
+    sendMessage({
+      "msg": "method",
+      "method": "createGroupChat",
+      "params": [
+        {
+          "_id": MainWebSocketUtil.getRandomAlphanumericWithCaps(17),
+          "meetingId": _meetingInfo.meetingID,
+          "userId": other.internalId,
+          "clientType": "HTML5",
+          "validated": true,
+          "connectionId": MainWebSocketUtil.getRandomAlphanumericWithCaps(17),
+          "approved": true,
+          "loginTime": DateTime.now().millisecondsSinceEpoch,
+          "inactivityCheck": false,
+          "connectionStatus": "online",
+          "sortName": other.sortName,
+          "color": "#0d47a1",
+          "breakoutProps": {
+            "isBreakoutUser": false,
+            "parentId": "bbb-none",
+          },
+          "effectiveConnectionType": null,
+          "responseDelay": 0,
+          "loggedOut": false,
+          "intId": other.internalId,
+          "extId": "none",
+          "name": other.name,
+          "role": other.role,
+          "guest": false,
+          "authed": true,
+          "guestStatus": "ALLOW",
+          "emoji": "none",
+          "presenter": other.isPresenter,
+          "locked": true,
+          "avatar": Uri.parse(_meetingInfo.joinUrl)
+              .replace(path: "/client/avatar.png")
+              .toString(),
+        }
+      ]
     });
   }
 
@@ -172,7 +216,7 @@ class ChatModule extends Module {
               .id;
         }
 
-        if (userID != _defaultSenderId) {
+        if (userID != _meetingInfo.internalUserID) {
           UserTypingInfo info = UserTypingInfo(id, chatID, userID, name);
           _usersTypingInfoMap[id] = info;
 

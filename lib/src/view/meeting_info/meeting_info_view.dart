@@ -186,25 +186,41 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
       ),
     );
 
-    return new Container(
-      padding: EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children:[
-          bubble,
-          if(user.isPresenter)
+    return ListTile(
+      leading: bubble,
+      title: Row(
+        children: [
+          if (user.isPresenter)
             Container(
                 margin: const EdgeInsets.only(right: 15.0),
                 child: Icon(
                   Icons.desktop_windows,
                   size: 20.0,
-            )),
+                )),
           Text(user.name),
           if(isCurrentUser)
             Text(" (" + AppLocalizations.of(context).get("meeting-info.you") + ")"),
         ],
       ),
+      trailing: !isCurrentUser ? _createItemPopupMenu(user) : null,
     );
   }
+
+  /// Create popup menu for a user item.
+  Widget _createItemPopupMenu(UserModel user) => PopupMenuButton<String>(
+        onSelected: (result) {
+          if (result == "createPrivateChat") {
+            widget._mainWebSocket.chatModule.createGroupChat(user);
+          }
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem<String>(
+            value: "createPrivateChat",
+            child: Text(AppLocalizations.of(context)
+                .get("meeting-info.create-private-chat")),
+          ),
+        ],
+      );
 
   /// Build the views application bar.
   Widget _buildAppBar() => AppBar(
