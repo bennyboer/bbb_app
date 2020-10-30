@@ -81,7 +81,7 @@ class AppLocalizations {
     ));
     _addLocalization(_Localization(
       "meeting-info.participant",
-      en: "Participant",
+      en: "Participants",
       de: "Teilnehmer",
     ));
     _addLocalization(_Localization(
