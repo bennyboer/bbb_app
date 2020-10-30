@@ -150,9 +150,7 @@ class _ChatViewState extends State<ChatView> {
               controller: _scrollController,
               itemBuilder: (BuildContext context, int index) {
                 ChatMessage message = _messages[index];
-                UserModel sender = widget
-                    ._mainWebSocket.userModule.userMap.values
-                    .firstWhere((u) => u.internalId == message.senderID);
+                UserModel sender = widget._mainWebSocket.userModule.userMapByInternalId[message.senderID];
 
                 return _buildChatMessageWidget(
                   message,

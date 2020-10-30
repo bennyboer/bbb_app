@@ -11,6 +11,7 @@ class UserModule extends Module {
 
   /// Map of users we currently have fetched from the web socket.
   Map<String, UserModel> _userMap = {};
+  Map<String, UserModel> _userMapByInternalId = {};
 
   UserModule(messageSender) : super(messageSender);
 
@@ -48,11 +49,7 @@ class UserModule extends Module {
 
       UserModel u = _userMap.putIfAbsent(jsonMsg['id'], () => UserModel());
 
-      // UserModel u = _userMap.values.firstWhere((u) => u.id == jsonMsg['id'], orElse: () => UserModel());
-
       //TODO create some nicer mapper
-
-      u.id = jsonMsg['id'];
 
       if(jsonMsg['fields']['name'] != null)
         u.name = jsonMsg['fields']['name'];
@@ -75,7 +72,11 @@ class UserModule extends Module {
       if(jsonMsg['fields']['connectionStatus'] != null)
         u.connectionStatus = jsonMsg['fields']['connectionStatus'];
 
-      _userMap[u.id] = u; //this has to id, not internal ID (internalID is not included in all received messages relating this user)
+      _userMap[jsonMsg['id']] = u; //this has to id, not internal ID (internalID is not included in all received messages relating this user)
+
+      if(u.internalId != null) {
+        _userMapByInternalId[u.internalId] = u;
+      }
 
       // Publish changed user map
       _userStreamController.add(_userMap);
@@ -87,4 +88,7 @@ class UserModule extends Module {
 
   /// Get the current user map.
   Map<String, UserModel> get userMap => _userMap;
+
+  /// Get the current user map by internal ID.
+  Map<String, UserModel> get userMapByInternalId => _userMapByInternalId;
 }

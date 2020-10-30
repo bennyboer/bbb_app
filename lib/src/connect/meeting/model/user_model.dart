@@ -4,8 +4,6 @@ class UserModel {
   static String CONNECTIONSTATUS_ONLINE = "online";
 
 
-  String id = "";
-
   String name = "";
 
   String sortName = "";
