@@ -63,6 +63,9 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
 
   @override
   Widget build(BuildContext context) {
+
+    List<UserModel> users = createUserList();
+
     return Scaffold(
       appBar: _buildAppBar(),
       body: ListView(
@@ -101,15 +104,16 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
           Padding(
             padding: EdgeInsets.all(10),
             child: Text(
-                AppLocalizations.of(context).get("meeting-info.participant")),
+                AppLocalizations.of(context).get("meeting-info.participant") + " (" + users.length.toString() + ")"),
           ),
-          _buildUsers(context),
+          _buildUsers(context, users),
         ],
       ),
     );
   }
 
-  Widget _buildUsers(BuildContext context) {
+  List<UserModel> createUserList() {
+
     List<UserModel> currentUser = [];
     _userMap.values.forEach((u) {
       if (u.internalId == widget._meetingInfo.internalUserID) {
@@ -136,20 +140,22 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
     moderators.sort((a, b) => a.sortName.compareTo(b.sortName));
     nonModerators.sort((a, b) => a.sortName.compareTo(b.sortName));
 
-    var allUsers = currentUser + moderators + nonModerators;
+    List<UserModel> allUsers = currentUser + moderators + nonModerators;
 
+    allUsers.removeWhere((u) => u.connectionStatus != UserModel.CONNECTIONSTATUS_ONLINE);
+
+    return allUsers;
+  }
+
+  Widget _buildUsers(BuildContext context, List<UserModel> users) {
     return ListView.builder(
         scrollDirection: Axis.vertical,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: allUsers.length,
+        itemCount: users.length,
         itemBuilder: (BuildContext context, int index) {
-          UserModel user = allUsers[index];
-          if (user.connectionStatus == UserModel.CONNECTIONSTATUS_ONLINE) {
-            return _buildUserEntry(user, context);
-          } else {
-            return new SizedBox();
-          }
+          UserModel user = users[index];
+          return _buildUserEntry(user, context);
         });
   }
 
@@ -193,6 +199,8 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
                   size: 20.0,
             )),
           Text(user.name),
+          if(isCurrentUser)
+            Text(" (" + AppLocalizations.of(context).get("meeting-info.you") + ")"),
         ],
       ),
     );

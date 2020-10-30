@@ -90,6 +90,11 @@ class AppLocalizations {
       de: "Nachrichten",
     ));
     _addLocalization(_Localization(
+      "meeting-info.you",
+      en: "You",
+      de: "Sie",
+    ));
+    _addLocalization(_Localization(
       "chat.public",
       en: "Public chat",
       de: "Öffentlicher Chat",
