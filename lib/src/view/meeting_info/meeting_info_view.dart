@@ -183,9 +183,16 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
     return new Container(
       padding: EdgeInsets.symmetric(vertical: 10),
       child: Row(
-        children: [
+        children:[
           bubble,
-          Text(user.isPresenter ? "(P) " + user.name : user.name),
+          if(user.isPresenter)
+            Container(
+                margin: const EdgeInsets.only(right: 15.0),
+                child: Icon(
+                  Icons.desktop_windows,
+                  size: 20.0,
+            )),
+          Text(user.name),
         ],
       ),
     );
