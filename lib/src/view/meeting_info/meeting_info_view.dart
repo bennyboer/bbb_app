@@ -65,8 +65,8 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _buildAppBar(),
-      body: Column(
-        children: [
+      body: ListView(
+        children: <Widget>[
           Padding(
             padding: EdgeInsets.all(10),
             child:
@@ -75,6 +75,7 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
           ListView.builder(
             scrollDirection: Axis.vertical,
             shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
             itemCount: _chatGroups.length,
             itemBuilder: (BuildContext context, int index) {
               ChatGroup group = _chatGroups[index];
@@ -140,6 +141,7 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
     return ListView.builder(
         scrollDirection: Axis.vertical,
         shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
         itemCount: allUsers.length,
         itemBuilder: (BuildContext context, int index) {
           UserModel user = allUsers[index];
