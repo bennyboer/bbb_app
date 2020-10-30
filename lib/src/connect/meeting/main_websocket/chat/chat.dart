@@ -33,11 +33,15 @@ class ChatModule extends Module {
       StreamController.broadcast();
 
   /// Controller publishing chat groups.
-  StreamController<ChatGroup> _chatGroupController =
+  StreamController<ChatGroupEvent> _chatGroupController =
       StreamController.broadcast();
 
   /// Controller publishing currently typing user status updates.
   StreamController<UserTypingInfo> _userTypingStatusController =
+      StreamController.broadcast();
+
+  /// Controller publishing updated unread message counters.
+  StreamController<UnreadMessageCounterEvent> _unreadMessageCounterController =
       StreamController.broadcast();
 
   /// Messages already received.
@@ -45,6 +49,9 @@ class ChatModule extends Module {
 
   /// Already received chat groups.
   List<ChatGroup> _chatGroups = [];
+
+  /// Set of chat group IDs that are currently active (have not been removed by the user).
+  Set<String> _activeChatGroups = Set();
 
   /// Message confirmation completer.
   Map<String, Completer<void>> _msgConfirmCompleters = {};
@@ -55,6 +62,9 @@ class ChatModule extends Module {
   /// Users currently typing info (mapped per typing message ID).
   /// Used to remove typing user status easily again.
   Map<String, UserTypingInfo> _usersTypingInfoMap = {};
+
+  /// Counters for unread messages.
+  Map<String, int> _unreadMessageCounters = {};
 
   ChatModule(
     MessageSender messageSender,
@@ -115,6 +125,14 @@ class ChatModule extends Module {
 
   /// Create a private chat group with the passed [other] user.
   void createGroupChat(UserModel other) {
+    // Check if there is already a chat group with the user
+    for (ChatGroup group in _chatGroups) {
+      if (group.participantIDs.length == 2 &&
+          group.participantIDs.contains(other.internalId)) {
+        return;
+      }
+    }
+
     sendMessage({
       "msg": "method",
       "method": "createGroupChat",
@@ -155,6 +173,23 @@ class ChatModule extends Module {
         }
       ]
     });
+  }
+
+  /// Remove the passed already existing chat [group].
+  void removeGroupChat(ChatGroup group) {
+    // Chat group is kept on purpose, as there is currently no way to unsubscribe to chat groups.
+    // If the other participant is writing again, the chat will popup again as it is in the web client.
+
+    _activeChatGroups.remove(group.id);
+    _chatGroupController.add(ChatGroupEvent(group, false));
+  }
+
+  /// Reset the unread message counter for the passed [chatID].
+  void resetUnreadMessageCounter(String chatID) {
+    _unreadMessageCounters.putIfAbsent(chatID, () => 0);
+    _unreadMessageCounters[chatID] = 0;
+
+    _unreadMessageCounterController.add(UnreadMessageCounterEvent(chatID, 0));
   }
 
   /// Wait until the passed send message with the passed [msgId] arrives from the main web socket as
@@ -265,6 +300,19 @@ class ChatModule extends Module {
       timestamp: timestamp,
     );
 
+    if (!_activeChatGroups.contains(chatID)) {
+      // We need to reactive that chat group as it has been removed from the user previously.
+      _activeChatGroups.add(chatID);
+      _chatGroupController.add(ChatGroupEvent(
+          _chatGroups.firstWhere((element) => element.id == chatID), true));
+    }
+
+    // Increase the unread message counter and publish the new counter value.
+    int counter = _unreadMessageCounters.putIfAbsent(chatID, () => 0) + 1;
+    _unreadMessageCounters[chatID] = counter;
+    _unreadMessageCounterController
+        .add(UnreadMessageCounterEvent(chatID, counter));
+
     _messages.putIfAbsent(chatID, () => []).add(message);
     _chatMessageController.add(message);
   }
@@ -274,7 +322,8 @@ class ChatModule extends Module {
     ChatGroup group = ChatGroup(chatID, name, participantIDs);
 
     _chatGroups.add(group);
-    _chatGroupController.add(group);
+    _activeChatGroups.add(group.id);
+    _chatGroupController.add(ChatGroupEvent(group, true));
 
     // Subscribe to messages of the chat group
     List<dynamic> params = chatID != defaultChatID
@@ -295,6 +344,7 @@ class ChatModule extends Module {
     _chatMessageController.close();
     _chatGroupController.close();
     _userTypingStatusController.close();
+    _unreadMessageCounterController.close();
 
     // Complete pending message sending completers (if any)
     for (MapEntry<String, Completer<void>> entry
@@ -312,7 +362,7 @@ class ChatModule extends Module {
       _messages.putIfAbsent(chatID, () => []);
 
   /// Get a stream of incoming chat groups.
-  Stream<ChatGroup> get chatGroupStream => _chatGroupController.stream;
+  Stream<ChatGroupEvent> get chatGroupStream => _chatGroupController.stream;
 
   /// Get already received chat groups.
   List<ChatGroup> get chatGroups => _chatGroups;
@@ -324,4 +374,37 @@ class ChatModule extends Module {
   /// Get already received user typing info for the passed [chatID].
   Set<String> getUserTypingInfo(String chatID) =>
       _usersTypingMap.putIfAbsent(chatID, () => Set());
+
+  /// Get a stream of unread message counter updates.
+  Stream<UnreadMessageCounterEvent> get unreadMessageCounterStream =>
+      _unreadMessageCounterController.stream;
+
+  /// Get a current state of a unread message counter for the passed [chatID].
+  int getUnreadMessageCounter(String chatID) =>
+      _unreadMessageCounters.putIfAbsent(chatID, () => 0);
+
+  /// Get all unread message counters.
+  Map<String, int> get unreadMessageCounters => _unreadMessageCounters;
+}
+
+/// Event published over the chat group stream controller.
+class ChatGroupEvent {
+  /// The chat group of the event.
+  ChatGroup target;
+
+  /// Whether the group has been added or removed.
+  bool added;
+
+  ChatGroupEvent(this.target, this.added);
+}
+
+/// Event published over the unread message counter stream controller.
+class UnreadMessageCounterEvent {
+  /// Chat ID of the chat the unread message belongs to.
+  String chatID;
+
+  /// The changed counter value.
+  int counter;
+
+  UnreadMessageCounterEvent(this.chatID, this.counter);
 }

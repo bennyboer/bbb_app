@@ -58,11 +58,19 @@ class _ChatViewState extends State<ChatView> {
   void initState() {
     super.initState();
 
+    // Reset unread message counter as the user is currently actively viewing the chat.
+    widget._mainWebSocket.chatModule
+        .resetUnreadMessageCounter(widget._chatGroup.id);
+
     _messages.addAll(
         widget._mainWebSocket.chatModule.getMessages(widget._chatGroup.id));
     _chatMessageStreamSubscription =
         widget._mainWebSocket.chatModule.messageStream.listen((msg) {
       if (msg.chatID == widget._chatGroup.id) {
+        // Reset unread message counter as the user is currently actively viewing the chat.
+        widget._mainWebSocket.chatModule
+            .resetUnreadMessageCounter(widget._chatGroup.id);
+
         setState(() {
           _messages.add(msg);
         });
@@ -150,7 +158,8 @@ class _ChatViewState extends State<ChatView> {
               controller: _scrollController,
               itemBuilder: (BuildContext context, int index) {
                 ChatMessage message = _messages[index];
-                UserModel sender = widget._mainWebSocket.userModule.userMapByInternalId[message.senderID];
+                UserModel sender = widget._mainWebSocket.userModule
+                    .userMapByInternalId[message.senderID];
 
                 return _buildChatMessageWidget(
                   message,

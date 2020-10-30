@@ -30,11 +30,17 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
   /// Available chat groups.
   List<ChatGroup> _chatGroups = [];
 
+  /// Unread message counters for each open chat group.
+  Map<String, int> _unreadMessageCounters = {};
+
   /// Subscription to user changes.
   StreamSubscription _userChangesStreamSubscription;
 
   /// Subscription to chat group changes.
   StreamSubscription _chatGroupsStreamSubscription;
+
+  /// Subscription to unread message counters of the open chats.
+  StreamSubscription _unreadMessageCounterStreamSubscription;
 
   @override
   void initState() {
@@ -47,9 +53,26 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
     });
 
     _chatGroups.addAll(widget._mainWebSocket.chatModule.chatGroups);
-    _chatGroupsStreamSubscription =
-        widget._mainWebSocket.chatModule.chatGroupStream.listen((chatGroup) {
-      setState(() => _chatGroups.add(chatGroup));
+    _chatGroupsStreamSubscription = widget
+        ._mainWebSocket.chatModule.chatGroupStream
+        .listen((chatGroupEvent) {
+      setState(() {
+        if (chatGroupEvent.added) {
+          _chatGroups.add(chatGroupEvent.target);
+        } else {
+          _chatGroups.remove(chatGroupEvent.target);
+        }
+      });
+    });
+
+    _unreadMessageCounters =
+        Map.of(widget._mainWebSocket.chatModule.unreadMessageCounters);
+    _unreadMessageCounterStreamSubscription = widget
+        ._mainWebSocket.chatModule.unreadMessageCounterStream
+        .listen((event) {
+      setState(() {
+        _unreadMessageCounters[event.chatID] = event.counter;
+      });
     });
   }
 
@@ -63,57 +86,99 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
 
   @override
   Widget build(BuildContext context) {
-
     List<UserModel> users = createUserList();
 
     return Scaffold(
       appBar: _buildAppBar(),
       body: ListView(
         children: <Widget>[
-          Padding(
-            padding: EdgeInsets.all(10),
-            child:
-                Text(AppLocalizations.of(context).get("meeting-info.messages")),
-          ),
-          ListView.builder(
-            scrollDirection: Axis.vertical,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _chatGroups.length,
-            itemBuilder: (BuildContext context, int index) {
-              ChatGroup group = _chatGroups[index];
-
-              return new ListTile(
-                title: Text(group.id == ChatModule.defaultChatID
-                    ? AppLocalizations.of(context).get("chat.public")
-                    : group.name),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => ChatView(
-                              group,
-                              widget._meetingInfo,
-                              widget._mainWebSocket,
-                            )),
-                  );
-                },
-              );
-            },
-          ),
-          Padding(
-            padding: EdgeInsets.all(10),
-            child: Text(
-                AppLocalizations.of(context).get("meeting-info.participant") + " (" + users.length.toString() + ")"),
-          ),
+          _buildSectionHeader(
+              AppLocalizations.of(context).get("meeting-info.messages")),
+          _buildChatList(),
+          _buildSectionHeader(
+              "${AppLocalizations.of(context).get("meeting-info.participants")} (${users.length})"),
           _buildUsers(context, users),
         ],
       ),
     );
   }
 
-  List<UserModel> createUserList() {
+  /// Build a section header text.
+  Widget _buildSectionHeader(String text) => Container(
+        padding: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+        margin: EdgeInsets.only(bottom: 5),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              width: 1.0,
+              color:
+                  Theme.of(context).textTheme.bodyText1.color.withOpacity(0.3),
+            ),
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 20.0,
+          ),
+        ),
+      );
 
+  /// Build the available chats list.
+  Widget _buildChatList() => ListView.builder(
+        scrollDirection: Axis.vertical,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _chatGroups.length,
+        itemBuilder: (BuildContext context, int index) {
+          ChatGroup group = _chatGroups[index];
+
+          return _buildChatListItem(group);
+        },
+      );
+
+  /// Build a chat list item.
+  Widget _buildChatListItem(ChatGroup group) => new ListTile(
+        leading: Stack(
+          children: [
+            Icon(Icons.chat),
+            if (_unreadMessageCounters.containsKey(group.id) && _unreadMessageCounters[group.id] > 0)
+              Container(
+                margin: EdgeInsets.only(top: 12, left: 15),
+                padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).errorColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text("${_unreadMessageCounters[group.id]}"),
+              ),
+          ],
+        ),
+        title: Text(group.id == ChatModule.defaultChatID
+            ? AppLocalizations.of(context).get("chat.public")
+            : group.name),
+        trailing: group.id != ChatModule.defaultChatID
+            ? IconButton(
+                icon: Icon(Icons.delete_forever),
+                onPressed: () =>
+                    widget._mainWebSocket.chatModule.removeGroupChat(group),
+              )
+            : null,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => ChatView(
+                      group,
+                      widget._meetingInfo,
+                      widget._mainWebSocket,
+                    )),
+          );
+        },
+      );
+
+  List<UserModel> createUserList() {
     List<UserModel> currentUser = [];
     _userMap.values.forEach((u) {
       if (u.internalId == widget._meetingInfo.internalUserID) {
@@ -142,7 +207,8 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
 
     List<UserModel> allUsers = currentUser + moderators + nonModerators;
 
-    allUsers.removeWhere((u) => u.connectionStatus != UserModel.CONNECTIONSTATUS_ONLINE);
+    allUsers.removeWhere(
+        (u) => u.connectionStatus != UserModel.CONNECTIONSTATUS_ONLINE);
 
     return allUsers;
   }
@@ -166,7 +232,6 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
     final Widget bubble = Container(
       width: 50,
       height: 50,
-      margin: EdgeInsets.symmetric(horizontal: 15),
       decoration: BoxDecoration(
         borderRadius: user.role == UserModel.ROLE_MODERATOR
             ? BorderRadius.circular(10)
@@ -198,8 +263,10 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
                   size: 20.0,
                 )),
           Text(user.name),
-          if(isCurrentUser)
-            Text(" (" + AppLocalizations.of(context).get("meeting-info.you") + ")"),
+          if (isCurrentUser)
+            Text(" (" +
+                AppLocalizations.of(context).get("meeting-info.you") +
+                ")"),
         ],
       ),
       trailing: !isCurrentUser ? _createItemPopupMenu(user) : null,
