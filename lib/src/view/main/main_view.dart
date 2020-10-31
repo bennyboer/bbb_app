@@ -7,6 +7,7 @@ import 'package:bbb_app/src/locale/app_localizations.dart';
 import 'package:bbb_app/src/view/main/webcam/webcam_widget.dart';
 import 'package:bbb_app/src/view/meeting_info/meeting_info_view.dart';
 import 'package:bbb_app/src/view/settings/settings_view.dart';
+import 'package:bbb_app/src/view/start/start_view.dart';
 import 'package:flutter/material.dart';
 
 /// The main view including the current presentation/webcams/screenshare.
@@ -21,7 +22,7 @@ class MainView extends StatefulWidget {
 }
 
 /// State of the main view.
-class _MainViewState extends State<MainView> {
+class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   /// Main websocket connection of the meeting.
   MainWebSocket _mainWebSocket;
 
@@ -55,13 +56,8 @@ class _MainViewState extends State<MainView> {
         _mainWebSocket.chatModule.unreadMessageCounterStream.listen((event) {
       setState(() => _updateTotalUnreadMessagesCounter());
     });
-  }
 
-  /// Update the total unread messages counter.
-  void _updateTotalUnreadMessagesCounter() {
-    _totalUnreadMessages = 0;
-    _mainWebSocket.chatModule.unreadMessageCounters
-        .forEach((key, value) => _totalUnreadMessages += value);
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
@@ -70,7 +66,30 @@ class _MainViewState extends State<MainView> {
     _unreadMessageCounterStreamSubscription.cancel();
 
     _mainWebSocket.disconnect();
+
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      _onAppClose();
+    }
+  }
+
+  /// Called when the app is closed by the user.
+  void _onAppClose() {
+    if (_mainWebSocket != null) {
+      _mainWebSocket.disconnect();
+    }
+  }
+
+  /// Update the total unread messages counter.
+  void _updateTotalUnreadMessagesCounter() {
+    _totalUnreadMessages = 0;
+    _mainWebSocket.chatModule.unreadMessageCounters
+        .forEach((key, value) => _totalUnreadMessages += value);
   }
 
   @override
@@ -134,16 +153,54 @@ class _MainViewState extends State<MainView> {
           },
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.settings),
-            tooltip: AppLocalizations.of(context).get("settings.title"),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => SettingsView()),
-              );
-            },
-          ),
+          _buildPopupMenu(),
         ],
+      );
+
+  /// Build the popup menu of the app bar.
+  Widget _buildPopupMenu() => PopupMenuButton(
+        onSelected: (value) {
+          if (value == "settings") {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SettingsView()),
+            );
+          } else if (value == "logout") {
+            // Main websocket will be disconnected in the dispose method automatically,
+            // so no need to do it here.
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => StartView()),
+            );
+          }
+        },
+        itemBuilder: (context) {
+          return [
+            PopupMenuItem<String>(
+              value: "settings",
+              child: Row(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(right: 10),
+                    child: Icon(Icons.settings),
+                  ),
+                  Text(AppLocalizations.of(context).get("settings.title")),
+                ],
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: "logout",
+              child: Row(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(right: 10),
+                    child: Icon(Icons.logout),
+                  ),
+                  Text(AppLocalizations.of(context).get("main.logout")),
+                ],
+              ),
+            ),
+          ];
+        },
       );
 }

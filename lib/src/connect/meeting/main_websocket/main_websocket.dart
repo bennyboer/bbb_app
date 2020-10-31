@@ -9,6 +9,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/util/util.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/video.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/utils/websocket.dart';
+import 'package:http/http.dart' as http;
 
 /// Main websocket connection to the BBB web server.
 class MainWebSocket {
@@ -34,7 +35,7 @@ class MainWebSocket {
             path:
                 "html5client/sockjs/${MainWebSocketUtil.getRandomDigits(3)}/${MainWebSocketUtil.getRandomAlphanumeric(8)}/websocket");
 
-    _webSocket = SimpleWebSocket(uri.toString());
+    _webSocket = SimpleWebSocket(uri.toString(), cookie: _meetingInfo.cookie);
     print("connect to ${uri.toString()}");
 
     _webSocket.onOpen = () {
@@ -59,7 +60,23 @@ class MainWebSocket {
 
   /// Disconnect the web socket.
   Future<void> disconnect() async {
+    await logout();
+  }
+
+  /// Logout the user from the meeting.
+  Future<void> logout() async {
+    _sendMessage({
+      "msg": "method",
+      "method": "userLeftMeeting",
+      "params": [],
+    });
+
     _webSocket.close();
+
+    // Call logout URL
+    await http.get(_meetingInfo.logoutUrl, headers: {
+      "cookie": _meetingInfo.cookie,
+    });
   }
 
   /// Set up the web socket modules.

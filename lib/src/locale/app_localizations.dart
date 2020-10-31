@@ -119,6 +119,11 @@ class AppLocalizations {
       en: "Create private chat",
       de: "Privaten Chat erstellen",
     ));
+    _addLocalization(_Localization(
+      "main.logout",
+      en: "Leave meeting",
+      de: "Meeting verlassen",
+    ));
 
     _isInitialized = true;
   }

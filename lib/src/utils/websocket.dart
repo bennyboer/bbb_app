@@ -1,23 +1,28 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:convert';
-import 'dart:async';
 
 typedef void OnMessageCallback(dynamic msg);
 typedef void OnCloseCallback(int code, String reason);
 typedef void OnOpenCallback();
 
 class SimpleWebSocket {
-  String _url;
-  var _socket;
+  final String _url;
+  final String _cookie;
+  WebSocket _socket;
   OnOpenCallback onOpen;
   OnMessageCallback onMessage;
   OnCloseCallback onClose;
-  SimpleWebSocket(this._url);
+
+  SimpleWebSocket(
+    this._url, {
+    String cookie,
+  }) : _cookie = cookie;
 
   connect() async {
     try {
-      _socket = await _connectForSelfSignedCert(_url);
+      _socket = await _connectForSelfSignedCert(_url, cookie: _cookie);
       this?.onOpen();
       _socket.listen((data) {
         this?.onMessage(data);
@@ -37,18 +42,21 @@ class SimpleWebSocket {
   }
 
   close() {
-    if (_socket != null)
-      _socket.close();
+    if (_socket != null) _socket.close(WebSocketStatus.normalClosure);
   }
 
-  Future<WebSocket> _connectForSelfSignedCert(url) async {
+  Future<WebSocket> _connectForSelfSignedCert(
+    String url, {
+    String cookie,
+  }) async {
     try {
       Random r = new Random();
       String key = base64.encode(List<int>.generate(8, (_) => r.nextInt(255)));
       HttpClient client = HttpClient(context: SecurityContext());
       client.badCertificateCallback =
           (X509Certificate cert, String host, int port) {
-        print('SimpleWebSocket: Allow self-signed certificate => $host:$port. ');
+        print(
+            'SimpleWebSocket: Allow self-signed certificate => $host:$port. ');
         return true;
       };
 
@@ -57,6 +65,10 @@ class SimpleWebSocket {
       request.headers.add('Upgrade', 'websocket');
       request.headers.add('Sec-WebSocket-Version', '13');
       request.headers.add('Sec-WebSocket-Key', key.toLowerCase());
+
+      if (cookie != null) {
+        request.headers.add("Cookie", cookie);
+      }
 
       HttpClientResponse response = await request.close();
       Socket socket = await response.detachSocket();
