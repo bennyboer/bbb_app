@@ -80,6 +80,7 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
   void dispose() {
     _userChangesStreamSubscription.cancel();
     _chatGroupsStreamSubscription.cancel();
+    _unreadMessageCounterStreamSubscription.cancel();
 
     super.dispose();
   }
