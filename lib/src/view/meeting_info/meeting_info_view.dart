@@ -52,7 +52,7 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
       setState(() => _userMap = userMap);
     });
 
-    _chatGroups.addAll(widget._mainWebSocket.chatModule.chatGroups);
+    _chatGroups.addAll(widget._mainWebSocket.chatModule.activeChatGroups);
     _chatGroupsStreamSubscription = widget
         ._mainWebSocket.chatModule.chatGroupStream
         .listen((chatGroupEvent) {

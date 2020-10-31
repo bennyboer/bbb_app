@@ -180,6 +180,9 @@ class ChatModule extends Module {
     // Chat group is kept on purpose, as there is currently no way to unsubscribe to chat groups.
     // If the other participant is writing again, the chat will popup again as it is in the web client.
 
+    // Reset unread message counter for the chat group to remove
+    resetUnreadMessageCounter(group.id);
+
     _activeChatGroups.remove(group.id);
     _chatGroupController.add(ChatGroupEvent(group, false));
   }
@@ -366,6 +369,11 @@ class ChatModule extends Module {
 
   /// Get already received chat groups.
   List<ChatGroup> get chatGroups => _chatGroups;
+
+  /// Get a list of active chat groups (chat groups the user did not actively delete).
+  List<ChatGroup> get activeChatGroups => chatGroups
+      .where((element) => _activeChatGroups.contains(element.id))
+      .toList(growable: false);
 
   /// Get a stream of currently typing users.
   Stream<UserTypingInfo> get userTypingStatusStream =>

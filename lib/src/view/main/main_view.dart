@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
@@ -27,8 +28,15 @@ class _MainViewState extends State<MainView> {
   /// List of camera Ids we currently display.
   List<String> _cameraIdList = [];
 
+  /// Counter for total unread messages.
+  int _totalUnreadMessages = 0;
+
   /// Subscription to camera IDs list changes.
   StreamSubscription _cameraIdsStreamSubscription;
+
+  /// Subscription to unread message counter updates.
+  StreamSubscription<UnreadMessageCounterEvent>
+      _unreadMessageCounterStreamSubscription;
 
   @override
   void initState() {
@@ -41,11 +49,25 @@ class _MainViewState extends State<MainView> {
         _mainWebSocket.videoModule.cameraIDsStream.listen((cameraIds) {
       setState(() => _cameraIdList = cameraIds);
     });
+
+    _updateTotalUnreadMessagesCounter();
+    _unreadMessageCounterStreamSubscription =
+        _mainWebSocket.chatModule.unreadMessageCounterStream.listen((event) {
+      setState(() => _updateTotalUnreadMessagesCounter());
+    });
+  }
+
+  /// Update the total unread messages counter.
+  void _updateTotalUnreadMessagesCounter() {
+    _totalUnreadMessages = 0;
+    _mainWebSocket.chatModule.unreadMessageCounters
+        .forEach((key, value) => _totalUnreadMessages += value);
   }
 
   @override
   void dispose() {
     _cameraIdsStreamSubscription.cancel();
+    _unreadMessageCounterStreamSubscription.cancel();
 
     _mainWebSocket.disconnect();
     super.dispose();
@@ -57,9 +79,6 @@ class _MainViewState extends State<MainView> {
       appBar: _buildAppBar(),
       body: Column(
         children: [
-          RaisedButton(
-              child: Text("Test"),
-              onPressed: () => _mainWebSocket.disconnect()),
           Text("Your username is: ${widget._meetingInfo.fullUserName}"),
           Text("Having ${_cameraIdList.length} cameras active"),
           ListView.builder(
@@ -85,7 +104,24 @@ class _MainViewState extends State<MainView> {
   Widget _buildAppBar() => AppBar(
         title: Text(widget._meetingInfo.conferenceName),
         leading: IconButton(
-          icon: Icon(Icons.people),
+          icon: Stack(
+            children: [
+              Icon(Icons.people),
+              if (_totalUnreadMessages > 0)
+                Container(
+                  margin: EdgeInsets.only(top: 12, left: 15),
+                  padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).errorColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    "${_totalUnreadMessages}",
+                    softWrap: false,
+                  ),
+                ),
+            ],
+          ),
           tooltip: AppLocalizations.of(context).get("meeting-info.title"),
           onPressed: () {
             Navigator.push(
