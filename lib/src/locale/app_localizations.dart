@@ -45,6 +45,11 @@ class AppLocalizations {
       de: "Ein Benutzername ist erforderlich!",
     ));
     _addLocalization(_Localization(
+    "login.accesscode",
+    en: "Access code",
+    de: "Zugangscode",
+    ));
+    _addLocalization(_Localization(
       "login.url",
       en: "BBB Meeting URL",
       de: "BBB Meeting URL",

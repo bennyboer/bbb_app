@@ -106,7 +106,7 @@ class _StartViewState extends State<StartView> {
   Widget _buildAccesscodeTextField() {
     return TextFormField(
       decoration: InputDecoration(
-        hintText: "Access code if required",
+        hintText: AppLocalizations.of(context).get("login.accesscode"),
         border: InputBorder.none,
         filled: true,
         prefixIcon: Icon(Icons.label),
