@@ -1,8 +1,13 @@
+import 'dart:async';
+
+import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
+import 'package:bbb_app/src/locale/app_localizations.dart';
 import 'package:bbb_app/src/view/main/webcam/webcam_widget.dart';
 import 'package:bbb_app/src/view/meeting_info/meeting_info_view.dart';
 import 'package:bbb_app/src/view/settings/settings_view.dart';
+import 'package:bbb_app/src/view/start/start_view.dart';
 import 'package:flutter/material.dart';
 
 /// The main view including the current presentation/webcams/screenshare.
@@ -17,22 +22,74 @@ class MainView extends StatefulWidget {
 }
 
 /// State of the main view.
-class _MainViewState extends State<MainView> {
+class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   /// Main websocket connection of the meeting.
   MainWebSocket _mainWebSocket;
 
   /// List of camera Ids we currently display.
   List<String> _cameraIdList = [];
 
+  /// Counter for total unread messages.
+  int _totalUnreadMessages = 0;
+
+  /// Subscription to camera IDs list changes.
+  StreamSubscription _cameraIdsStreamSubscription;
+
+  /// Subscription to unread message counter updates.
+  StreamSubscription<UnreadMessageCounterEvent>
+      _unreadMessageCounterStreamSubscription;
+
   @override
   void initState() {
     super.initState();
 
-    _mainWebSocket = MainWebSocket(
-      widget._meetingInfo,
-      cameraIdListUpdater: (cameraIdList) =>
-          setState(() => _cameraIdList = cameraIdList),
-    );
+    _mainWebSocket = MainWebSocket(widget._meetingInfo);
+
+    _cameraIdList = _mainWebSocket.videoModule.cameraIDs;
+    _cameraIdsStreamSubscription =
+        _mainWebSocket.videoModule.cameraIDsStream.listen((cameraIds) {
+      setState(() => _cameraIdList = cameraIds);
+    });
+
+    _updateTotalUnreadMessagesCounter();
+    _unreadMessageCounterStreamSubscription =
+        _mainWebSocket.chatModule.unreadMessageCounterStream.listen((event) {
+      setState(() => _updateTotalUnreadMessagesCounter());
+    });
+
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    _cameraIdsStreamSubscription.cancel();
+    _unreadMessageCounterStreamSubscription.cancel();
+
+    _mainWebSocket.disconnect();
+
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      _onAppClose();
+    }
+  }
+
+  /// Called when the app is closed by the user.
+  void _onAppClose() {
+    if (_mainWebSocket != null) {
+      _mainWebSocket.disconnect();
+    }
+  }
+
+  /// Update the total unread messages counter.
+  void _updateTotalUnreadMessagesCounter() {
+    _totalUnreadMessages = 0;
+    _mainWebSocket.chatModule.unreadMessageCounters
+        .forEach((key, value) => _totalUnreadMessages += value);
   }
 
   @override
@@ -66,26 +123,84 @@ class _MainViewState extends State<MainView> {
   Widget _buildAppBar() => AppBar(
         title: Text(widget._meetingInfo.conferenceName),
         leading: IconButton(
-          icon: Icon(Icons.people),
-          tooltip: "Meeting info",
+          icon: Stack(
+            children: [
+              Icon(Icons.people),
+              if (_totalUnreadMessages > 0)
+                Container(
+                  margin: EdgeInsets.only(top: 12, left: 15),
+                  padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).errorColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    "${_totalUnreadMessages}",
+                    softWrap: false,
+                  ),
+                ),
+            ],
+          ),
+          tooltip: AppLocalizations.of(context).get("meeting-info.title"),
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => MeetingInfoView()),
+              MaterialPageRoute(
+                builder: (context) =>
+                    MeetingInfoView(widget._meetingInfo, _mainWebSocket),
+              ),
             );
           },
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.settings),
-            tooltip: "Settings",
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => SettingsView()),
-              );
-            },
-          ),
+          _buildPopupMenu(),
         ],
+      );
+
+  /// Build the popup menu of the app bar.
+  Widget _buildPopupMenu() => PopupMenuButton(
+        onSelected: (value) {
+          if (value == "settings") {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SettingsView()),
+            );
+          } else if (value == "logout") {
+            // Main websocket will be disconnected in the dispose method automatically,
+            // so no need to do it here.
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => StartView()),
+            );
+          }
+        },
+        itemBuilder: (context) {
+          return [
+            PopupMenuItem<String>(
+              value: "settings",
+              child: Row(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(right: 10),
+                    child: Icon(Icons.settings),
+                  ),
+                  Text(AppLocalizations.of(context).get("settings.title")),
+                ],
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: "logout",
+              child: Row(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(right: 10),
+                    child: Icon(Icons.logout),
+                  ),
+                  Text(AppLocalizations.of(context).get("main.logout")),
+                ],
+              ),
+            ),
+          ];
+        },
       );
 }

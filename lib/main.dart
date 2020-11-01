@@ -1,8 +1,11 @@
 import 'dart:core';
 
 import 'package:bbb_app/src/broadcast/app_state_notifier.dart';
+import 'package:bbb_app/src/locale/app_localizations.dart';
+import 'package:bbb_app/src/locale/app_localizations_delegate.dart';
 import 'package:bbb_app/src/view/start/start_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 /// Entry point of the application.
@@ -29,6 +32,13 @@ class BBBApp extends StatelessWidget {
         ),
         themeMode: appState.darkModeEnabled ? ThemeMode.dark : ThemeMode.light,
         home: StartView(),
+        localizationsDelegates: [
+          AppLocalizationsDelegate(),
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizationsDelegate.supportedLocales,
       ),
     );
   }

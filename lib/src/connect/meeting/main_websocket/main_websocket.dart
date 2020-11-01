@@ -1,37 +1,20 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
+import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/ping/ping.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/util/util.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/video/video.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/utils/websocket.dart';
-
-typedef CameraIdListUpdater = void Function(List<String> cameraIds);
+import 'package:http/http.dart' as http;
 
 /// Main websocket connection to the BBB web server.
 class MainWebSocket {
-  /// Available digits.
-  static String _DIGITS = "1234567890";
-
-  /// Available alphanumeric characters (excluding capitals).
-  static String _ALPHANUMERIC = "abcdefghijklmnopqrstuvwxyz1234567890";
-
-  /// Available alphanumeric characters (including capitals).
-  static String _ALPHANUMERIC_WITH_CAPS =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
-
-  static int _PINGINTERVALSECONDS = 10;
-
-  /// Random number generator to use.
-  Random _rng = Random();
-
   /// Info of the meeting to create main websocket connection for.
   MeetingInfo _meetingInfo;
-
-  /// List of camera Ids we currently have fetched from the web socket.
-  List<String> _cameraIdList = [];
-
-  /// Lookup of the camera ID by a stream ID.
-  Map<String, String> cameraIdByStreamIdLookup = {};
 
   /// Web socket instance to use.
   SimpleWebSocket _webSocket;
@@ -39,24 +22,20 @@ class MainWebSocket {
   /// Counter used to generate message IDs.
   int msgIdCounter = 1;
 
-  /// Updater for the cameraId list.
-  CameraIdListUpdater _cameraIdListUpdater;
-
-  /// Timer for regularly sending ping message on websocket.
-  Timer _pingTimer;
+  /// Modules the web socket is delegating messages to.
+  Map<String, Module> _modules;
 
   /// Create main web socket connection.
-  MainWebSocket(
-    this._meetingInfo, {
-    CameraIdListUpdater cameraIdListUpdater,
-  }) : _cameraIdListUpdater = cameraIdListUpdater {
+  MainWebSocket(this._meetingInfo) {
+    _setupModules();
+
     final uri = Uri.parse(_meetingInfo.joinUrl)
         .replace(queryParameters: null)
         .replace(
             path:
-                "html5client/sockjs/${_getRandomDigits(3)}/${_getRandomAlphanumeric(8)}/websocket");
+                "html5client/sockjs/${MainWebSocketUtil.getRandomDigits(3)}/${MainWebSocketUtil.getRandomAlphanumeric(8)}/websocket");
 
-    _webSocket = SimpleWebSocket(uri.toString());
+    _webSocket = SimpleWebSocket(uri.toString(), cookie: _meetingInfo.cookie);
     print("connect to ${uri.toString()}");
 
     _webSocket.onOpen = () {
@@ -68,12 +47,51 @@ class MainWebSocket {
       _processMessage(message);
     };
 
-    _webSocket.onClose = (int code, String reason) {
-      print("mainWebsocket closed by server [$code => $reason]!");
-      _pingTimer.cancel();
+    _webSocket.onClose = (int code, String reason) async {
+      print("mainWebsocket closed [$code => $reason]!");
+
+      for (MapEntry<String, Module> moduleEntry in _modules.entries) {
+        await moduleEntry.value.onDisconnect();
+      }
     };
 
     _webSocket.connect();
+  }
+
+  /// Disconnect the web socket.
+  Future<void> disconnect() async {
+    await logout();
+  }
+
+  /// Logout the user from the meeting.
+  Future<void> logout() async {
+    _sendMessage({
+      "msg": "method",
+      "method": "userLeftMeeting",
+      "params": [],
+    });
+
+    _webSocket.close();
+
+    // Call logout URL
+    await http.get(_meetingInfo.logoutUrl, headers: {
+      "cookie": _meetingInfo.cookie,
+    });
+  }
+
+  /// Set up the web socket modules.
+  void _setupModules() {
+    final MessageSender messageSender = (msg) => _sendMessage(msg);
+
+    _modules = {
+      "ping": new PingModule(messageSender),
+      "video": new VideoModule(messageSender),
+      "user": new UserModule(messageSender),
+      "chat": new ChatModule(
+        messageSender,
+        _meetingInfo,
+      ),
+    };
   }
 
   /// Process incoming [message].
@@ -91,59 +109,20 @@ class MainWebSocket {
         jsonMsgs.forEach((jsonMsg) {
           jsonMsg = json.decode(jsonMsg);
 
-          if (jsonMsg['msg'] != null) {
-            final msg = jsonMsg['msg'];
-
-            if (msg == "added") {
-              if (jsonMsg['collection'] != null) {
-                switch (jsonMsg['collection']) {
-                  case 'video-streams':
-                    {
-                      if (jsonMsg['fields']['stream'] != null) {
-                        print("adding new video stream...");
-
-                        String cameraId = jsonMsg['fields']['stream'];
-                        _cameraIdList.add(cameraId);
-                        print(_cameraIdList);
-
-                        cameraIdByStreamIdLookup[jsonMsg["id"]] = cameraId;
-
-                        // Publish changed camera ID list to the caller
-                        if (_cameraIdListUpdater != null) {
-                          _cameraIdListUpdater(_cameraIdList);
-                        }
-                      }
-                    }
-                    break;
-
-                  default:
-                    break;
-                }
-              }
-            } else if (msg == "removed") {
-              switch (jsonMsg['collection']) {
-                case 'video-streams':
-                  {
-                    String streamId = jsonMsg["id"];
-                    String cameraId = cameraIdByStreamIdLookup[streamId];
-
-                    _cameraIdList.remove(cameraId);
-                    print(_cameraIdList);
-
-                    // Publish changed camera ID list to the caller
-                    if (_cameraIdListUpdater != null) {
-                      _cameraIdListUpdater(_cameraIdList);
-                    }
-                  }
-                  break;
-
-                default:
-                  break;
-              }
-            } else if (msg == "connected") {
+          final String method = jsonMsg["msg"];
+          if (method != null) {
+            if (method == "connected") {
               _sendValidateAuthTokenMsg();
-              _sendSubMsg("video-streams");
-              _startPing();
+
+              // Delegate incoming message to the modules.
+              for (MapEntry<String, Module> moduleEntry in _modules.entries) {
+                moduleEntry.value.onConnected();
+              }
+            } else {
+              // Delegate incoming message to the modules.
+              for (MapEntry<String, Module> moduleEntry in _modules.entries) {
+                moduleEntry.value.processMessage(jsonMsg);
+              }
             }
           }
         });
@@ -155,7 +134,7 @@ class MainWebSocket {
 
   /// Send the connect message to the server.
   void _sendConnectMsg() {
-    _sendJSONEncodedMessage({
+    _sendMessage({
       "msg": "connect",
       "version": "1",
       "support": ["1", "pre2", "pre1"],
@@ -164,7 +143,7 @@ class MainWebSocket {
 
   /// Send message to server to validate the auth token.
   void _sendValidateAuthTokenMsg() {
-    _sendJSONEncodedMessage({
+    _sendMessage({
       "msg": "method",
       "method": "validateAuthToken",
       "params": [
@@ -177,61 +156,21 @@ class MainWebSocket {
     });
   }
 
-  /// Send subscription message to subscribe to the given [topic].
-  _sendSubMsg(String topic) {
-    // TODO save subs in map
-
-    _sendJSONEncodedMessage({
-      "msg": "sub",
-      "id": _getRandomAlphanumericWithCaps(17),
-      "name": topic,
-      "params": [],
-    });
-  }
-
-  /// Regularly send a ping message to keep the connection alive.
-  _startPing() {
-    if(_pingTimer == null) {
-      _pingTimer = new Timer.periodic(new Duration(seconds: _PINGINTERVALSECONDS), (t) {
-        _sendJSONEncodedMessage({
-          "msg": "method",
-          "method": "ping",
-          "params": [],
-          "id": "${msgIdCounter++}",
-        });
-      });
-    }
-  }
-
   /// Send a message over the websocket.
-  void _sendJSONEncodedMessage(Map<String, dynamic> msgMap) {
+  void _sendMessage(Map<String, dynamic> msgMap) {
+    msgMap["id"] = "${msgIdCounter++}"; // Add global message ID
+
     final String msg = json.encode(msgMap).replaceAll("\"", "\\\"");
 
     _webSocket.send("[\"$msg\"]");
   }
 
-  /// Get random digits with the given [length].
-  String _getRandomDigits(int length) {
-    return String.fromCharCodes(Iterable.generate(
-      length,
-      (_) => _DIGITS.codeUnitAt(_rng.nextInt(_DIGITS.length)),
-    ));
-  }
+  /// Get the chat module of the websocket.
+  ChatModule get chatModule => _modules["chat"];
 
-  /// Get a random string of alphanumeric characters with the given [length].
-  String _getRandomAlphanumeric(int length) {
-    return String.fromCharCodes(Iterable.generate(
-      length,
-      (_) => _ALPHANUMERIC.codeUnitAt(_rng.nextInt(_ALPHANUMERIC.length)),
-    ));
-  }
+  /// Get the video module of the websocket.
+  VideoModule get videoModule => _modules["video"];
 
-  /// Get a random string of alphanumeric characters (including capitals) with the given [length].
-  String _getRandomAlphanumericWithCaps(int length) {
-    return String.fromCharCodes(Iterable.generate(
-      length,
-      (_) => _ALPHANUMERIC_WITH_CAPS
-          .codeUnitAt(_rng.nextInt(_ALPHANUMERIC_WITH_CAPS.length)),
-    ));
-  }
+  /// Get the user module of the websocket.
+  UserModule get userModule => _modules["user"];
 }
