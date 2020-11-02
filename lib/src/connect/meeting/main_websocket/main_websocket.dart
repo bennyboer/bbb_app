@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/ping/ping.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/presentation.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/util/util.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/video.dart';
@@ -91,6 +92,7 @@ class MainWebSocket {
         messageSender,
         _meetingInfo,
       ),
+      "presentation": new PresentationModule(messageSender),
     };
   }
 
