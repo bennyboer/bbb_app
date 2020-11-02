@@ -104,6 +104,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
           Expanded(
             child: PresentationWidget(_mainWebSocket),
           ),
+          Text("Bflwefjefje"),
           ListView.builder(
               padding: const EdgeInsets.all(8),
               scrollDirection: Axis.vertical,

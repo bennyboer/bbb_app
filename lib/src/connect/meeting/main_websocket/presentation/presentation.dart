@@ -4,6 +4,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/conversion_status.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/presentation_page.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/presentation_slide.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/slide_bounds.dart';
 
 import 'model/presentation.dart';
 
@@ -14,6 +15,9 @@ class PresentationModule extends Module {
 
   /// Topic where slides are published.
   static const String _slidesTopic = "slides";
+
+  /// Topic where slide positions are published.
+  static const String _slidePositionTopic = "slide-positions";
 
   /// Currently loaded presentations by the internal ID (not the presentation ID).
   Map<String, Presentation> _presentationsByID = {};
@@ -26,6 +30,9 @@ class PresentationModule extends Module {
 
   /// Currently loaded presentation slides by the slide ID.
   Map<String, PresentationSlide> _slides = {};
+
+  /// Mapping from slide position IDs to slide IDs.
+  Map<String, String> _slidePositionIDsToSlideIDs = {};
 
   /// Stream controller publishing presentation events.
   StreamController<PresentationEvent> _presentationEventStreamController =
@@ -47,6 +54,7 @@ class PresentationModule extends Module {
   void onConnected() {
     subscribe(_presentationTopic);
     subscribe(_slidesTopic);
+    subscribe(_slidePositionTopic);
 
     _slideEventSubscription = slideEventsStream.listen((event) {
       if (event.slide.current) {
@@ -101,6 +109,9 @@ class PresentationModule extends Module {
       case "slides":
         _onSlideChanged(msg);
         break;
+      case "slide-positions":
+        _onSlidePositionChanged(msg);
+        break;
     }
   }
 
@@ -113,7 +124,67 @@ class PresentationModule extends Module {
       case "slides":
         _onSlideAdded(msg);
         break;
+      case "slide-positions":
+        _onSlidePositionAdded(msg);
+        break;
     }
+  }
+
+  /// Called when a slide position should be added.
+  void _onSlidePositionAdded(Map<String, dynamic> msg) {
+    String id = msg["id"];
+
+    Map<String, dynamic> fields = msg["fields"];
+
+    String slideId = fields["id"];
+    PresentationSlide slide = _slides[slideId];
+
+    SlideBounds bounds = _jsonToSlideBounds(fields);
+    slide.bounds = bounds;
+
+    _slidePositionIDsToSlideIDs[id] = slideId;
+
+    _slideEventStreamController
+        .add(PresentationSlideEvent(EventType.CHANGED, slide));
+  }
+
+  /// Called when a slide position should be changed.
+  void _onSlidePositionChanged(Map<String, dynamic> msg) {
+    String id = msg["id"];
+    String slideId = _slidePositionIDsToSlideIDs[id];
+    PresentationSlide slide = _slides[slideId];
+
+    Map<String, dynamic> fields = msg["fields"];
+
+    SlideBounds bounds = slide.bounds;
+    if (fields.containsKey("x")) bounds.x = fields["x"].toDouble();
+    if (fields.containsKey("y")) bounds.y = fields["y"].toDouble();
+    if (fields.containsKey("viewBoxWidth"))
+      bounds.viewBoxWidth = fields["viewBoxWidth"].toDouble();
+    if (fields.containsKey("viewBoxHeight"))
+      bounds.viewBoxHeight = fields["viewBoxHeight"].toDouble();
+
+    _slideEventStreamController
+        .add(PresentationSlideEvent(EventType.CHANGED, slide));
+  }
+
+  /// Convert the passed JSON to slide bounds.
+  SlideBounds _jsonToSlideBounds(Map<String, dynamic> fields) {
+    double width = fields["width"].toDouble();
+    double height = fields["height"].toDouble();
+    double x = fields["x"].toDouble();
+    double y = fields["y"].toDouble();
+    double viewBoxWidth = fields["viewBoxWidth"].toDouble();
+    double viewBoxHeight = fields["viewBoxHeight"].toDouble();
+
+    return SlideBounds(
+      width: width,
+      height: height,
+      x: x,
+      y: y,
+      viewBoxWidth: viewBoxWidth,
+      viewBoxHeight: viewBoxHeight,
+    );
   }
 
   /// Called when a presentation should be added.
@@ -229,7 +300,7 @@ class PresentationModule extends Module {
     Map<String, dynamic> conversion = fields["conversion"];
     ConversionStatus conversionStatus = _jsonToConversionStatus(conversion);
 
-    List<Map<String, dynamic>> jsonPages = fields["pages"];
+    List<dynamic> jsonPages = fields["pages"];
     List<PresentationPage> pages = [];
     for (Map<String, dynamic> jsonPage in jsonPages) {
       pages.add(_jsonToPresentationPage(jsonPage));

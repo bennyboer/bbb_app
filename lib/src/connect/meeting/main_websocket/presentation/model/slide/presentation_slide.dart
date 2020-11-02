@@ -1,3 +1,5 @@
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/slide_bounds.dart';
+
 /// Slide of a presentation.
 class PresentationSlide {
   /// ID of the slide.
@@ -38,6 +40,9 @@ class PresentationSlide {
 
   /// URI to the slides SVG.
   String svgUri;
+
+  /// Bounds of the slide.
+  SlideBounds bounds;
 
   PresentationSlide({
     this.id,
