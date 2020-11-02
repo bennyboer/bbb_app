@@ -39,6 +39,7 @@ dependencies:
   provider: ^4.3.2+2
   intl: ^0.16.1
   sprintf: ^5.0.0
+  flutter_svg: ^0.19.1
 
   # Required for MediaRecorder example
   path_provider:

@@ -175,4 +175,7 @@ class MainWebSocket {
 
   /// Get the user module of the websocket.
   UserModule get userModule => _modules["user"];
+
+  /// Get the presentation module of the websocket.
+  PresentationModule get presentationModule => _modules["presentation"];
 }

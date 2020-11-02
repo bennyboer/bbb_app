@@ -4,6 +4,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
+import 'package:bbb_app/src/view/main/presentation/presentation_widget.dart';
 import 'package:bbb_app/src/view/main/webcam/webcam_widget.dart';
 import 'package:bbb_app/src/view/meeting_info/meeting_info_view.dart';
 import 'package:bbb_app/src/view/settings/settings_view.dart';
@@ -100,6 +101,9 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
         children: [
           Text("Your username is: ${widget._meetingInfo.fullUserName}"),
           Text("Having ${_cameraIdList.length} cameras active"),
+          Expanded(
+            child: PresentationWidget(_mainWebSocket),
+          ),
           ListView.builder(
               padding: const EdgeInsets.all(8),
               scrollDirection: Axis.vertical,
