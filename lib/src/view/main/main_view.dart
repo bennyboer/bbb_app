@@ -48,8 +48,9 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     _mainWebSocket = MainWebSocket(widget._meetingInfo);
 
     _videoConnections = _mainWebSocket.videoModule.videoConnections;
-    _videoConnectionsStreamSubscription =
-        _mainWebSocket.videoModule.videoConnectionsStream.listen((videoConnections) {
+    _videoConnectionsStreamSubscription = _mainWebSocket
+        .videoModule.videoConnectionsStream
+        .listen((videoConnections) {
       setState(() => _videoConnections = videoConnections);
     });
 
@@ -139,7 +140,9 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    "${_totalUnreadMessages}",
+                    _totalUnreadMessages < 100
+                        ? "${_totalUnreadMessages}"
+                        : "∗",
                     softWrap: false,
                     style: TextStyle(
                         color:
