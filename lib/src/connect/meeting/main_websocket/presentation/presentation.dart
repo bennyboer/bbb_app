@@ -12,6 +12,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/sl
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 
 import 'model/annotation/info/rectangle.dart';
+import 'model/annotation/info/triangle.dart';
 import 'model/presentation.dart';
 
 /// Module providing presentation-related stuff.
@@ -194,6 +195,7 @@ class PresentationModule extends Module {
 
     String eventName = fields["eventName"];
     if (eventName == "added") {
+      bool shouldPublishEvent = false;
       PresentationSlide slideChanged;
 
       List<dynamic> argsJson = fields["args"];
@@ -205,18 +207,26 @@ class PresentationModule extends Module {
 
           PresentationSlide slide = _slides[slideId];
           if (slide.annotations.containsKey(annotationId)) {
-            slide.annotations[annotationId] = _jsonToAnnotation(
+            Annotation annotation = _jsonToAnnotation(
                 annotationJson, slide.annotations[annotationId]);
+            slide.annotations[annotationId] = annotation;
+
+            if (annotation.status == "DRAW_END") {
+              shouldPublishEvent = true; // Only send update when really needed
+            }
           } else {
             slide.annotations[annotationId] = _jsonToAnnotation(annotationJson);
+            shouldPublishEvent = true;
           }
 
           slideChanged = slide;
         }
       }
 
-      _slideEventStreamController
-          .add(PresentationSlideEvent(EventType.CHANGED, slideChanged));
+      if (shouldPublishEvent) {
+        _slideEventStreamController
+            .add(PresentationSlideEvent(EventType.CHANGED, slideChanged));
+      }
     } else if (eventName == "removed") {
       PresentationSlide slideChanged;
 
@@ -286,6 +296,49 @@ class PresentationModule extends Module {
         return _jsonToPencilInfo(fields, existing as PencilInfo);
       case "rectangle":
         return _jsonToRectangleInfo(fields, existing as RectangleInfo);
+      case "triangle":
+        return _jsonToTriangleInfo(fields, existing as TriangleInfo);
+    }
+  }
+
+  /// Convert the passed JSON map to a triangle annotation info representation.
+  /// An existing info is passed (when it exists) to be filled.
+  TriangleInfo _jsonToTriangleInfo(Map<String, dynamic> fields,
+      [TriangleInfo existing]) {
+    int color = fields["color"];
+    double thickness = fields["thickness"].toDouble();
+
+    List<dynamic> pointsJson = fields["points"];
+    List<Point> points = [];
+    for (int i = 0; i < pointsJson.length; i += 2) {
+      points.add(Point(
+        pointsJson[i].toDouble(),
+        pointsJson[i + 1].toDouble(),
+      ));
+    }
+
+    // There are only two points send forming a rectangle to display a triangle in.
+    // We are calculating the correct points here.
+    Point p1 = Point(points.first.x + (points.last.x - points.first.x) / 2, points.first.y);
+    Point p2 = Point(points.first.x, points.last.y);
+    Point p3 = Point(points.last.x, points.last.y);
+
+    if (existing != null) {
+      existing.color = color;
+      existing.thickness = thickness;
+      existing.p1 = p1;
+      existing.p2 = p2;
+      existing.p3 = p3;
+
+      return existing;
+    } else {
+      return TriangleInfo(
+        color: color,
+        thickness: thickness,
+        p1: p1,
+        p2: p2,
+        p3: p3,
+      );
     }
   }
 

@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/annotation.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/pencil.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/rectangle.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/triangle.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/slide_bounds.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -64,7 +65,38 @@ class PresentationPainter extends CustomPainter {
         _drawRectangleAnnotation(
             annotation.info as RectangleInfo, canvas, size);
         break;
+      case "triangle":
+        _drawTriangleAnnotation(annotation.info as TriangleInfo, canvas, size);
+        break;
     }
+  }
+
+  /// Draw a triangle annotation from the passed [info].
+  void _drawTriangleAnnotation(TriangleInfo info, Canvas canvas, Size size) {
+    double thickness = info.thickness * _bounds.width / 100;
+
+    Paint paint = Paint()
+      ..strokeWidth = thickness
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..color = Color(info.color | 0xFF000000);
+
+    Path path = Path();
+    path.moveTo(
+      info.p1.x * _bounds.width / 100,
+      info.p1.y * _bounds.height / 100,
+    );
+    path.lineTo(
+      info.p2.x * _bounds.width / 100,
+      info.p2.y * _bounds.height / 100,
+    );
+    path.lineTo(
+      info.p3.x * _bounds.width / 100,
+      info.p3.y * _bounds.height / 100,
+    );
+    path.close();
+
+    canvas.drawPath(path, paint);
   }
 
   /// Draw a rectangle annotation from the passed [info].
@@ -75,7 +107,6 @@ class PresentationPainter extends CustomPainter {
       ..strokeWidth = thickness
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
       ..color = Color(info.color | 0xFF000000);
 
     canvas.drawRect(
