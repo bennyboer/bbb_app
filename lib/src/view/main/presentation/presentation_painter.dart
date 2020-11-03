@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/annotation.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/pencil.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/rectangle.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/slide_bounds.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -48,7 +49,6 @@ class PresentationPainter extends CustomPainter {
 
   /// Draw the annotations.
   void _drawAnnotations(Canvas canvas, Size size) {
-    print(_annotations.length);
     for (Annotation annotation in _annotations) {
       _drawAnnotation(annotation, canvas, size);
     }
@@ -60,13 +60,37 @@ class PresentationPainter extends CustomPainter {
       case "pencil":
         _drawPencilAnnotation(annotation.info as PencilInfo, canvas, size);
         break;
+      case "rectangle":
+        _drawRectangleAnnotation(
+            annotation.info as RectangleInfo, canvas, size);
+        break;
     }
+  }
+
+  /// Draw a rectangle annotation from the passed [info].
+  void _drawRectangleAnnotation(RectangleInfo info, Canvas canvas, Size size) {
+    double thickness = info.thickness * _bounds.width / 100;
+
+    Paint paint = Paint()
+      ..strokeWidth = thickness
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = Color(info.color | 0xFF000000);
+
+    canvas.drawRect(
+        Rect.fromLTWH(
+          info.bounds.left * _bounds.width / 100,
+          info.bounds.top * _bounds.height / 100,
+          info.bounds.width * _bounds.width / 100,
+          info.bounds.height * _bounds.height / 100,
+        ),
+        paint);
   }
 
   /// Draw a pencil annotation from the passed [info].
   void _drawPencilAnnotation(PencilInfo info, Canvas canvas, Size size) {
-    double zoomFactor = _bounds.width / _bounds.viewBoxWidth;
-    double thickness = info.thickness * 5 * zoomFactor;
+    double thickness = info.thickness * _bounds.width / 100;
 
     Paint paint = Paint()
       ..strokeWidth = thickness

@@ -11,6 +11,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/sl
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/slide_bounds.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 
+import 'model/annotation/info/rectangle.dart';
 import 'model/presentation.dart';
 
 /// Module providing presentation-related stuff.
@@ -283,6 +284,40 @@ class PresentationModule extends Module {
     switch (type) {
       case "pencil":
         return _jsonToPencilInfo(fields, existing as PencilInfo);
+      case "rectangle":
+        return _jsonToRectangleInfo(fields, existing as RectangleInfo);
+    }
+  }
+
+  /// Convert the passed JSON map to a rectangle annotation info representation.
+  /// An existing info is passed (when it exists) to be filled.
+  RectangleInfo _jsonToRectangleInfo(Map<String, dynamic> fields,
+      [RectangleInfo existing]) {
+    int color = fields["color"];
+    double thickness = fields["thickness"].toDouble();
+
+    List<dynamic> pointsJson = fields["points"];
+    List<Point> points = [];
+    for (int i = 0; i < pointsJson.length; i += 2) {
+      points.add(Point(
+        pointsJson[i].toDouble(),
+        pointsJson[i + 1].toDouble(),
+      ));
+    }
+    Rectangle bounds = Rectangle.fromPoints(points.first, points.last);
+
+    if (existing != null) {
+      existing.color = color;
+      existing.thickness = thickness;
+      existing.bounds = bounds;
+
+      return existing;
+    } else {
+      return RectangleInfo(
+        color: color,
+        thickness: thickness,
+        bounds: bounds,
+      );
     }
   }
 
