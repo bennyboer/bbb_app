@@ -7,6 +7,7 @@ import 'package:day_night_switcher/day_night_switcher.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
 
 // Start view of the app where you'll be able to enter a meeting using the invitation link.
 class StartView extends StatefulWidget {
@@ -27,6 +28,9 @@ class _StartViewState extends State<StartView> {
 
   /// Controller for the meeting URL text field.
   final TextEditingController _meetingURLController = TextEditingController();
+
+  /// Visiblity of the access code text field.
+  bool _accessCodeVisible = false;
 
   @override
   void initState() {
@@ -77,7 +81,9 @@ class _StartViewState extends State<StartView> {
       child: Column(
         children: [
           _buildUsernameTextField(),
-          _buildAccesscodeTextField(),
+           Visibility(
+               visible: _accessCodeVisible,
+               child: _buildAccesscodeTextField()),
           _buildURLTextField(),
           _buildJoinButton(context),
         ],
@@ -120,6 +126,7 @@ class _StartViewState extends State<StartView> {
   /// Build the text field where the user should input the BBB URL to join the meeting of.
   Widget _buildURLTextField() {
     return TextFormField(
+      onChanged: (url) async {_handleUrlUpdate(url);}, /// Todo: reduce calls? -> timer? 
       decoration: InputDecoration(
         hintText: AppLocalizations.of(context).get("login.url"),
         border: InputBorder.none,
@@ -167,8 +174,6 @@ class _StartViewState extends State<StartView> {
       try {
         MeetingInfo meetingInfo = await tryJoinMeeting(meetingURL, username, accesscode);
 
-
-
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => MainView(meetingInfo)),
@@ -182,7 +187,6 @@ class _StartViewState extends State<StartView> {
           ),
         );
       }
-
       snackBarController.close(); // Close snack bar.
     }
   }
@@ -192,5 +196,14 @@ class _StartViewState extends State<StartView> {
     return await MeetingInfoLoaders()
         .loader
         .load(meetingUrl, accesscode, username);
+  }
+
+  Future<void> _handleUrlUpdate(String meetingUrl) async {
+    /// Only send out a request to urls of the form "https://*/x/xxx-xxx-xxx-xxx" ToFix: still tries to send out if pattern repeats
+    if ( meetingUrl.contains(new RegExp(r'^https://.+(?=/[a-z0-9]/([a-z0-9]){3}-[a-z0-9]{3}-[a-z0-9]{3}-[a-z0-9]{3})')))
+    {
+      http.Response response = await http.get(meetingUrl);
+      response.body.contains('room_access_code') ? setState(() {_accessCodeVisible = true;}) : setState(() {_accessCodeVisible = false;});
+    }
   }
 }
