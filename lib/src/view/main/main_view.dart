@@ -137,7 +137,9 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                   child: Text(
                     "${_totalUnreadMessages}",
                     softWrap: false,
-                    style: TextStyle(color: Theme.of(context).textTheme.bodyText1.color),
+                    style: TextStyle(
+                        color:
+                            Theme.of(context).primaryTextTheme.bodyText1.color),
                   ),
                 ),
             ],
@@ -183,7 +185,10 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                 children: [
                   Padding(
                     padding: EdgeInsets.only(right: 10),
-                    child: Icon(Icons.settings),
+                    child: Icon(
+                      Icons.settings,
+                      color: Theme.of(context).textTheme.bodyText1.color,
+                    ),
                   ),
                   Text(AppLocalizations.of(context).get("settings.title")),
                 ],
@@ -195,7 +200,8 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                 children: [
                   Padding(
                     padding: EdgeInsets.only(right: 10),
-                    child: Icon(Icons.logout),
+                    child: Icon(Icons.logout,
+                        color: Theme.of(context).textTheme.bodyText1.color),
                   ),
                   Text(AppLocalizations.of(context).get("main.logout")),
                 ],

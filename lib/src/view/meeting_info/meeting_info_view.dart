@@ -156,7 +156,7 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
                 child: Text(
                   "${_unreadMessageCounters[group.id]}",
                   style: TextStyle(
-                      color: Theme.of(context).textTheme.bodyText1.color),
+                      color: Theme.of(context).primaryTextTheme.bodyText1.color),
                 ),
               ),
           ],
