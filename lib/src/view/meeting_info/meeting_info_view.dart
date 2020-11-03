@@ -139,7 +139,10 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
           return Column(
             children: [
               _buildChatListItem(group),
-              Divider(indent: 15, endIndent: 15,)
+              Divider(
+                indent: 15,
+                endIndent: 15,
+              )
             ],
           );
         },
@@ -147,7 +150,8 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
 
   /// Build a chat list item.
   Widget _buildChatListItem(ChatGroup group) => new ListTile(
-        contentPadding: const EdgeInsets.only(left: 15.0, top: 0.0, bottom: 0.0),
+        contentPadding:
+            const EdgeInsets.only(left: 15.0, top: 0.0, bottom: 0.0),
         leading: Container(
           constraints: BoxConstraints(minWidth: 50, maxWidth: 50),
           width: 50,
@@ -158,7 +162,7 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
               children: [
                 Icon(Icons.chat),
                 if (_unreadMessageCounters.containsKey(group.id) &&
-                _unreadMessageCounters[group.id] > 0)
+                    _unreadMessageCounters[group.id] > 0)
                   Container(
                     margin: EdgeInsets.only(top: 12, left: 15),
                     padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
@@ -167,10 +171,13 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
-                  "${_unreadMessageCounters[group.id]}",
-                  style: TextStyle(
-                      color: Theme.of(context).primaryTextTheme.bodyText1.color),
-                ),
+                      "${_unreadMessageCounters[group.id]}",
+                      style: TextStyle(
+                          color: Theme.of(context)
+                              .primaryTextTheme
+                              .bodyText1
+                              .color),
+                    ),
                   ),
               ],
             ),
@@ -245,7 +252,10 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
           return Column(
             children: [
               _buildUserEntry(user, context),
-              Divider(indent: 15, endIndent: 15,)
+              Divider(
+                indent: 15,
+                endIndent: 15,
+              )
             ],
           );
         });

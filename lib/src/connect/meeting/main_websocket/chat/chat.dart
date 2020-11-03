@@ -134,6 +134,11 @@ class ChatModule extends Module {
     for (ChatGroup group in _chatGroups) {
       if (group.participantIDs.length == 2 &&
           group.participantIDs.contains(other.internalId)) {
+        // Check if not in active chat groups -> then add it
+        if (!_activeChatGroups.contains(group.id)) {
+          _activeChatGroups.add(group.id);
+          _chatGroupController.add(ChatGroupEvent(group, true));
+        }
         return;
       }
     }
