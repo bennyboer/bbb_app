@@ -6,6 +6,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/an
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/line.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/pencil.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/rectangle.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/text.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/triangle.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/slide_bounds.dart';
 import 'package:flutter/material.dart';
@@ -32,12 +33,6 @@ class PresentationPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     _drawSVG(canvas, size);
     _drawAnnotations(canvas, size);
-
-    TextPainter tp = TextPainter(
-        text: TextSpan(text: "Hallo Welt", style: TextStyle(fontSize: 40)),
-        textDirection: TextDirection.ltr);
-    tp.layout();
-    tp.paint(canvas, Offset(10, 10));
   }
 
   /// Draw the SVG on the canvas.
@@ -76,7 +71,30 @@ class PresentationPainter extends CustomPainter {
       case "line":
         _drawLineAnnotation(annotation.info as LineInfo, canvas, size);
         break;
+      case "text":
+        _drawTextAnnotation(annotation.info as TextInfo, canvas, size);
+        break;
     }
+  }
+
+  /// Draw a text annotation from the passed [info].
+  void _drawTextAnnotation(TextInfo info, Canvas canvas, Size size) {
+    TextPainter tp = TextPainter(
+      text: TextSpan(
+        text: info.text,
+        style: TextStyle(
+          fontSize: info.fontSize * _bounds.height / 100,
+          color: Color(info.fontColor | 0xFF000000),
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    tp.layout(maxWidth: info.bounds.width * _bounds.width / 100);
+
+    tp.paint(
+        canvas,
+        Offset(info.bounds.left * _bounds.width / 100,
+            info.bounds.top * _bounds.height / 100));
   }
 
   /// Draw a line annotation from the passed [info].

@@ -14,6 +14,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/sl
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 
 import 'model/annotation/info/rectangle.dart';
+import 'model/annotation/info/text.dart';
 import 'model/annotation/info/triangle.dart';
 import 'model/presentation.dart';
 
@@ -304,6 +305,40 @@ class PresentationModule extends Module {
         return _jsonToEllipsisInfo(fields, existing as EllipsisInfo);
       case "line":
         return _jsonToLineInfo(fields, existing as LineInfo);
+      case "text":
+        return _jsonToTextInfo(fields, existing as TextInfo);
+    }
+  }
+
+  /// Convert the passed JSON map to a text annotation info representation.
+  /// An existing info is passed (when it exists) to be filled.
+  TextInfo _jsonToTextInfo(Map<String, dynamic> fields, [TextInfo existing]) {
+    int fontColor = fields["fontColor"];
+    double fontSize = fields["calcedFontSize"].toDouble();
+
+    double x = fields["x"].toDouble();
+    double y = fields["y"].toDouble();
+    double width = fields["textBoxWidth"].toDouble();
+    double height = fields["textBoxHeight"].toDouble();
+
+    String text = fields["text"];
+
+    Rectangle bounds = Rectangle(x, y, width, height);
+
+    if (existing != null) {
+      existing.text = text;
+      existing.bounds = bounds;
+      existing.fontColor = fontColor;
+      existing.fontSize = fontSize;
+
+      return existing;
+    } else {
+      return TextInfo(
+        text: text,
+        bounds: bounds,
+        fontColor: fontColor,
+        fontSize: fontSize,
+      );
     }
   }
 
