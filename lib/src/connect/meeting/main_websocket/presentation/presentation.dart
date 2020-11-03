@@ -1,10 +1,15 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/annotation.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/annotation_info.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/pencil.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/conversion_status.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/presentation_page.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/presentation_slide.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/slide_bounds.dart';
+import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 
 import 'model/presentation.dart';
 
@@ -18,6 +23,15 @@ class PresentationModule extends Module {
 
   /// Topic where slide positions are published.
   static const String _slidePositionTopic = "slide-positions";
+
+  /// Topic where annotations are published.
+  static const String _annotationsTopic = "annotations";
+
+  /// Info for the current meeting.
+  final MeetingInfo _meetingInfo;
+
+  /// Topic where stream annotations (painting on the slides) are published over.
+  final String _streamAnnotationsTopic;
 
   /// Currently loaded presentations by the internal ID (not the presentation ID).
   Map<String, Presentation> _presentationsByID = {};
@@ -48,13 +62,31 @@ class PresentationModule extends Module {
   /// Subscription to slide events.
   StreamSubscription<PresentationSlideEvent> _slideEventSubscription;
 
-  PresentationModule(messageSender) : super(messageSender);
+  PresentationModule(messageSender, this._meetingInfo)
+      : _streamAnnotationsTopic =
+            "stream-annotations-${_meetingInfo.meetingID}",
+        super(messageSender);
 
   @override
   void onConnected() {
     subscribe(_presentationTopic);
     subscribe(_slidesTopic);
     subscribe(_slidePositionTopic);
+    subscribe(_annotationsTopic);
+    subscribe(_streamAnnotationsTopic, params: [
+      "added",
+      {
+        "useCollection": false,
+        "args": [],
+      },
+    ]);
+    subscribe(_streamAnnotationsTopic, params: [
+      "removed",
+      {
+        "useCollection": false,
+        "args": [],
+      },
+    ]);
 
     _slideEventSubscription = slideEventsStream.listen((event) {
       if (event.slide.current) {
@@ -102,6 +134,10 @@ class PresentationModule extends Module {
 
   /// Called when something should be changed for the given [collectionName].
   void _onChanged(String collectionName, Map<String, dynamic> msg) {
+    if (collectionName == _streamAnnotationsTopic) {
+      _onStreamAnnotationChanged(msg);
+    }
+
     switch (collectionName) {
       case "presentations":
         _onPresentationChanged(msg);
@@ -127,6 +163,157 @@ class PresentationModule extends Module {
       case "slide-positions":
         _onSlidePositionAdded(msg);
         break;
+      case "annotations":
+        _onAnnotationsAdded(msg);
+        break;
+    }
+  }
+
+  /// Called when annotations should be added.
+  void _onAnnotationsAdded(Map<String, dynamic> msg) {
+    Map<String, dynamic> fields = msg["fields"];
+    String annotationId = fields["id"];
+    String slideId = fields["whiteboardId"];
+
+    Map<String, dynamic> annotationJson = {
+      "whiteboardId": slideId,
+      "userId": fields["userId"],
+      "annotation": fields,
+    };
+    PresentationSlide slide = _slides[slideId];
+    slide.annotations[annotationId] = _jsonToAnnotation(annotationJson);
+
+    _slideEventStreamController
+        .add(PresentationSlideEvent(EventType.CHANGED, slide));
+  }
+
+  /// Called when a stream annotation (paint) should be changed.
+  void _onStreamAnnotationChanged(Map<String, dynamic> msg) {
+    Map<String, dynamic> fields = msg["fields"];
+
+    String eventName = fields["eventName"];
+    if (eventName == "added") {
+      PresentationSlide slideChanged;
+
+      List<dynamic> argsJson = fields["args"];
+      for (Map<String, dynamic> argJson in argsJson) {
+        List<dynamic> annotationsJson = argJson["annotations"];
+        for (Map<String, dynamic> annotationJson in annotationsJson) {
+          String annotationId = annotationJson["annotation"]["id"];
+          String slideId = annotationJson["whiteboardId"];
+
+          PresentationSlide slide = _slides[slideId];
+          if (slide.annotations.containsKey(annotationId)) {
+            slide.annotations[annotationId] = _jsonToAnnotation(
+                annotationJson, slide.annotations[annotationId]);
+          } else {
+            slide.annotations[annotationId] = _jsonToAnnotation(annotationJson);
+          }
+
+          slideChanged = slide;
+        }
+      }
+
+      _slideEventStreamController
+          .add(PresentationSlideEvent(EventType.CHANGED, slideChanged));
+    } else if (eventName == "removed") {
+      PresentationSlide slideChanged;
+
+      List<dynamic> argsJson = fields["args"];
+      for (Map<String, dynamic> argJson in argsJson) {
+        String slideId = argJson["whiteboardId"];
+        PresentationSlide slide = _slides[slideId];
+
+        if (argJson.containsKey("shapeId")) {
+          String annotationId = argJson["shapeId"];
+          slide.annotations.remove(annotationId);
+        } else {
+          slide.annotations.clear();
+        }
+
+        slideChanged = slide;
+      }
+
+      _slideEventStreamController
+          .add(PresentationSlideEvent(EventType.CHANGED, slideChanged));
+    }
+  }
+
+  /// Convert the passed JSON map to an annotation.
+  /// A optional existing annotation is filled to be updated.
+  Annotation _jsonToAnnotation(Map<String, dynamic> fields,
+      [Annotation existing]) {
+    String whiteboardId = fields["whiteboardId"];
+    String userId = fields["userId"];
+
+    Map<String, dynamic> annotationJson = fields["annotation"];
+    String annotationId = annotationJson["id"];
+    String status = annotationJson["status"];
+    int position = annotationJson["position"];
+    String annotationType = annotationJson["annotationType"];
+
+    if (existing != null) {
+      existing.status = status;
+      existing.annotationType = annotationType;
+      existing.info = _jsonToAnnotationInfo(
+          annotationType, annotationJson["annotationInfo"], existing.info);
+
+      return existing;
+    } else {
+      return Annotation(
+        whiteboardId: whiteboardId,
+        userId: userId,
+        annotationId: annotationId,
+        status: status,
+        position: position,
+        annotationType: annotationType,
+        info: _jsonToAnnotationInfo(
+            annotationType, annotationJson["annotationInfo"]),
+      );
+    }
+  }
+
+  /// Convert the passed JSON map to a annotation info for the given [type].
+  /// An optional already existing annotation info is filled to be updated.
+  AnnotationInfo _jsonToAnnotationInfo(
+    String type,
+    Map<String, dynamic> fields, [
+    AnnotationInfo existing,
+  ]) {
+    switch (type) {
+      case "pencil":
+        return _jsonToPencilInfo(fields, existing as PencilInfo);
+    }
+  }
+
+  /// Convert the passed JSON map to a pencil annotation info representation.
+  /// An existing pencil info is passed (when it exists) to be filled.
+  PencilInfo _jsonToPencilInfo(Map<String, dynamic> fields,
+      [PencilInfo existing]) {
+    int color = fields["color"];
+    double thickness = fields["thickness"].toDouble();
+
+    List<dynamic> pointsJson = fields["points"];
+    List<Point> points = [];
+    for (int i = 0; i < pointsJson.length; i += 2) {
+      points.add(Point(
+        pointsJson[i].toDouble(),
+        pointsJson[i + 1].toDouble(),
+      ));
+    }
+
+    if (existing != null) {
+      existing.color = color;
+      existing.thickness = thickness;
+      existing.points = points;
+
+      return existing;
+    } else {
+      return PencilInfo(
+        color: color,
+        thickness: thickness,
+        points: points,
+      );
     }
   }
 

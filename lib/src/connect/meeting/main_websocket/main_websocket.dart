@@ -95,7 +95,7 @@ class MainWebSocket {
         _meetingInfo,
         userModule,
       ),
-      "presentation": new PresentationModule(messageSender),
+      "presentation": new PresentationModule(messageSender, _meetingInfo),
     };
   }
 

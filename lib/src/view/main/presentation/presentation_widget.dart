@@ -74,8 +74,12 @@ class _PresentationWidgetState extends State<PresentationWidget> {
                     _currentSlide.bounds.width / _currentSlide.bounds.height,
                 child: ClipRect(
                   child: CustomPaint(
-                    painter:
-                        PresentationPainter(_slideSvg, _currentSlide.bounds),
+                    painter: PresentationPainter(
+                      _slideSvg,
+                      _currentSlide.bounds,
+                      _currentSlide.annotations.values.toList(growable: false)
+                        ..sort((o1, o2) => o1.position.compareTo(o2.position)),
+                    ),
                   ),
                 ),
               )

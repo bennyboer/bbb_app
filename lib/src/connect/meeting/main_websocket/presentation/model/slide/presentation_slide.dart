@@ -1,3 +1,4 @@
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/annotation.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/slide_bounds.dart';
 
 /// Slide of a presentation.
@@ -43,6 +44,9 @@ class PresentationSlide {
 
   /// Bounds of the slide.
   SlideBounds bounds;
+
+  /// Available annotations on the slide.
+  Map<String, Annotation> annotations = {};
 
   PresentationSlide({
     this.id,
