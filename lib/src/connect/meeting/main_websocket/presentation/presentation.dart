@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/annotation.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/annotation_info.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/ellipsis.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/pencil.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/conversion_status.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/presentation_page.dart';
@@ -298,6 +299,40 @@ class PresentationModule extends Module {
         return _jsonToRectangleInfo(fields, existing as RectangleInfo);
       case "triangle":
         return _jsonToTriangleInfo(fields, existing as TriangleInfo);
+      case "ellipse":
+        return _jsonToEllipsisInfo(fields, existing as EllipsisInfo);
+    }
+  }
+
+  /// Convert the passed JSON map to a ellipsis annotation info representation.
+  /// An existing info is passed (when it exists) to be filled.
+  EllipsisInfo _jsonToEllipsisInfo(Map<String, dynamic> fields,
+      [EllipsisInfo existing]) {
+    int color = fields["color"];
+    double thickness = fields["thickness"].toDouble();
+
+    List<dynamic> pointsJson = fields["points"];
+    List<Point> points = [];
+    for (int i = 0; i < pointsJson.length; i += 2) {
+      points.add(Point(
+        pointsJson[i].toDouble(),
+        pointsJson[i + 1].toDouble(),
+      ));
+    }
+    Rectangle bounds = Rectangle.fromPoints(points.first, points.last);
+
+    if (existing != null) {
+      existing.color = color;
+      existing.thickness = thickness;
+      existing.bounds = bounds;
+
+      return existing;
+    } else {
+      return EllipsisInfo(
+        color: color,
+        thickness: thickness,
+        bounds: bounds,
+      );
     }
   }
 
@@ -319,7 +354,8 @@ class PresentationModule extends Module {
 
     // There are only two points send forming a rectangle to display a triangle in.
     // We are calculating the correct points here.
-    Point p1 = Point(points.first.x + (points.last.x - points.first.x) / 2, points.first.y);
+    Point p1 = Point(
+        points.first.x + (points.last.x - points.first.x) / 2, points.first.y);
     Point p2 = Point(points.first.x, points.last.y);
     Point p3 = Point(points.last.x, points.last.y);
 

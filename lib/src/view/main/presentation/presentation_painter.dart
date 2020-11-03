@@ -2,6 +2,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/annotation.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/ellipsis.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/pencil.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/rectangle.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/triangle.dart';
@@ -68,7 +69,29 @@ class PresentationPainter extends CustomPainter {
       case "triangle":
         _drawTriangleAnnotation(annotation.info as TriangleInfo, canvas, size);
         break;
+      case "ellipse":
+        _drawEllipsisAnnotation(annotation.info as EllipsisInfo, canvas, size);
     }
+  }
+
+  /// Draw an ellipsis annotation from the passed [info].
+  void _drawEllipsisAnnotation(EllipsisInfo info, Canvas canvas, Size size) {
+    double thickness = info.thickness * _bounds.width / 100;
+
+    Paint paint = Paint()
+      ..strokeWidth = thickness
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..color = Color(info.color | 0xFF000000);
+
+    canvas.drawOval(
+        Rect.fromLTWH(
+          info.bounds.left * _bounds.width / 100,
+          info.bounds.top * _bounds.height / 100,
+          info.bounds.width * _bounds.width / 100,
+          info.bounds.height * _bounds.height / 100,
+        ),
+        paint);
   }
 
   /// Draw a triangle annotation from the passed [info].
