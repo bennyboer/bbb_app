@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/poll/model/option.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/poll/model/poll.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
@@ -41,6 +43,9 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   StreamSubscription<UnreadMessageCounterEvent>
       _unreadMessageCounterStreamSubscription;
 
+  /// Subscription to incoming poll events.
+  StreamSubscription<Poll> _pollStreamSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -60,6 +65,13 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
       setState(() => _updateTotalUnreadMessagesCounter());
     });
 
+    _pollStreamSubscription =
+        _mainWebSocket.pollModule.pollStream.listen((event) async {
+      PollOption option = await _openPollDialog(event);
+
+      _mainWebSocket.pollModule.vote(event.id, option.id);
+    });
+
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -67,6 +79,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   void dispose() {
     _videoConnectionsStreamSubscription.cancel();
     _unreadMessageCounterStreamSubscription.cancel();
+    _pollStreamSubscription.cancel();
 
     _mainWebSocket.disconnect();
 
@@ -87,6 +100,26 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     if (_mainWebSocket != null) {
       _mainWebSocket.disconnect();
     }
+  }
+
+  /// Open the poll dialog for the passed [poll].
+  Future<PollOption> _openPollDialog(Poll poll) async {
+    return await showDialog<PollOption>(
+      context: context,
+      builder: (BuildContext context) {
+        return SimpleDialog(
+          title: Text(AppLocalizations.of(context).get("main.poll-title")),
+          children: poll.options.map((e) {
+            return SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(context, e);
+              },
+              child: Text(e.key),
+            );
+          }).toList(growable: false),
+        );
+      },
+    );
   }
 
   /// Update the total unread messages counter.

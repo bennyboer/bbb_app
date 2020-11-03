@@ -45,9 +45,9 @@ class AppLocalizations {
       de: "Ein Benutzername ist erforderlich!",
     ));
     _addLocalization(_Localization(
-    "login.accesscode",
-    en: "Access code",
-    de: "Zugangscode",
+      "login.accesscode",
+      en: "Access code",
+      de: "Zugangscode",
     ));
     _addLocalization(_Localization(
       "login.accesscode-missing",
@@ -133,6 +133,11 @@ class AppLocalizations {
       "main.logout",
       en: "Leave meeting",
       de: "Meeting verlassen",
+    ));
+    _addLocalization(_Localization(
+      "main.poll-title",
+      en: "Poll: Select an option",
+      de: "Umfrage: Auswahl",
     ));
 
     _isInitialized = true;

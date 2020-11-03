@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/ping/ping.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/poll/poll.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/presentation.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/util/util.dart';
@@ -96,6 +97,7 @@ class MainWebSocket {
         userModule,
       ),
       "presentation": new PresentationModule(messageSender, _meetingInfo),
+      "poll": new PollModule(messageSender),
     };
   }
 
@@ -181,4 +183,7 @@ class MainWebSocket {
 
   /// Get the presentation module of the websocket.
   PresentationModule get presentationModule => _modules["presentation"];
+
+  /// Get the poll module of the websocket.
+  PollModule get pollModule => _modules["poll"];
 }
