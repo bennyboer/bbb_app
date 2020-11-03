@@ -1,23 +1,29 @@
 import 'dart:async';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/video/video_connection.dart';
+import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 
-/// Module dealing with web cam stuff.
+/// Module dealing with video stream stuff.
 class VideoModule extends Module {
+
   /// Video streams subscription topic to subscribe to.
   static const _subscriptionTopic = "video-streams";
 
-  /// Controller over which we will publish updated camera ID lists.
-  StreamController<List<String>> _videoStreamController =
-      StreamController<List<String>>.broadcast();
+  /// Controller over which we will publish updated video connection lists.
+  StreamController<Map<String, VideoConnection>> _videoConnectionsStreamController =
+      StreamController<Map<String, VideoConnection>>.broadcast();
 
-  /// List of camera IDs we currently have.
-  List<String> _cameraIDs = [];
+  /// List of video connections we currently have.
+  Map<String, VideoConnection> _videoConnectionsByCameraId = {};
 
   /// Lookup of the camera ID by a stream ID.
   Map<String, String> _cameraIdByStreamIdLookup = {};
 
-  VideoModule(messageSender) : super(messageSender);
+  /// Info for the current meeting.
+  final MeetingInfo _meetingInfo;
+
+  VideoModule(messageSender, this._meetingInfo,) : super(messageSender);
 
   @override
   void onConnected() {
@@ -26,7 +32,10 @@ class VideoModule extends Module {
 
   @override
   Future<void> onDisconnect() {
-    _videoStreamController.close();
+    _videoConnectionsStreamController.close();
+    _videoConnectionsByCameraId.forEach((key, videoConnection) {
+      videoConnection.close();
+    });
   }
 
   @override
@@ -41,32 +50,43 @@ class VideoModule extends Module {
         if (cameraID != null) {
           print("Adding new video stream...");
 
-          _cameraIDs.add(cameraID);
+          VideoConnection v = VideoConnection(_meetingInfo, cameraID);
+          _videoConnectionsByCameraId[cameraID] = v;
+
+          v.init().then((value) => {
+
+            // Publish changed video connections list
+            _videoConnectionsStreamController.add(_videoConnectionsByCameraId)
+
+          });
+
           _cameraIdByStreamIdLookup[msg["id"]] = cameraID;
 
-          // Publish changed camera ID list
-          _videoStreamController.add(_cameraIDs);
         }
       }
     } else if (method == "removed") {
       String collectionName = msg["collection"];
 
       if (collectionName == "video-streams") {
+        print("Removing video stream...");
+
         String streamID = msg["id"];
         String cameraID = _cameraIdByStreamIdLookup[streamID];
 
-        _cameraIDs.remove(cameraID);
+        VideoConnection v = _videoConnectionsByCameraId.remove(cameraID);
 
-        // Publish changed camera ID list
-        _videoStreamController.add(_cameraIDs);
+        // Publish changed video connections list
+        _videoConnectionsStreamController.add(_videoConnectionsByCameraId);
+
+        v.close();
       }
     }
   }
 
-  /// Get a stream of camera IDs lists that are updated when new camera IDs pop up
+  /// Get a stream of video connections lists that are updated when new camera IDs pop up
   /// or are removed.
-  Stream<List<String>> get cameraIDsStream => _videoStreamController.stream;
+  Stream<Map<String, VideoConnection>> get videoConnectionsStream => _videoConnectionsStreamController.stream;
 
-  /// Get the currently listed camera IDs.
-  List<String> get cameraIDs => _cameraIDs;
+  /// Get the currently listed video connections.
+  Map<String, VideoConnection> get videoConnections => _videoConnectionsByCameraId;
 }
