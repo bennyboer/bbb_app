@@ -5,6 +5,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/an
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/ellipsis.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/line.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/pencil.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/poll_result.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/rectangle.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/text.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/triangle.dart';
@@ -74,7 +75,139 @@ class PresentationPainter extends CustomPainter {
       case "text":
         _drawTextAnnotation(annotation.info as TextInfo, canvas, size);
         break;
+      case "poll_result":
+        _drawPollResult(annotation.info as PollResult, canvas, size);
+        break;
     }
+  }
+
+  /// Draw a poll result from the passed [info].
+  void _drawPollResult(PollResult info, Canvas canvas, Size size) {
+    double marginBottomRight = _bounds.width / 100;
+
+    double x = info.bounds.left * _bounds.width / 100;
+    double y = info.bounds.top * _bounds.height / 100;
+    double width = info.bounds.width * _bounds.width / 100 - marginBottomRight;
+    double height =
+        info.bounds.height * _bounds.height / 100 - marginBottomRight;
+
+    double entryHeight = height / info.entries.length;
+
+    // Draw box around poll result
+    Paint paint = Paint()
+      ..strokeWidth = _bounds.width / 500
+      ..color = Color(0xFF778899);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(x, y, width, height),
+        Radius.circular(_bounds.width / 200),
+      ),
+      paint,
+    );
+
+    // Find widest entry key string
+    List<TextPainter> painters = [];
+    double maxEntryKeyWidth = 0.0;
+    for (PollResultEntry entry in info.entries) {
+      TextPainter tp = TextPainter(
+        text: TextSpan(
+          text: entry.key,
+          style: TextStyle(
+            fontSize: entryHeight * 0.75,
+            color: Colors.white,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      tp.layout();
+
+      maxEntryKeyWidth = max(tp.width, maxEntryKeyWidth);
+
+      painters.add(tp);
+    }
+
+    // Draw poll result entries
+    double curY = y;
+    for (int i = 0; i < info.entries.length; i++) {
+      PollResultEntry entry = info.entries[i];
+      TextPainter painter = painters[i];
+
+      _drawPollResultEntry(
+        entry,
+        info.responders,
+        painter,
+        maxEntryKeyWidth,
+        Rect.fromLTWH(x, curY, width, entryHeight),
+        canvas,
+        size,
+      );
+
+      curY += entryHeight;
+    }
+  }
+
+  /// Draw the passed poll result [entry] at the given [rect].
+  void _drawPollResultEntry(
+    PollResultEntry entry,
+    int responders,
+    TextPainter keyPainter,
+    double maxEntryKeyWidth,
+    Rect rect,
+    Canvas canvas,
+    Size size,
+  ) {
+    final double padding = _bounds.width / 200;
+    double x = rect.left + padding;
+
+    // Draw entry key
+    keyPainter.paint(
+        canvas, Offset(x, rect.top + (rect.height - keyPainter.height) / 2));
+
+    x += maxEntryKeyWidth + padding;
+
+    double widthFactor = entry.votes / responders;
+    Paint barPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = Colors.white;
+
+    double maxBarWidth = rect.width - (x - rect.left) - padding;
+    Rect barRect = Rect.fromLTWH(
+      x,
+      rect.top + padding / 2,
+      max(
+        maxBarWidth * widthFactor,
+        _bounds.width / 500,
+      ),
+      rect.height - padding,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        barRect,
+        Radius.circular(padding),
+      ),
+      barPaint,
+    );
+
+    // Draw label on bar
+    TextPainter tp = TextPainter(
+      text: TextSpan(
+        text: "${(widthFactor * 100).round()}% (${entry.votes})",
+        style: TextStyle(
+          color: Colors.black87,
+          fontSize: keyPainter.text.style.fontSize * 0.75,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    tp.layout();
+
+    tp.paint(
+      canvas,
+      Offset(
+        barRect.left + (maxBarWidth - tp.width) / 2,
+        barRect.top + (barRect.height - tp.height) / 2,
+      ),
+    );
   }
 
   /// Draw a text annotation from the passed [info].

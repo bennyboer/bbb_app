@@ -7,6 +7,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/an
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/ellipsis.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/line.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/pencil.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/poll_result.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/conversion_status.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/presentation_page.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/presentation_slide.dart';
@@ -63,6 +64,9 @@ class PresentationModule extends Module {
 
   /// Currently shown slide (if any).
   PresentationSlide _currentSlide;
+
+  /// The last received poll result annotation.
+  Annotation _lastPollResultAnnotation;
 
   /// Subscription to slide events.
   StreamSubscription<PresentationSlideEvent> _slideEventSubscription;
@@ -186,7 +190,17 @@ class PresentationModule extends Module {
       "annotation": fields,
     };
     PresentationSlide slide = _slides[slideId];
-    slide.annotations[annotationId] = _jsonToAnnotation(annotationJson);
+    Annotation annotation = _jsonToAnnotation(annotationJson);
+    slide.annotations[annotationId] = annotation;
+
+    if (annotation.info is PollResult) {
+      if (_lastPollResultAnnotation != null) {
+        // Only allow one poll result shown.
+        slide.annotations.remove(_lastPollResultAnnotation.annotationId);
+      }
+
+      _lastPollResultAnnotation = annotation;
+    }
 
     _slideEventStreamController
         .add(PresentationSlideEvent(EventType.CHANGED, slide));
@@ -216,6 +230,16 @@ class PresentationModule extends Module {
 
             if (annotation.status == "DRAW_END") {
               shouldPublishEvent = true; // Only send update when really needed
+            }
+
+            if (annotation.info is PollResult) {
+              if (_lastPollResultAnnotation != null) {
+                // Only allow one poll result shown.
+                slide.annotations
+                    .remove(_lastPollResultAnnotation.annotationId);
+              }
+
+              _lastPollResultAnnotation = annotation;
             }
           } else {
             slide.annotations[annotationId] = _jsonToAnnotation(annotationJson);
@@ -307,6 +331,53 @@ class PresentationModule extends Module {
         return _jsonToLineInfo(fields, existing as LineInfo);
       case "text":
         return _jsonToTextInfo(fields, existing as TextInfo);
+      case "poll_result":
+        return _jsonToPollResult(fields, existing as PollResult);
+    }
+  }
+
+  /// Convert the passed JSON map to a poll result representation.
+  /// An existing info is passed (when it exists) to be filled.
+  PollResult _jsonToPollResult(Map<String, dynamic> fields,
+      [PollResult existing]) {
+    int responders = fields["numResponders"];
+    int respondents = fields["numRespondents"];
+
+    List<dynamic> points = fields["points"];
+    double x = points[0].toDouble();
+    double y = points[1].toDouble();
+    double width = points[2].toDouble();
+    double height = points[3].toDouble();
+    Rectangle bounds = Rectangle(x, y, width, height);
+
+    List<dynamic> resultsJson = fields["result"];
+    List<PollResultEntry> entries = [];
+    for (Map<String, dynamic> resultEntryJson in resultsJson) {
+      int id = resultEntryJson["id"];
+      String key = resultEntryJson["key"];
+      int votes = resultEntryJson["numVotes"];
+
+      entries.add(PollResultEntry(
+        id: id,
+        key: key,
+        votes: votes,
+      ));
+    }
+
+    if (existing != null) {
+      existing.responders = responders;
+      existing.respondents = respondents;
+      existing.bounds = bounds;
+      existing.entries = entries;
+
+      return existing;
+    } else {
+      return PollResult(
+        responders: responders,
+        respondents: respondents,
+        bounds: bounds,
+        entries: entries,
+      );
     }
   }
 
