@@ -88,7 +88,7 @@ class MainWebSocket {
 
     _modules = {
       "ping": new PingModule(messageSender),
-      "video": new VideoModule(messageSender),
+      "video": new VideoModule(messageSender, _meetingInfo),
       "user": userModule,
       "chat": new ChatModule(
         messageSender,

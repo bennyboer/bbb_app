@@ -2,14 +2,15 @@ import 'dart:async';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/video/video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
 import 'package:bbb_app/src/view/main/presentation/presentation_widget.dart';
-import 'package:bbb_app/src/view/main/webcam/webcam_widget.dart';
 import 'package:bbb_app/src/view/meeting_info/meeting_info_view.dart';
 import 'package:bbb_app/src/view/settings/settings_view.dart';
 import 'package:bbb_app/src/view/start/start_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 /// The main view including the current presentation/webcams/screenshare.
 class MainView extends StatefulWidget {
@@ -27,14 +28,14 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   /// Main websocket connection of the meeting.
   MainWebSocket _mainWebSocket;
 
-  /// List of camera Ids we currently display.
-  List<String> _cameraIdList = [];
+  /// List of video streams we currently display.
+  Map<String, VideoConnection> _videoConnections;
 
   /// Counter for total unread messages.
   int _totalUnreadMessages = 0;
 
-  /// Subscription to camera IDs list changes.
-  StreamSubscription _cameraIdsStreamSubscription;
+  /// Subscription to video connection list changes.
+  StreamSubscription _videoConnectionsStreamSubscription;
 
   /// Subscription to unread message counter updates.
   StreamSubscription<UnreadMessageCounterEvent>
@@ -46,10 +47,10 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
 
     _mainWebSocket = MainWebSocket(widget._meetingInfo);
 
-    _cameraIdList = _mainWebSocket.videoModule.cameraIDs;
-    _cameraIdsStreamSubscription =
-        _mainWebSocket.videoModule.cameraIDsStream.listen((cameraIds) {
-      setState(() => _cameraIdList = cameraIds);
+    _videoConnections = _mainWebSocket.videoModule.videoConnections;
+    _videoConnectionsStreamSubscription =
+        _mainWebSocket.videoModule.videoConnectionsStream.listen((videoConnections) {
+      setState(() => _videoConnections = videoConnections);
     });
 
     _updateTotalUnreadMessagesCounter();
@@ -63,12 +64,13 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    _cameraIdsStreamSubscription.cancel();
+    _videoConnectionsStreamSubscription.cancel();
     _unreadMessageCounterStreamSubscription.cancel();
 
     _mainWebSocket.disconnect();
 
     WidgetsBinding.instance.removeObserver(this);
+
     super.dispose();
   }
 
@@ -100,7 +102,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
       body: Column(
         children: [
           Text("Your username is: ${widget._meetingInfo.fullUserName}"),
-          Text("Having ${_cameraIdList.length} cameras active"),
+          Text("Having ${_videoConnections.length} cameras active"),
           Expanded(
             child: PresentationWidget(_mainWebSocket),
           ),
@@ -108,15 +110,13 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
               padding: const EdgeInsets.all(8),
               scrollDirection: Axis.vertical,
               shrinkWrap: true,
-              itemCount: _cameraIdList.length,
+              itemCount: _videoConnections.length,
               itemBuilder: (BuildContext context, int index) {
+                String key = _videoConnections.keys.elementAt(index);
                 return Container(
                     width: 200,
                     height: 200,
-                    child: WebCamWidget(
-                      widget._meetingInfo,
-                      _cameraIdList[index],
-                    ));
+                    child: RTCVideoView(_videoConnections[key].remoteRenderer));
               }),
         ],
       ),
