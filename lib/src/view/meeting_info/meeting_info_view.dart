@@ -144,7 +144,8 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
         leading: Stack(
           children: [
             Icon(Icons.chat),
-            if (_unreadMessageCounters.containsKey(group.id) && _unreadMessageCounters[group.id] > 0)
+            if (_unreadMessageCounters.containsKey(group.id) &&
+                _unreadMessageCounters[group.id] > 0)
               Container(
                 margin: EdgeInsets.only(top: 12, left: 15),
                 padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
@@ -152,7 +153,11 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
                   color: Theme.of(context).errorColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text("${_unreadMessageCounters[group.id]}"),
+                child: Text(
+                  "${_unreadMessageCounters[group.id]}",
+                  style: TextStyle(
+                      color: Theme.of(context).primaryTextTheme.bodyText1.color),
+                ),
               ),
           ],
         ),
