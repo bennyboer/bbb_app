@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/annotation.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/ellipsis.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/line.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/pencil.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/rectangle.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/triangle.dart';
@@ -71,7 +72,33 @@ class PresentationPainter extends CustomPainter {
         break;
       case "ellipse":
         _drawEllipsisAnnotation(annotation.info as EllipsisInfo, canvas, size);
+        break;
+      case "line":
+        _drawLineAnnotation(annotation.info as LineInfo, canvas, size);
+        break;
     }
+  }
+
+  /// Draw a line annotation from the passed [info].
+  void _drawLineAnnotation(LineInfo info, Canvas canvas, Size size) {
+    double thickness = info.thickness * _bounds.width / 100;
+
+    Paint paint = Paint()
+      ..strokeWidth = thickness
+      ..style = PaintingStyle.stroke
+      ..color = Color(info.color | 0xFF000000);
+
+    canvas.drawLine(
+      Offset(
+        info.p1.x * _bounds.width / 100,
+        info.p1.y * _bounds.height / 100,
+      ),
+      Offset(
+        info.p2.x * _bounds.width / 100,
+        info.p2.y * _bounds.height / 100,
+      ),
+      paint,
+    );
   }
 
   /// Draw an ellipsis annotation from the passed [info].

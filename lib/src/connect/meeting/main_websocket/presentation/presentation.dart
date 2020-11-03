@@ -5,6 +5,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/annotation.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/annotation_info.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/ellipsis.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/line.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/pencil.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/conversion_status.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/presentation_page.dart';
@@ -301,6 +302,40 @@ class PresentationModule extends Module {
         return _jsonToTriangleInfo(fields, existing as TriangleInfo);
       case "ellipse":
         return _jsonToEllipsisInfo(fields, existing as EllipsisInfo);
+      case "line":
+        return _jsonToLineInfo(fields, existing as LineInfo);
+    }
+  }
+
+  /// Convert the passed JSON map to a line annotation info representation.
+  /// An existing info is passed (when it exists) to be filled.
+  LineInfo _jsonToLineInfo(Map<String, dynamic> fields, [LineInfo existing]) {
+    int color = fields["color"];
+    double thickness = fields["thickness"].toDouble();
+
+    List<dynamic> pointsJson = fields["points"];
+    List<Point> points = [];
+    for (int i = 0; i < pointsJson.length; i += 2) {
+      points.add(Point(
+        pointsJson[i].toDouble(),
+        pointsJson[i + 1].toDouble(),
+      ));
+    }
+
+    if (existing != null) {
+      existing.color = color;
+      existing.thickness = thickness;
+      existing.p1 = points.first;
+      existing.p2 = points.last;
+
+      return existing;
+    } else {
+      return LineInfo(
+        color: color,
+        thickness: thickness,
+        p1: points.first,
+        p2: points.last,
+      );
     }
   }
 
