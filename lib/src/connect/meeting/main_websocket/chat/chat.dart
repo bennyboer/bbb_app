@@ -4,6 +4,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/chat/group.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/message.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/user_typing_info.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/util/util.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
@@ -24,6 +25,9 @@ class ChatModule extends Module {
 
   /// Info for the current meeting.
   final MeetingInfo _meetingInfo;
+
+  /// User module of the main websocket connection.
+  final UserModule _userModule;
 
   /// Message counter.
   int _messageCounter = 1;
@@ -69,6 +73,7 @@ class ChatModule extends Module {
   ChatModule(
     MessageSender messageSender,
     this._meetingInfo,
+    this._userModule,
   ) : super(messageSender);
 
   /// Send a chat message.
@@ -322,6 +327,15 @@ class ChatModule extends Module {
 
   /// Called on a new incoming chat group.
   void _onNewGroupChat(String chatID, String name, Set<String> participantIDs) {
+    if (chatID != defaultChatID && participantIDs.length == 2) {
+      // Only for private chats
+      // For some reason the chat name is always the name of the other participant (even for the participant).
+      name = _userModule
+          .userMapByInternalId[participantIDs
+              .firstWhere((element) => element != _meetingInfo.internalUserID)]
+          .name;
+    }
+
     ChatGroup group = ChatGroup(chatID, name, participantIDs);
 
     _chatGroups.add(group);
