@@ -2,46 +2,27 @@ import 'dart:convert';
 
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/utils/websocket.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
-/// Widget displaying a webcam stream.
-class WebCamWidget extends StatefulWidget {
+/// Class encapsulating a WebRTC video stream connection.
+class VideoConnection {
+
   /// Info of the current meeting.
   MeetingInfo _meetingInfo;
 
   /// Camera ID to display stream for.
   String _cameraId;
 
-  WebCamWidget(this._meetingInfo, this._cameraId);
+  VideoConnection(var meetingInfo, var cameraId) {
+    this._meetingInfo = meetingInfo;
+    this._cameraId = cameraId;
+  }
 
-  @override
-  State<StatefulWidget> createState() => _WebCamWidgetState();
-
-  String get cameraId => _cameraId;
-
-  MeetingInfo get meetingInfo => _meetingInfo;
-}
-
-/// State of the webcam widget.
-class _WebCamWidgetState extends State<WebCamWidget> {
   SimpleWebSocket _socket;
   RTCPeerConnection _pc;
   RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
 
-  @override
-  Widget build(BuildContext context) {
-    return RTCVideoView(_remoteRenderer);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-
-    _remoteRenderer.initialize().then((value) => connect());
-  }
-
-//TODO custom TURN/STUN server returned by BBB
+  //TODO custom TURN/STUN server returned by BBB
   Map<String, dynamic> _iceServers = {
     'iceServers': [
       {'url': 'stun:stun.l.google.com:19302'},
@@ -63,11 +44,27 @@ class _WebCamWidgetState extends State<WebCamWidget> {
     'optional': [],
   };
 
+  Future<void> init() {
+    return _remoteRenderer.initialize().then((value) => connect());
+  }
+
+  void close() {
+    _socket.close();
+    _pc.close();
+
+    //workaround. seems like the dispose is not called properly from the ListView in main_view.dart.
+    //can not dispose before RTCVideoView isn't displayed anymore. --> wait 10 seconds as this is async...
+    Future.delayed(const Duration(seconds: 10), () {
+      print("disposing renderer");
+      remoteRenderer.dispose();
+    });
+  }
+
   void connect() async {
     print("connect!!!");
 
     final uri =
-        Uri.parse(widget.meetingInfo.joinUrl).replace(path: "bbb-webrtc-sfu");
+    Uri.parse(_meetingInfo.joinUrl).replace(path: "bbb-webrtc-sfu");
 
     print(uri);
 
@@ -122,11 +119,10 @@ class _WebCamWidgetState extends State<WebCamWidget> {
 
       case 'playStart':
         {
-          print("############################################## playStart");
+          print("playStart");
           print(_pc.getRemoteStreams());
-          setState(() {
-            _remoteRenderer.srcObject = _pc.getRemoteStreams()[1]; //TODO why index 1?
-          });
+
+          _remoteRenderer.srcObject = _pc.getRemoteStreams()[0];
         }
         break;
 
@@ -141,7 +137,7 @@ class _WebCamWidgetState extends State<WebCamWidget> {
 
       _pc.onIceCandidate = (candidate) {
         send({
-          'cameraId': widget.cameraId,
+          'cameraId': _cameraId,
           'candidate': {
             'candidate': candidate.candidate,
             'sdpMLineIndex': candidate.sdpMlineIndex,
@@ -153,14 +149,14 @@ class _WebCamWidgetState extends State<WebCamWidget> {
         });
       };
 
-      //this is never triggered.... using case 'playStart' in onMessage() instead
+      //this is never triggered... using case 'playStart' in onMessage() instead
       _pc.onAddStream = (stream) {
-        print("############################################## onAddStream");
+        print("onAddStream");
         _remoteRenderer.srcObject = stream;
       };
 
       _pc.onRemoveStream = (stream) {
-        print("############################################## onRemoveStream");
+        print("onRemoveStream");
         _remoteRenderer.srcObject = null;
       };
 
@@ -171,19 +167,23 @@ class _WebCamWidgetState extends State<WebCamWidget> {
 
       send({
         'bitrate': 200,
-        'cameraId': widget.cameraId,
+        'cameraId': _cameraId,
         'id': 'start',
-        'meetingId': widget.meetingInfo.meetingID,
+        'meetingId': _meetingInfo.meetingID,
         'record': true,
         'role': 'viewer',
         'sdpOffer': s.sdp,
         'type': 'video',
-        'userId': widget.meetingInfo.internalUserID,
-        'userName': widget.meetingInfo.fullUserName,
-        'voiceBridge': widget.meetingInfo.voiceBridge,
+        'user.mId': _meetingInfo.internalUserID,
+        'userName': _meetingInfo.fullUserName,
+        'voiceBridge': _meetingInfo.voiceBridge,
       });
     } catch (e) {
       print(e.toString());
     }
   }
+
+  /// Get the renderer.
+  RTCVideoRenderer get remoteRenderer => _remoteRenderer;
+
 }

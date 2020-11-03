@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/ping/ping.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/presentation.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/util/util.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/video.dart';
@@ -87,13 +88,14 @@ class MainWebSocket {
 
     _modules = {
       "ping": new PingModule(messageSender),
-      "video": new VideoModule(messageSender),
+      "video": new VideoModule(messageSender, _meetingInfo),
       "user": userModule,
       "chat": new ChatModule(
         messageSender,
         _meetingInfo,
         userModule,
       ),
+      "presentation": new PresentationModule(messageSender, _meetingInfo),
     };
   }
 
@@ -176,4 +178,7 @@ class MainWebSocket {
 
   /// Get the user module of the websocket.
   UserModule get userModule => _modules["user"];
+
+  /// Get the presentation module of the websocket.
+  PresentationModule get presentationModule => _modules["presentation"];
 }
