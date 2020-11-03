@@ -106,7 +106,7 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
 
   /// Build a section header text.
   Widget _buildSectionHeader(String text) => Container(
-        padding: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+        padding: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
         margin: EdgeInsets.only(bottom: 5),
         decoration: BoxDecoration(
           border: Border(
@@ -117,11 +117,12 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
             ),
           ),
         ),
-        alignment: Alignment.center,
+        alignment: Alignment.centerLeft,
         child: Text(
           text,
           style: TextStyle(
-            fontSize: 20.0,
+            fontSize: 18.0,
+            fontWeight: FontWeight.w600,
           ),
         ),
       );
@@ -135,26 +136,40 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
         itemBuilder: (BuildContext context, int index) {
           ChatGroup group = _chatGroups[index];
 
-          return _buildChatListItem(group);
+          return Column(
+            children: [
+              _buildChatListItem(group),
+              Divider(indent: 15, endIndent: 15,)
+            ],
+          );
         },
       );
 
   /// Build a chat list item.
   Widget _buildChatListItem(ChatGroup group) => new ListTile(
-        leading: Stack(
-          children: [
-            Icon(Icons.chat),
-            if (_unreadMessageCounters.containsKey(group.id) && _unreadMessageCounters[group.id] > 0)
-              Container(
-                margin: EdgeInsets.only(top: 12, left: 15),
-                padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).errorColor,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text("${_unreadMessageCounters[group.id]}"),
-              ),
-          ],
+        contentPadding: const EdgeInsets.only(left: 15.0, top: 0.0, bottom: 0.0),
+        leading: Container(
+          constraints: BoxConstraints(minWidth: 50, maxWidth: 50),
+          width: 50,
+          height: 40,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Stack(
+              children: [
+                Icon(Icons.chat),
+                if (_unreadMessageCounters.containsKey(group.id) && _unreadMessageCounters[group.id] > 0)
+                  Container(
+                    margin: EdgeInsets.only(top: 12, left: 15),
+                    padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).errorColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text("${_unreadMessageCounters[group.id]}"),
+                  ),
+              ],
+            ),
+          ),
         ),
         title: Text(group.id == ChatModule.defaultChatID
             ? AppLocalizations.of(context).get("chat.public")
@@ -222,7 +237,12 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
         itemCount: users.length,
         itemBuilder: (BuildContext context, int index) {
           UserModel user = users[index];
-          return _buildUserEntry(user, context);
+          return Column(
+            children: [
+              _buildUserEntry(user, context),
+              Divider(indent: 15, endIndent: 15,)
+            ],
+          );
         });
   }
 
@@ -254,6 +274,7 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
 
     return ListTile(
       leading: bubble,
+      contentPadding: const EdgeInsets.only(left: 15.0, top: 0.0, bottom: 0.0),
       title: Row(
         children: [
           if (user.isPresenter)
