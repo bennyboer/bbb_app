@@ -137,6 +137,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                   child: Text(
                     "${_totalUnreadMessages}",
                     softWrap: false,
+                    style: TextStyle(color: Theme.of(context).textTheme.bodyText1.color),
                   ),
                 ),
             ],

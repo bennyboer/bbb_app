@@ -83,13 +83,16 @@ class MainWebSocket {
   void _setupModules() {
     final MessageSender messageSender = (msg) => _sendMessage(msg);
 
+    final UserModule userModule = new UserModule(messageSender);
+
     _modules = {
       "ping": new PingModule(messageSender),
       "video": new VideoModule(messageSender),
-      "user": new UserModule(messageSender),
+      "user": userModule,
       "chat": new ChatModule(
         messageSender,
         _meetingInfo,
+        userModule,
       ),
     };
   }
