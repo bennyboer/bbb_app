@@ -118,7 +118,9 @@ class _StartViewState extends State<StartView> {
         prefixIcon: Icon(Icons.label),
       ),
       style: TextStyle(fontSize: 20.0),
-      // validator: (value) => value.isEmpty ? "Please enter access code" : null, /// Disabled for easier access to open rooms
+      validator: (value) => value.isEmpty
+          ? AppLocalizations.of(context).get("login.accesscode-missing")
+          : null,
       controller: _accesscodeTextField,
     );
   }
@@ -126,7 +128,7 @@ class _StartViewState extends State<StartView> {
   /// Build the text field where the user should input the BBB URL to join the meeting of.
   Widget _buildURLTextField() {
     return TextFormField(
-      onChanged: (url) async {_handleUrlUpdate(url);}, /// Todo: reduce calls? -> timer? 
+      onChanged: (url) async {_handleUrlUpdate(url);},
       decoration: InputDecoration(
         hintText: AppLocalizations.of(context).get("login.url"),
         border: InputBorder.none,
@@ -199,11 +201,14 @@ class _StartViewState extends State<StartView> {
   }
 
   Future<void> _handleUrlUpdate(String meetingUrl) async {
-    /// Only send out a request to urls of the form "https://*/x/xxx-xxx-xxx-xxx" ToFix: still tries to send out if pattern repeats
-    if ( meetingUrl.contains(new RegExp(r'^https://.+(?=/[a-z0-9]/([a-z0-9]){3}-[a-z0-9]{3}-[a-z0-9]{3}-[a-z0-9]{3})')))
-    {
+    /// Only send out a request to urls of the form "https://*/x/xxx-xxx-xxx-xxx"
+    // ^https://(?!.*://.+) -> Match if starts with https://, not followed by ://
+    // excluding spaces [^ ]+ and ignore chracters till string ends with pattern /x/xxx-xxx-xxx-xxx
+    if ( meetingUrl.contains(new RegExp(r'^https://(?!.*://.+)[^ ]+/[a-z0-9]/([a-z0-9]{3}-){3}[a-z0-9]{3}$'))) {
       http.Response response = await http.get(meetingUrl);
-      response.body.contains('room_access_code') ? setState(() {_accessCodeVisible = true;}) : setState(() {_accessCodeVisible = false;});
+      response.body.contains('room_access_code')
+          ? setState(() {_accessCodeVisible = true;})
+          : setState(() {_accessCodeVisible = false;});
     }
   }
 }

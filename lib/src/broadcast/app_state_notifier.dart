@@ -15,4 +15,5 @@ class AppStateNotifier extends ChangeNotifier {
   get darkModeEnabled {
     return _isDarkMode;
   }
+
 }

@@ -50,6 +50,11 @@ class AppLocalizations {
     de: "Zugangscode",
     ));
     _addLocalization(_Localization(
+      "login.accesscode-missing",
+      en: "Access code required!",
+      de: "Zugangscode benötigt!",
+    ));
+    _addLocalization(_Localization(
       "login.url",
       en: "BBB Meeting URL",
       de: "BBB Meeting URL",
