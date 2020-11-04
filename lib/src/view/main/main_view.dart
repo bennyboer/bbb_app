@@ -135,27 +135,28 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
       appBar: _buildAppBar(),
       body: Column(
         children: <Widget>[
-          if(_videoConnections.length > 0)
+          if (_videoConnections.length > 0)
             Expanded(
-                child: PageView.builder(
-                    scrollDirection: Axis.horizontal,
-                    controller: PageController(viewportFraction: 1.0),
-                    itemCount: _videoConnections.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      String key = _videoConnections.keys.elementAt(index);
-                      return Container(
-                        padding: const EdgeInsets.all(8),
-                        width: MediaQuery.of(context).size.width,
-                        child: RTCVideoView(_videoConnections[key].remoteRenderer, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain),
-                      );
-                    }
-                ),
+              child: PageView.builder(
+                  scrollDirection: Axis.horizontal,
+                  controller: PageController(viewportFraction: 1.0),
+                  itemCount: _videoConnections.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    String key = _videoConnections.keys.elementAt(index);
+                    return Container(
+                      padding: const EdgeInsets.all(8),
+                      width: MediaQuery.of(context).size.width,
+                      child: RTCVideoView(_videoConnections[key].remoteRenderer,
+                          objectFit: RTCVideoViewObjectFit
+                              .RTCVideoViewObjectFitContain),
+                    );
+                  }),
             ),
           Expanded(
               child: Container(
-                padding: const EdgeInsets.all(8),
-                child: PresentationWidget(_mainWebSocket),
-              )),
+            padding: const EdgeInsets.all(8),
+            child: PresentationWidget(_mainWebSocket),
+          )),
         ],
       ),
     );
