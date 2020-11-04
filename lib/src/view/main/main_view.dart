@@ -134,24 +134,28 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     return Scaffold(
       appBar: _buildAppBar(),
       body: Column(
-        children: [
-          Text("Your username is: ${widget._meetingInfo.fullUserName}"),
-          Text("Having ${_videoConnections.length} cameras active"),
+        children: <Widget>[
+          if(_videoConnections.length > 0)
+            Expanded(
+                child: PageView.builder(
+                    scrollDirection: Axis.horizontal,
+                    controller: PageController(viewportFraction: 1.0),
+                    itemCount: _videoConnections.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      String key = _videoConnections.keys.elementAt(index);
+                      return Container(
+                        padding: const EdgeInsets.all(8),
+                        width: MediaQuery.of(context).size.width,
+                        child: RTCVideoView(_videoConnections[key].remoteRenderer, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain),
+                      );
+                    }
+                ),
+            ),
           Expanded(
-            child: PresentationWidget(_mainWebSocket),
-          ),
-          ListView.builder(
-              padding: const EdgeInsets.all(8),
-              scrollDirection: Axis.vertical,
-              shrinkWrap: true,
-              itemCount: _videoConnections.length,
-              itemBuilder: (BuildContext context, int index) {
-                String key = _videoConnections.keys.elementAt(index);
-                return Container(
-                    width: 200,
-                    height: 200,
-                    child: RTCVideoView(_videoConnections[key].remoteRenderer));
-              }),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                child: PresentationWidget(_mainWebSocket),
+              )),
         ],
       ),
     );
