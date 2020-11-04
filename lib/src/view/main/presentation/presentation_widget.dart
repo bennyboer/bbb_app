@@ -56,7 +56,10 @@ class _PresentationWidgetState extends State<PresentationWidget> {
 
     _slideSvg = await svg.fromSvgString(response.body, response.body);
 
-    setState(() {});
+    //check if this widget is still in tree. (might have been removed from tree during the http.get)
+    if(mounted) {
+      setState(() {});
+    }
   }
 
   @override
