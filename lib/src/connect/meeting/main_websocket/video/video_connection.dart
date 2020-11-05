@@ -4,6 +4,11 @@ import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/utils/websocket.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+enum VideoConnectionType {
+  VIDEO,
+  SCREENSHARE,
+}
+
 /// Class encapsulating a WebRTC video stream connection.
 class VideoConnection {
 
@@ -13,9 +18,12 @@ class VideoConnection {
   /// Camera ID to display stream for.
   String _cameraId;
 
-  VideoConnection(var meetingInfo, var cameraId) {
+  VideoConnectionType _type;
+
+  VideoConnection(var meetingInfo, var cameraId, VideoConnectionType type) {
     this._meetingInfo = meetingInfo;
     this._cameraId = cameraId;
+    this._type = type;
   }
 
   SimpleWebSocket _socket;
@@ -104,6 +112,13 @@ class VideoConnection {
         {
           await _pc.setRemoteDescription(
               new RTCSessionDescription(message['sdpAnswer'], 'answer'));
+
+          if(_type == VideoConnectionType.SCREENSHARE) {
+            print("screenshare stream set src!");
+            _remoteRenderer.srcObject = _pc.getRemoteStreams()[0];
+            print("screenshare stream set src done!");
+          }
+
         }
         break;
 
@@ -135,21 +150,38 @@ class VideoConnection {
     try {
       _pc = await createPeerConnection(_iceServers, _config);
 
-      _pc.onIceCandidate = (candidate) {
-        send({
-          'cameraId': _cameraId,
-          'candidate': {
-            'candidate': candidate.candidate,
-            'sdpMLineIndex': candidate.sdpMlineIndex,
-            'sdpMid': candidate.sdpMid,
-          },
-          'id': 'onIceCandidate',
-          'role': 'viewer',
-          'type': 'video'
-        });
-      };
+      if(_type == VideoConnectionType.VIDEO) {
+        _pc.onIceCandidate = (candidate) {
+          send({
+            'cameraId': _cameraId,
+            'candidate': {
+              'candidate': candidate.candidate,
+              'sdpMLineIndex': candidate.sdpMlineIndex,
+              'sdpMid': candidate.sdpMid,
+            },
+            'id': 'onIceCandidate',
+            'role': 'viewer',
+            'type': 'video'
+          });
+        };
+      } else if (_type == VideoConnectionType.SCREENSHARE) {
+        _pc.onIceCandidate = (candidate) {
+          send({
+            'callerName': _meetingInfo.internalUserID,
+            'candidate': {
+              'candidate': candidate.candidate,
+              'sdpMLineIndex': candidate.sdpMlineIndex,
+              'sdpMid': candidate.sdpMid,
+            },
+            'id': 'iceCandidate',
+            'role': 'recv',
+            'type': 'screenshare',
+            'voiceBridge': _meetingInfo.voiceBridge
+          });
+        };
+      }
 
-      //this is never triggered... using case 'playStart' in onMessage() instead
+      //this is never triggered... using case 'playStart' in onMessage() for video streams and 'startResponse' in onMessage() for screenshare streams instead
       _pc.onAddStream = (stream) {
         print("onAddStream");
         _remoteRenderer.srcObject = stream;
@@ -165,19 +197,33 @@ class VideoConnection {
       RTCSessionDescription s = await _pc.createOffer(_constraints);
       _pc.setLocalDescription(s);
 
-      send({
-        'bitrate': 200,
-        'cameraId': _cameraId,
-        'id': 'start',
-        'meetingId': _meetingInfo.meetingID,
-        'record': true,
-        'role': 'viewer',
-        'sdpOffer': s.sdp,
-        'type': 'video',
-        'user.mId': _meetingInfo.internalUserID,
-        'userName': _meetingInfo.fullUserName,
-        'voiceBridge': _meetingInfo.voiceBridge,
-      });
+      if(_type == VideoConnectionType.VIDEO) {
+        send({
+          'bitrate': 200,
+          'cameraId': _cameraId,
+          'id': 'start',
+          'meetingId': _meetingInfo.meetingID,
+          'record': true,
+          'role': 'viewer',
+          'sdpOffer': s.sdp,
+          'type': 'video',
+          'user.mId': _meetingInfo.internalUserID,
+          'userName': _meetingInfo.fullUserName,
+          'voiceBridge': _meetingInfo.voiceBridge,
+        });
+      } else if(_type == VideoConnectionType.SCREENSHARE) {
+        send({
+          'callerName': _meetingInfo.internalUserID,
+          'id': 'start',
+          'internalMeetingId': _meetingInfo.meetingID,
+          'role': 'recv',
+          'sdpOffer': s.sdp,
+          'type': 'screenshare',
+          'userName': _meetingInfo.fullUserName,
+          'voiceBridge': _meetingInfo.voiceBridge,
+        });
+      }
+
     } catch (e) {
       print(e.toString());
     }

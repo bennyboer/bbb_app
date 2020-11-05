@@ -33,11 +33,17 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   /// List of video streams we currently display.
   Map<String, VideoConnection> _videoConnections;
 
+  /// List of screenshare streams we currently display.
+  Map<String, VideoConnection> _screenshareVideoConnections;
+
   /// Counter for total unread messages.
   int _totalUnreadMessages = 0;
 
   /// Subscription to video connection list changes.
   StreamSubscription _videoConnectionsStreamSubscription;
+
+  /// Subscription to screenshare connection list changes.
+  StreamSubscription _screenshareVideoConnectionsStreamSubscription;
 
   /// Subscription to unread message counter updates.
   StreamSubscription<UnreadMessageCounterEvent>
@@ -59,6 +65,13 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
       setState(() => _videoConnections = videoConnections);
     });
 
+    _screenshareVideoConnections = _mainWebSocket.videoModule.screenshareVideoConnections;
+    _screenshareVideoConnectionsStreamSubscription = _mainWebSocket
+        .videoModule.screenshareVideoConnectionsStream
+        .listen((screenshareVideoConnections) {
+      setState(() => _screenshareVideoConnections = screenshareVideoConnections);
+    });
+
     _updateTotalUnreadMessagesCounter();
     _unreadMessageCounterStreamSubscription =
         _mainWebSocket.chatModule.unreadMessageCounterStream.listen((event) {
@@ -78,6 +91,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   @override
   void dispose() {
     _videoConnectionsStreamSubscription.cancel();
+    _screenshareVideoConnectionsStreamSubscription.cancel();
     _unreadMessageCounterStreamSubscription.cancel();
     _pollStreamSubscription.cancel();
 
@@ -131,6 +145,12 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+
+    String screenshareKey;
+    if(_screenshareVideoConnections.length > 0) {
+      screenshareKey = _screenshareVideoConnections.keys.elementAt(0);
+    }
+
     return Scaffold(
       appBar: _buildAppBar(),
       body: Column(
@@ -152,14 +172,26 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                     );
                   }),
             ),
-          Expanded(
-              child: Container(
-            padding: const EdgeInsets.all(8),
-            child: PresentationWidget(_mainWebSocket),
-          )),
+          if(_screenshareVideoConnections.length == 0)
+            Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  child: PresentationWidget(_mainWebSocket),
+                )),
+          if(_screenshareVideoConnections.length > 0)
+            Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  child: RTCVideoView(_screenshareVideoConnections[screenshareKey].remoteRenderer,
+                      objectFit: RTCVideoViewObjectFit
+                          .RTCVideoViewObjectFitContain),
+                ),
+            )
+
         ],
       ),
     );
+
   }
 
   /// Build the main views application bar.
