@@ -196,13 +196,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.1.4"
-  path_provider:
-    dependency: "direct main"
-    description:
-      name: path_provider
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.6.21"
   path_provider_linux:
     dependency: transitive
     description:
@@ -210,13 +203,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.0.1+2"
-  path_provider_macos:
-    dependency: "direct main"
-    description:
-      name: path_provider_macos
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.0.4+4"
   path_provider_platform_interface:
     dependency: transitive
     description:
