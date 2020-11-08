@@ -331,6 +331,23 @@ class PresentationPainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round
       ..color = Color(info.color | 0xFF000000);
 
+    if (info.commands == null) {
+      _drawUnsmoothedPencilAnnotation(info, canvas, size, thickness, paint);
+    } else {
+      _drawSmoothedPencilAnnotation(info, canvas, size, thickness, paint);
+    }
+  }
+
+  /// Draw an unsmoothed pencil annotation.
+  /// This one will be present, when the user has not finished drawing
+  /// the pencil line and thus will be unsmoothed.
+  void _drawUnsmoothedPencilAnnotation(
+    PencilInfo info,
+    Canvas canvas,
+    Size size,
+    double thickness,
+    Paint paint,
+  ) {
     Path path = Path();
     if (info.points.isNotEmpty) {
       path.moveTo(
@@ -344,6 +361,64 @@ class PresentationPainter extends CustomPainter {
           point.x * _bounds.width / 100,
           point.y * _bounds.height / 100,
         );
+      }
+    }
+
+    canvas.drawPath(path, paint);
+  }
+
+  /// Draw a smoothed pencil annotation.
+  void _drawSmoothedPencilAnnotation(
+    PencilInfo info,
+    Canvas canvas,
+    Size size,
+    double thickness,
+    Paint paint,
+  ) {
+    Path path = Path();
+
+    int i = 0; // Index in the points list of the pencil info
+    for (PencilCommand command in info.commands) {
+      switch (command) {
+        case PencilCommand.MOVE_TO:
+          path.moveTo(
+            info.points[i].x * _bounds.width / 100,
+            info.points[i].y * _bounds.height / 100,
+          );
+          i++;
+          break;
+
+        case PencilCommand.LINE_TO:
+          path.lineTo(
+            info.points[i].x * _bounds.width / 100,
+            info.points[i].y * _bounds.height / 100,
+          );
+          break;
+
+        case PencilCommand.QUADRATIC_CURVE_TO:
+          path.quadraticBezierTo(
+            info.points[i].x * _bounds.width / 100,
+            info.points[i].y * _bounds.height / 100,
+            info.points[i + 1].x * _bounds.width / 100,
+            info.points[i + 1].y * _bounds.height / 100,
+          );
+          i += 2;
+          break;
+
+        case PencilCommand.CUBIC_CURVE_TO:
+          path.cubicTo(
+            info.points[i].x * _bounds.width / 100,
+            info.points[i].y * _bounds.height / 100,
+            info.points[i + 1].x * _bounds.width / 100,
+            info.points[i + 1].y * _bounds.height / 100,
+            info.points[i + 2].x * _bounds.width / 100,
+            info.points[i + 2].y * _bounds.height / 100,
+          );
+          i += 3;
+          break;
+
+        default:
+          throw new Exception("Pencil command '${command.toString()}' unknown");
       }
     }
 
