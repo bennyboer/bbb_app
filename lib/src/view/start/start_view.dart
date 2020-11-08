@@ -41,44 +41,64 @@ class _StartViewState extends State<StartView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SizedBox.expand(
-        child: Padding(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(child: SizedBox(), flex: 1),
-              Text(
-                AppLocalizations.of(context).get("bigbluebutton"),
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 32.0),
-              ),
-              Expanded(child: SizedBox(), flex: 1),
-              Builder(builder: (context) {
-                return _buildForm(context);
-              }),
-              Expanded(child: SizedBox(), flex: 1),
-              Padding(
-                padding: EdgeInsets.only(top: 5, bottom: 15),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    DayNightSwitcher(
-                      isDarkModeEnabled:
-                          Provider.of<AppStateNotifier>(context, listen: false)
-                              .darkModeEnabled,
-                      onStateChanged: (isDarkModeEnabled) =>
-                          Provider.of<AppStateNotifier>(context, listen: false)
-                              .darkModeEnabled = isDarkModeEnabled,
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.info),
-                      onPressed: () => showAboutDialog(context: context),
-                    ),
-                  ],
+      body: Center(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 30),
+            child: Column(
+              children: [
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Text(
+                    AppLocalizations.of(context).get("app.title"),
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 32.0),
+                  ),
                 ),
-              ),
-            ],
+                Builder(builder: (context) {
+                  return _buildForm(context);
+                }),
+                Padding(
+                  padding: EdgeInsets.only(top: 30, bottom: 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      DayNightSwitcher(
+                        isDarkModeEnabled: Provider.of<AppStateNotifier>(
+                                context,
+                                listen: false)
+                            .darkModeEnabled,
+                        onStateChanged: (isDarkModeEnabled) =>
+                            Provider.of<AppStateNotifier>(context,
+                                    listen: false)
+                                .darkModeEnabled = isDarkModeEnabled,
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.info),
+                        onPressed: () => showAboutDialog(context: context),
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(),
+                Padding(
+                  padding: EdgeInsets.only(bottom: 10),
+                  child: Text(
+                    AppLocalizations.of(context).get("start.bbb-trademark"),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Theme.of(context)
+                          .textTheme
+                          .bodyText1
+                          .color
+                          .withOpacity(0.5),
+                      fontSize: 12.0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          padding: EdgeInsets.symmetric(horizontal: 15),
         ),
       ),
     );
@@ -92,7 +112,7 @@ class _StartViewState extends State<StartView> {
         children: [
           _buildUsernameTextField(),
           Visibility(
-              visible: _accessCodeVisible, child: _buildAccesscodeTextField()),
+              visible: _accessCodeVisible, child: _buildAccessCodeTextField()),
           _buildURLTextField(),
           _buildJoinButton(context),
         ],
@@ -102,55 +122,64 @@ class _StartViewState extends State<StartView> {
 
   /// Build the user name text field.
   Widget _buildUsernameTextField() {
-    return TextFormField(
-      decoration: InputDecoration(
-        hintText: AppLocalizations.of(context).get("login.username"),
-        border: InputBorder.none,
-        filled: true,
-        prefixIcon: Icon(Icons.label),
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 2),
+      child: TextFormField(
+        decoration: InputDecoration(
+          hintText: AppLocalizations.of(context).get("login.username"),
+          border: InputBorder.none,
+          filled: true,
+          prefixIcon: Icon(Icons.label),
+        ),
+        style: TextStyle(fontSize: 20.0),
+        validator: (value) => value.isEmpty
+            ? AppLocalizations.of(context).get("login.username-missing")
+            : null,
+        controller: _usernameTextField,
       ),
-      style: TextStyle(fontSize: 20.0),
-      validator: (value) => value.isEmpty
-          ? AppLocalizations.of(context).get("login.username-missing")
-          : null,
-      controller: _usernameTextField,
     );
   }
 
   /// Build the accesscode text field.
-  Widget _buildAccesscodeTextField() {
-    return TextFormField(
-      decoration: InputDecoration(
-        hintText: AppLocalizations.of(context).get("login.accesscode"),
-        border: InputBorder.none,
-        filled: true,
-        prefixIcon: Icon(Icons.label),
+  Widget _buildAccessCodeTextField() {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 2),
+      child: TextFormField(
+        decoration: InputDecoration(
+          hintText: AppLocalizations.of(context).get("login.accesscode"),
+          border: InputBorder.none,
+          filled: true,
+          prefixIcon: Icon(Icons.vpn_key),
+        ),
+        style: TextStyle(fontSize: 20.0),
+        validator: (value) => value.isEmpty
+            ? AppLocalizations.of(context).get("login.accesscode-missing")
+            : null,
+        controller: _accesscodeTextField,
       ),
-      style: TextStyle(fontSize: 20.0),
-      validator: (value) => value.isEmpty
-          ? AppLocalizations.of(context).get("login.accesscode-missing")
-          : null,
-      controller: _accesscodeTextField,
     );
   }
 
   /// Build the text field where the user should input the BBB URL to join the meeting of.
   Widget _buildURLTextField() {
-    return TextFormField(
-      onChanged: (url) async {
-        _handleUrlUpdate(url);
-      },
-      decoration: InputDecoration(
-        hintText: AppLocalizations.of(context).get("login.url"),
-        border: InputBorder.none,
-        filled: true,
-        prefixIcon: Icon(Icons.link),
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 2),
+      child: TextFormField(
+        onChanged: (url) async {
+          _handleUrlUpdate(url);
+        },
+        decoration: InputDecoration(
+          hintText: AppLocalizations.of(context).get("login.url"),
+          border: InputBorder.none,
+          filled: true,
+          prefixIcon: Icon(Icons.link),
+        ),
+        style: TextStyle(fontSize: 20.0),
+        validator: (value) => value.isEmpty
+            ? AppLocalizations.of(context).get("login.url-missing")
+            : null,
+        controller: _meetingURLController,
       ),
-      style: TextStyle(fontSize: 20.0),
-      validator: (value) => value.isEmpty
-          ? AppLocalizations.of(context).get("login.url-missing")
-          : null,
-      controller: _meetingURLController,
     );
   }
 
