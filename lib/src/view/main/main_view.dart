@@ -65,11 +65,13 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
       setState(() => _videoConnections = videoConnections);
     });
 
-    _screenshareVideoConnections = _mainWebSocket.videoModule.screenshareVideoConnections;
+    _screenshareVideoConnections =
+        _mainWebSocket.videoModule.screenshareVideoConnections;
     _screenshareVideoConnectionsStreamSubscription = _mainWebSocket
         .videoModule.screenshareVideoConnectionsStream
         .listen((screenshareVideoConnections) {
-      setState(() => _screenshareVideoConnections = screenshareVideoConnections);
+      setState(
+          () => _screenshareVideoConnections = screenshareVideoConnections);
     });
 
     _updateTotalUnreadMessagesCounter();
@@ -145,9 +147,8 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-
     String screenshareKey;
-    if(_screenshareVideoConnections.length > 0) {
+    if (_screenshareVideoConnections.length > 0) {
       screenshareKey = _screenshareVideoConnections.keys.elementAt(0);
     }
 
@@ -172,26 +173,25 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                     );
                   }),
             ),
-          if(_screenshareVideoConnections.length == 0)
+          if (_screenshareVideoConnections.length == 0)
             Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(8),
-                  child: PresentationWidget(_mainWebSocket),
-                )),
-          if(_screenshareVideoConnections.length > 0)
+              padding: const EdgeInsets.all(8),
+              child: PresentationWidget(_mainWebSocket),
+            )),
+          if (_screenshareVideoConnections.length > 0)
             Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  child: RTCVideoView(_screenshareVideoConnections[screenshareKey].remoteRenderer,
-                      objectFit: RTCVideoViewObjectFit
-                          .RTCVideoViewObjectFitContain),
-                ),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                child: RTCVideoView(
+                    _screenshareVideoConnections[screenshareKey].remoteRenderer,
+                    objectFit:
+                        RTCVideoViewObjectFit.RTCVideoViewObjectFitContain),
+              ),
             )
-
         ],
       ),
     );
-
   }
 
   /// Build the main views application bar.
@@ -252,6 +252,8 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
               context,
               MaterialPageRoute(builder: (context) => StartView()),
             );
+          } else if (value == "about") {
+            showAboutDialog(context: context);
           }
         },
         itemBuilder: (context) {
@@ -268,6 +270,21 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                     ),
                   ),
                   Text(AppLocalizations.of(context).get("settings.title")),
+                ],
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: "about",
+              child: Row(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(right: 10),
+                    child: Icon(
+                      Icons.info,
+                      color: Theme.of(context).textTheme.bodyText1.color,
+                    ),
+                  ),
+                  Text(AppLocalizations.of(context).get("main.about")),
                 ],
               ),
             ),
