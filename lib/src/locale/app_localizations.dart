@@ -25,9 +25,14 @@ class AppLocalizations {
   /// Initialize the localizations.
   static void _initLocalizations() {
     _addLocalization(_Localization(
-      "bigbluebutton",
-      en: "BigBlueButton",
-      de: "BigBlueButton",
+      "app.title",
+      en: "BBB App",
+      de: "BBB App",
+    ));
+    _addLocalization(_Localization(
+      "start.bbb-trademark",
+      en: "This app uses BigBlueButton and is not endorsed or certified by BigBlueButton Inc. BigBlueButton and the BigBlueButton Logo are trademarks of BigBlueButton Inc.",
+      de: "Diese App verwendet BigBlueButton, ist jedoch keine offizielle und zertifizierte App von BigBlueButton Inc. BigBlueButton sowie das BigBlueButton Logo sind Warenzeichen von BigBlueButton Inc.",
     ));
     _addLocalization(_Localization(
       "back",
