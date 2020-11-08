@@ -567,10 +567,20 @@ class PresentationModule extends Module {
       ));
     }
 
+    List<PencilCommand> commands;
+    if (fields.containsKey("commands")) {
+      List<dynamic> jsonCommands = fields["commands"];
+      commands = [];
+      for (var jsonCommand in jsonCommands) {
+        commands.add(_mapPencilCommandFromNum(jsonCommand));
+      }
+    }
+
     if (existing != null) {
       existing.color = color;
       existing.thickness = thickness;
       existing.points = points;
+      existing.commands = commands;
 
       return existing;
     } else {
@@ -578,7 +588,24 @@ class PresentationModule extends Module {
         color: color,
         thickness: thickness,
         points: points,
+        commands: commands,
       );
+    }
+  }
+
+  /// Map the passed raw pencil command number to the enum representation.
+  PencilCommand _mapPencilCommandFromNum(int num) {
+    switch (num) {
+      case 1:
+        return PencilCommand.MOVE_TO;
+      case 2:
+        return PencilCommand.LINE_TO;
+      case 3:
+        return PencilCommand.QUADRATIC_CURVE_TO;
+      case 4:
+        return PencilCommand.CUBIC_CURVE_TO;
+      default:
+        throw new Exception("Pencil command with number ${num} unknown");
     }
   }
 
