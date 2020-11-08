@@ -135,6 +135,11 @@ class AppLocalizations {
       de: "Meeting verlassen",
     ));
     _addLocalization(_Localization(
+      "main.about",
+      en: "App information",
+      de: "Über die App",
+    ));
+    _addLocalization(_Localization(
       "main.poll-title",
       en: "Poll: Select an option",
       de: "Umfrage: Auswahl",
