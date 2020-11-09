@@ -1,0 +1,3 @@
+class RegisterVoip implements SipUaHelperListener {
+
+}

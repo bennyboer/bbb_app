@@ -37,6 +37,7 @@ dependencies:
   intl: ^0.16.1
   sprintf: ^5.0.0
   flutter_svg: ^0.19.1
+  sip_ua: ^0.3.1
 
 dev_dependencies:
   flutter_test:
