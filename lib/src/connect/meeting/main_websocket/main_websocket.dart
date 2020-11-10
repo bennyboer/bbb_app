@@ -100,7 +100,7 @@ class MainWebSocket {
       ),
       "presentation": new PresentationModule(messageSender, _meetingInfo),
       "poll": new PollModule(messageSender),
-      "voice": new VoiceModule(messageSender, _meetingInfo);
+      "voice": new VoiceModule(messageSender, _meetingInfo),
     };
   }
 
