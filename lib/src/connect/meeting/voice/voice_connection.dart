@@ -3,6 +3,7 @@ import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/connect/meeting/voice/voice_manager.dart';
 import 'package:sip_ua/sip_ua.dart';
 
+
 class VoiceConnection extends VoiceManager implements SipUaHelperListener {
   MeetingInfo info;
   VoiceModule _module;
@@ -39,7 +40,9 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
         _call.unmute(true, false);
         break;
       case CallStateEnum.STREAM:
-        _call.sendDTMF("1");
+        // TODO! We need to send a DTMF of the length 2000. This works, however...
+        for (int i = 0; i < 20; i++)
+          _call.sendDTMF("1");
         break;
       default:
     }
