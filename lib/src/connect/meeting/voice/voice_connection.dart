@@ -1,9 +1,13 @@
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/connect/meeting/voice/voice_manager.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:sip_ua/sip_ua.dart';
 
 class VoiceConnection extends VoiceManager implements SipUaHelperListener {
   MeetingInfo info;
+  MediaStream _localStream;
+  MediaStream _remoteStream;
+  bool _audioMuted = false;
 
   VoiceConnection(this.info) : super(null) {
     helper.addSipUaHelperListener(this);
@@ -13,9 +17,24 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
     helper.start(super.buildSettings());
   }
 
+  void _toggleMute(Call call) {
+    if (_audioMuted) {
+      call.unmute(true, false);
+    } else {
+      call.mute(true, false);
+    }
+    _audioMuted = !_audioMuted;
+  }
+
   @override
   void callStateChanged(Call call, CallState state) {
     print("[SIP] Call state changed, is now ${state.state}");
+    switch (state.state) {
+      case CallStateEnum.CONFIRMED:
+        call.unmute(true, false);
+        break;
+      default:
+    }
   }
 
   @override
@@ -26,6 +45,15 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
   @override
   void registrationStateChanged(RegistrationState state) {
     print("[SIP] Registration Changed: ${state.state}");
+    switch (state.state) {
+      case RegistrationStateEnum.REGISTERED:
+        helper.call(super.buildEcho(), true);
+        break;
+      case RegistrationStateEnum.REGISTRATION_FAILED:
+        print("[SIP] Registration failed!");
+        break;
+      default:
+    }
   }
 
   @override

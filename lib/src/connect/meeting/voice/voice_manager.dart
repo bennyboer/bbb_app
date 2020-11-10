@@ -6,7 +6,7 @@ class VoiceManager {
 
   SIPUAHelper _helper;
   MeetingInfo info;
-  int audioSessionNumber = 1;
+  int _audioSessionNumber = 1;
 
   VoiceManager(this.info) {
     _helper = new SIPUAHelper();
@@ -19,7 +19,7 @@ class VoiceManager {
   }
 
   String _buildUser() {
-    return "${info.internalUserID}_${audioSessionNumber++}-${info.fullUserName}@${_getNakedUrl()}";
+    return "${info.internalUserID}_${_audioSessionNumber++}-${info.fullUserName}@${_getNakedUrl()}";
   }
 
   Uri _buildWsUri(Uri joinUrl) {
@@ -33,7 +33,7 @@ class VoiceManager {
     return cookies;
   }
 
-  String _buildEcho() {
+  String buildEcho() {
     return "echo${info.voiceBridge}@${_getNakedUrl()}";
   }
 
