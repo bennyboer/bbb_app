@@ -1,3 +1,7 @@
+<p align="center">
+    <img src="assets/icon/icon.svg" width="200">
+</p>
+
 # App client for BigBlueButton
 
 This app uses BigBlueButton and is not endorsed or certified by BigBlueButton Inc. BigBlueButton and the BigBlueButton Logo are trademarks of BigBlueButton Inc.
@@ -46,3 +50,16 @@ Follow the guide [here](https://flutter.dev/docs/get-started/) for instructions 
 <p align="center">
     <img src="docs/res/screenshots/chat.jpg" width="250">
 </p>
+
+
+## Technical information
+
+### Changing the app icon
+
+When changing the application icon, you will need to run:
+
+```
+flutter pub run flutter_launcher_icons:main
+```
+
+which will update the necessary files for Android and iOS.
