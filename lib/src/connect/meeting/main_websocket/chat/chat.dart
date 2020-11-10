@@ -347,12 +347,9 @@ class ChatModule extends Module {
     _activeChatGroups.add(group.id);
     _chatGroupController.add(ChatGroupEvent(group, true));
 
-    List<ChatGroup> chatGroupsTmp = [];
-    chatGroupsTmp.add(group);
-
     // Subscribe to messages of the chat group
     List<dynamic> params = chatID != defaultChatID
-        ? [chatGroupsTmp.map((e) => "${e.id}").toList(growable: false)]
+        ? [["${group.id}"]]
         : [];
     subscribe(_groupChatMessageTopic, params: params);
   }
