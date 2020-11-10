@@ -1,3 +1,4 @@
+import 'package:bbb_app/src/connect/meeting/main_websocket/voice/voice_module.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/connect/meeting/voice/voice_manager.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -5,11 +6,12 @@ import 'package:sip_ua/sip_ua.dart';
 
 class VoiceConnection extends VoiceManager implements SipUaHelperListener {
   MeetingInfo info;
+  VoiceModule _module;
   MediaStream _localStream;
   MediaStream _remoteStream;
   bool _audioMuted = false;
 
-  VoiceConnection(this.info) : super(null) {
+  VoiceConnection(this.info, this._module) : super(null) {
     helper.addSipUaHelperListener(this);
   }
 
@@ -33,6 +35,9 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
       case CallStateEnum.CONFIRMED:
         call.unmute(true, false);
         break;
+      case CallStateEnum.STREAM:
+        _module.endEchoTest();
+        break;
       default:
     }
   }
@@ -50,6 +55,7 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
         helper.call(super.buildEcho(), true);
         break;
       case RegistrationStateEnum.REGISTRATION_FAILED:
+        helper.call(super.buildEcho(), true);
         print("[SIP] Registration failed!");
         break;
       default:

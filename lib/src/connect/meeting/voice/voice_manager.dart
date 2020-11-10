@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import 'package:sip_ua/sip_ua.dart';
+import 'dart:convert';
 
 import '../meeting_info.dart';
 
@@ -13,13 +16,18 @@ class VoiceManager {
   }
 
   SIPUAHelper get helper => _helper;
+  int get audioSessionNumber => _audioSessionNumber;
 
   String _getNakedUrl() {
     return Uri.parse(info.joinUrl).host;
   }
 
   String _buildUser() {
-    return "${info.internalUserID}_${_audioSessionNumber++}-${info.fullUserName}@${_getNakedUrl()}";
+    return "${info.internalUserID}_$_audioSessionNumber-bbbID-${Uri.encodeComponent(info.fullUserName)}@${_getNakedUrl()}";
+  }
+
+  String _buildDisplayName() {
+    return "${info.internalUserID}_$_audioSessionNumber-bbbID-${info.fullUserName}}";
   }
 
   Uri _buildWsUri(Uri joinUrl) {
@@ -29,7 +37,14 @@ class VoiceManager {
 
   Map<String, dynamic> _createCookies() {
     Map<String, dynamic> cookies = new Map();
+    Random r = new Random();
+
     cookies["Cookie"] = info.cookie.split(";").where((element) => element.contains("JSESSIONID")).first;
+    String key = base64.encode(List<int>.generate(8, (_) => r.nextInt(255)));
+    cookies['Sec-WebSocket-Key'] = key.toLowerCase();
+    cookies['Sec-WebSocket-Protocol'] = "sip";
+    cookies['Sec-WebSocket-Version'] = "13";
+    cookies['Upgrade'] = "websocket";
     return cookies;
   }
 
@@ -43,13 +58,15 @@ class VoiceManager {
     settings.webSocketUrl = _buildWsUri(Uri.parse(info.joinUrl)).toString();
     settings.webSocketSettings.extraHeaders = _createCookies();
     settings.webSocketSettings.allowBadCertificate = true;
-    settings.webSocketSettings.userAgent = 'Dart/2.8 (dart:io) for OpenSIPS.';
+    settings.webSocketSettings.userAgent = 'BigBlueButton';
 
+    settings.displayName = _buildDisplayName();
     settings.uri = _buildUser();
-    settings.authorizationUser = _buildUser();
-    settings.displayName = info.fullUserName;
-    settings.userAgent = 'Dart SIP Client v1.0.0';
+    settings.userAgent = 'BigBlueButton';
+    // We don't need the register message
+    settings.register = false;
 
+    _audioSessionNumber++;
     return settings;
   }
 }
