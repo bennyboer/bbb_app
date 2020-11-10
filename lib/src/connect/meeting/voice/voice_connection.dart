@@ -1,14 +1,12 @@
 import 'package:bbb_app/src/connect/meeting/main_websocket/voice/voice_module.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/connect/meeting/voice/voice_manager.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:sip_ua/sip_ua.dart';
 
 class VoiceConnection extends VoiceManager implements SipUaHelperListener {
   MeetingInfo info;
   VoiceModule _module;
-  MediaStream _localStream;
-  MediaStream _remoteStream;
+  Call _call;
   bool _audioMuted = false;
 
   VoiceConnection(this.info, this._module) : super(null) {
@@ -19,7 +17,11 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
     helper.start(super.buildSettings());
   }
 
-  void _toggleMute(Call call) {
+  void disconnect() {
+    helper.stop();
+  }
+
+  void toggleMute(Call call) {
     if (_audioMuted) {
       call.unmute(true, false);
     } else {
@@ -31,9 +33,10 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
   @override
   void callStateChanged(Call call, CallState state) {
     print("[SIP] Call state changed, is now ${state.state}");
+    _call = call;
     switch (state.state) {
       case CallStateEnum.CONFIRMED:
-        call.unmute(true, false);
+        _call.unmute(true, false);
         break;
       case CallStateEnum.STREAM:
         _module.endEchoTest();
