@@ -15,7 +15,7 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
 
   @override
   void callStateChanged(Call call, CallState state) {
-    print("[SIP] Call state changed, is now ${state.toString()}");
+    print("[SIP] Call state changed, is now ${state.state}");
   }
 
   @override
@@ -25,11 +25,11 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
 
   @override
   void registrationStateChanged(RegistrationState state) {
-    print("[SIP] Registration Changed: ${state.toString()}");
+    print("[SIP] Registration Changed: ${state.state}");
   }
 
   @override
   void transportStateChanged(TransportState state) {
-    print("[SIP] Transport Changed: ${state.toString()}");
+    print("[SIP] Transport Changed: ${state.state}");
   }
 }

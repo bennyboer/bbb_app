@@ -10,6 +10,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/util/util.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/video.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
+import 'package:bbb_app/src/connect/meeting/voice/voice_connection.dart';
 import 'package:bbb_app/src/utils/websocket.dart';
 import 'package:http/http.dart' as http;
 
@@ -58,6 +59,7 @@ class MainWebSocket {
     };
 
     _webSocket.connect();
+    VoiceConnection(this._meetingInfo).connect();
   }
 
   /// Disconnect the web socket.

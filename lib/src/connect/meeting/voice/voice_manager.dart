@@ -15,8 +15,7 @@ class VoiceManager {
   SIPUAHelper get helper => _helper;
 
   String _getNakedUrl() {
-    return Uri.parse(info.joinUrl)
-        .replace(queryParameters: null, scheme: null).toString();
+    return Uri.parse(info.joinUrl).host;
   }
 
   String _buildUser() {
@@ -30,7 +29,7 @@ class VoiceManager {
 
   Map<String, dynamic> _createCookies() {
     Map<String, dynamic> cookies = new Map();
-    cookies["Cookie"] = info.cookie.split(";").where((element) => element.contains("JSESSIONID"));
+    cookies["Cookie"] = info.cookie.split(";").where((element) => element.contains("JSESSIONID")).first;
     return cookies;
   }
 
@@ -46,7 +45,7 @@ class VoiceManager {
     settings.webSocketSettings.allowBadCertificate = true;
     settings.webSocketSettings.userAgent = 'Dart/2.8 (dart:io) for OpenSIPS.';
 
-    settings.uri = _buildEcho();
+    settings.uri = _buildUser();
     settings.authorizationUser = _buildUser();
     settings.displayName = info.fullUserName;
     settings.userAgent = 'Dart SIP Client v1.0.0';
