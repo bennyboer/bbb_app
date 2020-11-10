@@ -39,7 +39,7 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
         _call.unmute(true, false);
         break;
       case CallStateEnum.STREAM:
-        _module.endEchoTest();
+        _call.sendDTMF("1");
         break;
       default:
     }
