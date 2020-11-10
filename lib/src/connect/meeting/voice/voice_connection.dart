@@ -50,23 +50,17 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
     print("[SIP] New Message: ${msg.toString()}");
   }
 
+  /// Probably useless, as we dont use registration
   @override
   void registrationStateChanged(RegistrationState state) {
     print("[SIP] Registration Changed: ${state.state}");
-    switch (state.state) {
-      case RegistrationStateEnum.REGISTERED:
-        helper.call(super.buildEcho(), true);
-        break;
-      case RegistrationStateEnum.REGISTRATION_FAILED:
-        helper.call(super.buildEcho(), true);
-        print("[SIP] Registration failed!");
-        break;
-      default:
-    }
   }
 
   @override
   void transportStateChanged(TransportState state) {
     print("[SIP] Transport Changed: ${state.state}");
+    if (state.state == TransportStateEnum.CONNECTED) {
+      helper.call(super.buildEcho(), true);
+    }
   }
 }
