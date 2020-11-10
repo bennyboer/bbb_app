@@ -349,7 +349,7 @@ class ChatModule extends Module {
 
     // Subscribe to messages of the chat group
     List<dynamic> params = chatID != defaultChatID
-        ? [_chatGroups.map((e) => "${e.id}").toList(growable: false)]
+        ? [["${group.id}"]]
         : [];
     subscribe(_groupChatMessageTopic, params: params);
   }
