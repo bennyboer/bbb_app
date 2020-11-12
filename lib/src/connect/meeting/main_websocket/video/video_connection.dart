@@ -46,7 +46,7 @@ class VideoConnection {
 
   final Map<String, dynamic> _constraints = {
     'mandatory': {
-      'OfferToReceiveAudio': true,
+      'OfferToReceiveAudio': false,
       'OfferToReceiveVideo': true,
     },
     'optional': [],
@@ -64,7 +64,7 @@ class VideoConnection {
     //can not dispose before RTCVideoView isn't displayed anymore. --> wait 10 seconds as this is async...
     Future.delayed(const Duration(seconds: 10), () {
       print("disposing renderer");
-      remoteRenderer.dispose();
+      _remoteRenderer.dispose();
     });
   }
 
@@ -151,7 +151,10 @@ class VideoConnection {
       _pc = await createPeerConnection(_iceServers, _config);
 
       if(_type == VideoConnectionType.VIDEO) {
+
         _pc.onIceCandidate = (candidate) {
+          print("onIceCandidate");
+
           send({
             'cameraId': _cameraId,
             'candidate': {
@@ -192,8 +195,6 @@ class VideoConnection {
         _remoteRenderer.srcObject = null;
       };
 
-      _pc = await createPeerConnection(_iceServers, _config);
-
       RTCSessionDescription s = await _pc.createOffer(_constraints);
       _pc.setLocalDescription(s);
 
@@ -207,7 +208,7 @@ class VideoConnection {
           'role': 'viewer',
           'sdpOffer': s.sdp,
           'type': 'video',
-          'user.mId': _meetingInfo.internalUserID,
+          'userId': _meetingInfo.internalUserID,
           'userName': _meetingInfo.fullUserName,
           'voiceBridge': _meetingInfo.voiceBridge,
         });
