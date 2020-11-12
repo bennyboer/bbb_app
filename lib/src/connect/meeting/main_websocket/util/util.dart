@@ -12,6 +12,8 @@ class MainWebSocketUtil {
   static String _ALPHANUMERIC_WITH_CAPS =
       "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
 
+  static String _HEX = "abcdef1234567890";
+
   /// Random number generator to use.
   static Random _rng = Random();
 
@@ -39,4 +41,13 @@ class MainWebSocketUtil {
           .codeUnitAt(_rng.nextInt(_ALPHANUMERIC_WITH_CAPS.length)),
     ));
   }
+
+  /// Get a random string of hex characters with the given [length].
+  static String getRandomHex(int length) {
+    return String.fromCharCodes(Iterable.generate(
+      length,
+          (_) => _HEX.codeUnitAt(_rng.nextInt(_HEX.length)),
+    ));
+  }
+
 }

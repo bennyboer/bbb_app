@@ -163,7 +163,15 @@ class MainWebSocket {
     });
   }
 
-  /// Send a message over the websocket.
+  int getNextCounter() {
+    return msgIdCounter++;
+  }
+
+  void sendMessage(Map<String, dynamic> msgMap) {
+    return _sendMessage(msgMap);
+  }
+
+    /// Send a message over the websocket.
   void _sendMessage(Map<String, dynamic> msgMap) {
     msgMap["id"] = "${msgIdCounter++}"; // Add global message ID
 
