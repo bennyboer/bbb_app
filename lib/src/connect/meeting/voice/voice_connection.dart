@@ -40,9 +40,7 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
         _call.unmute(true, false);
         break;
       case CallStateEnum.STREAM:
-        // TODO! We need to send a DTMF of the length 2000. This works, however...
-        for (int i = 0; i < 20; i++)
-          _call.sendDTMF("1");
+        _call.sendDTMF("1", {"length": 2000});
         break;
       default:
     }
