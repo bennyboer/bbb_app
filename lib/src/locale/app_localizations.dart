@@ -149,6 +149,11 @@ class AppLocalizations {
       en: "Poll: Select an option",
       de: "Umfrage: Auswahl",
     ));
+    _addLocalization(_Localization(
+      "main.meeting-ended",
+      en: "The meeting has been ended by the moderator",
+      de: "Das Meeting wurde vom Moderator beendet",
+    ));
 
     _isInitialized = true;
   }
