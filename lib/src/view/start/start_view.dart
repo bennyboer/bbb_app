@@ -14,6 +14,13 @@ import 'package:provider/provider.dart';
 
 // Start view of the app where you'll be able to enter a meeting using the invitation link.
 class StartView extends StatefulWidget {
+  /// Text of a snackbar that should be shown when the start view has been built.
+  final String _snackBarText;
+
+  StartView({
+    String snackBarText,
+  }) : _snackBarText = snackBarText;
+
   @override
   State<StatefulWidget> createState() => _StartViewState();
 }
@@ -40,6 +47,9 @@ class _StartViewState extends State<StartView> {
   /// Visiblity of the access code text field.
   bool _accessCodeVisible = false;
 
+  /// State of the start views scaffold.
+  ScaffoldState _scaffoldState;
+
   /// Whether the waiting room dialog is currently visible.
   bool _waitingRoomDialogShown = false;
 
@@ -50,70 +60,82 @@ class _StartViewState extends State<StartView> {
   void initState() {
     super.initState();
     initializeDateFormatting();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget._snackBarText != null) {
+        _scaffoldState.showSnackBar(SnackBar(
+          content: Text(widget._snackBarText),
+        ));
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 30),
-            child: Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
-                  child: Text(
-                    AppLocalizations.of(context).get("app.title"),
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 32.0),
-                  ),
-                ),
-                Builder(builder: (context) {
-                  return _buildForm(context);
-                }),
-                Padding(
-                  padding: EdgeInsets.only(top: 30, bottom: 0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      DayNightSwitcher(
-                        isDarkModeEnabled: Provider.of<AppStateNotifier>(
-                                context,
-                                listen: false)
-                            .darkModeEnabled,
-                        onStateChanged: (isDarkModeEnabled) =>
-                            Provider.of<AppStateNotifier>(context,
-                                    listen: false)
-                                .darkModeEnabled = isDarkModeEnabled,
+      body: Builder(
+        builder: (context) {
+          _scaffoldState = Scaffold.of(context);
+
+          return Center(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 30),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Text(
+                        AppLocalizations.of(context).get("app.title"),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 32.0),
                       ),
-                      IconButton(
-                        icon: Icon(Icons.info),
-                        onPressed: () => showAboutDialog(context: context),
-                      ),
-                    ],
-                  ),
-                ),
-                Divider(),
-                Padding(
-                  padding: EdgeInsets.only(bottom: 10),
-                  child: Text(
-                    AppLocalizations.of(context).get("start.bbb-trademark"),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Theme.of(context)
-                          .textTheme
-                          .bodyText1
-                          .color
-                          .withOpacity(0.5),
-                      fontSize: 12.0,
                     ),
-                  ),
+                    _buildForm(context),
+                    Padding(
+                      padding: EdgeInsets.only(top: 30, bottom: 0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          DayNightSwitcher(
+                            isDarkModeEnabled: Provider.of<AppStateNotifier>(
+                                    context,
+                                    listen: false)
+                                .darkModeEnabled,
+                            onStateChanged: (isDarkModeEnabled) =>
+                                Provider.of<AppStateNotifier>(context,
+                                        listen: false)
+                                    .darkModeEnabled = isDarkModeEnabled,
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.info),
+                            onPressed: () => showAboutDialog(context: context),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Divider(),
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 10),
+                      child: Text(
+                        AppLocalizations.of(context).get("start.bbb-trademark"),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Theme.of(context)
+                              .textTheme
+                              .bodyText1
+                              .color
+                              .withOpacity(0.5),
+                          fontSize: 12.0,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
