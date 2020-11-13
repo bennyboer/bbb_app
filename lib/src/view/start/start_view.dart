@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:bbb_app/src/broadcast/app_state_notifier.dart';
+import 'package:bbb_app/src/connect/meeting/load/exception/meeting_info_load_exception.dart';
 import 'package:bbb_app/src/connect/meeting/load/meeting_info_loaders.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
@@ -24,6 +27,11 @@ class StartView extends StatefulWidget {
 
 /// State of the start view.
 class _StartViewState extends State<StartView> {
+  /// Duration after the user stopped typing after which to check whether
+  /// an access code is needed for the current meeting URL.
+  static const Duration _checkForAccessCodeNeededDuration =
+      Duration(seconds: 2);
+
   /// Key of this form used to validate the form later.
   final _formKey = GlobalKey<FormState>();
 
@@ -41,6 +49,12 @@ class _StartViewState extends State<StartView> {
 
   /// State of the start views scaffold.
   ScaffoldState _scaffoldState;
+
+  /// Whether the waiting room dialog is currently visible.
+  bool _waitingRoomDialogShown = false;
+
+  /// Timer of when the user stopped editing the meeting URL.
+  Timer _userStoppedEditingMeetingUrlTimer;
 
   @override
   void initState() {
@@ -187,8 +201,19 @@ class _StartViewState extends State<StartView> {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 2),
       child: TextFormField(
-        onChanged: (url) async {
-          _handleUrlUpdate(url);
+        onChanged: (url) {
+          if (_userStoppedEditingMeetingUrlTimer == null) {
+            _userStoppedEditingMeetingUrlTimer =
+                Timer(_checkForAccessCodeNeededDuration, () {
+              _handleUrlUpdate(url);
+            });
+          } else {
+            _userStoppedEditingMeetingUrlTimer.cancel();
+            _userStoppedEditingMeetingUrlTimer =
+                Timer(_checkForAccessCodeNeededDuration, () {
+              _handleUrlUpdate(url);
+            });
+          }
         },
         decoration: InputDecoration(
           hintText: AppLocalizations.of(context).get("login.url"),
@@ -239,9 +264,20 @@ class _StartViewState extends State<StartView> {
         MeetingInfo meetingInfo =
             await tryJoinMeeting(meetingURL, username, accesscode);
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => MainView(meetingInfo)),
+        // Check if meeting info isn't null (may happen when the waiting room dialog is cancelled).
+        if (meetingInfo != null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => MainView(meetingInfo)),
+          );
+        }
+      } on WaitingRoomDeclinedException catch (e) {
+        Scaffold.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context).get("login.waiting-room-declined"),
+            ),
+          ),
         );
       } catch (e) {
         Scaffold.of(context).showSnackBar(
@@ -256,20 +292,79 @@ class _StartViewState extends State<StartView> {
     }
   }
 
-  /// Try to join the meeting specified with the passed [meetingUrl], [username] and [accesscode].
+  /// Try to join the meeting specified with the passed [meetingUrl], [username] and [accessCode].
+  /// Will return null if cancelled.
   Future<MeetingInfo> tryJoinMeeting(
-      String meetingUrl, String username, String accesscode) async {
-    return await MeetingInfoLoaders()
-        .loader
-        .load(meetingUrl, accesscode, username);
+    String meetingUrl,
+    String username,
+    String accessCode,
+  ) async {
+    Completer<MeetingInfo> _completer = new Completer<MeetingInfo>();
+
+    MeetingInfoLoaders().loader.load(
+      meetingUrl,
+      accessCode,
+      username,
+      statusUpdater: (isWaitingRoom) {
+        if (isWaitingRoom) {
+          _waitingRoomDialogShown = true;
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text(
+                    AppLocalizations.of(context).get("login.in-waiting-room")),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.all(10),
+                      child: CircularProgressIndicator(),
+                    ),
+                    Text(AppLocalizations.of(context)
+                        .get("login.in-waiting-room-message")),
+                  ],
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    child: Text(AppLocalizations.of(context).get("cancel")),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _waitingRoomDialogShown = false;
+                      _completer.complete(null);
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+        }
+      },
+    ).then((value) {
+      if (!_completer.isCompleted) {
+        _completer.complete(value);
+
+        if (_waitingRoomDialogShown) {
+          _waitingRoomDialogShown = false;
+          Navigator.of(context, rootNavigator: true).pop();
+        }
+      }
+    }).catchError((error) {
+      if (!_completer.isCompleted) {
+        _completer.completeError(error);
+
+        if (_waitingRoomDialogShown) {
+          _waitingRoomDialogShown = false;
+          Navigator.of(context, rootNavigator: true).pop();
+        }
+      }
+    });
+
+    return _completer.future;
   }
 
   Future<void> _handleUrlUpdate(String meetingUrl) async {
-    /// Only send out a request to urls of the form "https://*/x/xxx-xxx-xxx-xxx"
-    // ^https://(?!.*://.+) -> Match if starts with https://, not followed by ://
-    // excluding spaces [^ ]+ and ignore chracters till string ends with pattern /x/xxx-xxx-xxx-xxx
-    if (meetingUrl.contains(new RegExp(
-        r'^https://(?!.*://.+)[^ ]+/[a-z0-9]/([a-z0-9]{3}-){3}[a-z0-9]{3}$'))) {
+    try {
       http.Response response = await http.get(meetingUrl);
       response.body.contains('room_access_code')
           ? setState(() {
@@ -278,6 +373,8 @@ class _StartViewState extends State<StartView> {
           : setState(() {
               _accessCodeVisible = false;
             });
+    } catch (e) {
+      // Ignore
     }
   }
 }

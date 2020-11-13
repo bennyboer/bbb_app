@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:bbb_app/src/connect/meeting/load/exception/meeting_info_load_exception.dart';
 import 'package:bbb_app/src/connect/meeting/load/meeting_info_loader.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:html/dom.dart';
@@ -11,15 +12,27 @@ import 'package:http/http.dart';
 /// Meeting info loader for BBB.
 class BBBMeetingInfoLoader extends MeetingInfoLoader {
   /// Name of the token we need to parse from HTML in order to post the initial join form.
-  static String _AUTHENTICITY_TOKEN_NAME = "csrf-token";
+  static const String _csrfTokenName = "csrf-token";
+
+  /// URL to poll for the current waiting room status.
+  static const String _waitingRoomPollPath = "/bigbluebutton/api/guestWait";
+
+  /// Maximum amount of polls for the current waiting room status.
+  static const int _maxWaitingRoomPolls = 100;
+
+  /// Duration to update the waiting room status after.
+  static const Duration _updateWaitingRoomStatusDuration = Duration(seconds: 5);
 
   /// Cookie to use.
   String _cookie = "";
 
   @override
   Future<MeetingInfo> load(
-      String meetingUrl, String accessCode, String name) async {
-
+    String meetingUrl,
+    String accessCode,
+    String name, {
+    StatusUpdater statusUpdater,
+  }) async {
     /// Gets initial csrf-token & sets the greenlight session token
     String authenticityToken = await _loadAuthenticityToken(meetingUrl);
 
@@ -32,12 +45,24 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
 
     /// Joins with the given name
     String initialJoinUrl =
-       await _postJoinForm(meetingUrl, authenticityToken, name);
+        await _postJoinForm(meetingUrl, authenticityToken, name);
 
     String joinUrl = await _fetchJoinUrl(initialJoinUrl);
 
     // Fetch session token from the final join URL
     String sessionToken = Uri.parse(joinUrl).queryParameters["sessionToken"];
+
+    // Check whether the initial join URL is actually the BBB waiting room
+    if (_isWaitingRoom(joinUrl)) {
+      statusUpdater(true);
+
+      // Wait until user has either been accepted or declined
+      joinUrl = await _waitForModeratorAccept(joinUrl, sessionToken);
+      if (joinUrl == null) {
+        throw new WaitingRoomDeclinedException(
+            "User has not been accepted by the moderator to join the meeting");
+      }
+    }
 
     // Call the "enter" endpoint to fetch all needed meeting data
     Uri parsedUri = Uri.parse(joinUrl);
@@ -68,6 +93,46 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
       isBreakout: enterJson["isBreakout"],
       muteOnStart: enterJson["muteOnStart"],
     );
+  }
+
+  /// Check if the passed [joinUrl] is actually the BBB waiting room.
+  bool _isWaitingRoom(String joinUrl) => joinUrl.contains("guest-wait");
+
+  /// Wait until the moderator accepts or declines the join request.
+  /// Will return the next join url when the user has been accepted by a Moderator.
+  /// If the user has been denied, this method will return null.
+  Future<String> _waitForModeratorAccept(
+      String waitingRoomUrl, String sessionToken) async {
+    Uri waitingRoomPollUrl = Uri.parse(waitingRoomUrl);
+    waitingRoomPollUrl = waitingRoomPollUrl
+        .replace(path: _waitingRoomPollPath, queryParameters: {
+      "sessionToken": sessionToken,
+      "redirect": "false",
+    });
+
+    for (int attempt = 0; attempt < _maxWaitingRoomPolls; attempt++) {
+      http.Response response = await http.get(
+        waitingRoomPollUrl,
+        headers: {'Cookie': _cookie},
+      );
+
+      if (response.statusCode != HttpStatus.ok) {
+        throw new Exception(
+            "During waiting for the moderator accept we encountered an illegal status code: ${response.statusCode}. Expected 200 OK");
+      }
+
+      print(response.body);
+      Map<String, dynamic> jsonResponse =
+          json.decode(response.body)["response"];
+      String guestStatus = jsonResponse["guestStatus"];
+      if (guestStatus == "ALLOW") {
+        return jsonResponse["url"];
+      } else if (guestStatus == "DENY") {
+        return null;
+      }
+
+      await Future.delayed(_updateWaitingRoomStatusDuration);
+    }
   }
 
   /// Fetch the final join URL used to join the meeting.
@@ -102,10 +167,9 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
 
   Future<String> _postLoginForm(
       String meetingUrl, String authenticityToken, String accessCode) async {
-
     /// post login parameter to url/login
     http.Response response = await http.post(
-      meetingUrl+'/login',
+      meetingUrl + '/login',
       headers: {'Cookie': _cookie},
       body: {
         "utf8": "true",
@@ -133,7 +197,7 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
     String path = Uri.parse(meetingUrl).path;
 
     http.Response response = await http.post(
-      meetingUrl ,
+      meetingUrl,
       headers: {'Cookie': _cookie},
       body: {
         "utf8": "true",
@@ -162,16 +226,14 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
   /// Load the authenticity token from the given [meetingUrl].
   Future<String> _loadAuthenticityToken(String meetingUrl) async {
     // Make GET request to the meeting URL, the cookie is for the second request, in the first it's empty
-    http.Response response = await http.get(meetingUrl, headers: {'Cookie': _cookie},);
+    http.Response response = await http.get(
+      meetingUrl,
+      headers: {'Cookie': _cookie},
+    );
     if (response.statusCode != HttpStatus.ok) {
       throw new Exception(
           "Request to fetch authenticity token returned unexpected status code ${response.statusCode} in the response. Expected 200 OK.");
     }
-
-    // // Easy way to check if the page we are trying to access requires an access code or not
-    // // or if the access code insertion was successful
-    // print("Page requires an access code: ");
-    // print(response.body.contains('room_access_code'));
 
     // Set the greenlight-session cookie
     _setCookie(response);
@@ -179,7 +241,7 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
     // Parse the HTML included in the body of the response
     Document doc = parse(response.body);
     // Fetch authenticity token included in the HTML document
-    Element element = doc.querySelector("meta[name=csrf-token]");
+    Element element = doc.querySelector("meta[name=$_csrfTokenName]");
 
     if (element == null) {
       throw new Exception(
@@ -187,11 +249,6 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
     }
 
     return element.attributes["content"];
-  }
-
-  /// Do we need an access code?
-  bool _accessCodeRequired(http.Response response) {
-    return response.body.contains('room_access_code');
   }
 
   bool _setCookie(http.Response response) {
@@ -199,23 +256,9 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
     if (response.headers["set-cookie"] != null) {
       _cookie = response.headers["set-cookie"];
       success = true;
+    } else {
+      print("setCookie failed!");
     }
-    else {print("setCookie failed!");}
     return success;
   }
-
-  /// Extract the AuthenticityToken from a given http response
-  /// Not used by now
-  String _extractAuthenticityToken(http.Response response) {
-    Document doc = parse(response.body);
-    // Fetch authenticity token included in the HTML document
-    Element element =
-      doc.querySelector("meta[name=csrf-token]");
-    if (element == null) {
-      throw new Exception(
-          "Expected to find the element containing the authenticity token in the fetched HTML");
-    }
-    return element.attributes["content"];
-  }
 }
-
