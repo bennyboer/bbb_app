@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/meeting/meeting.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/ping/ping.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/poll/poll.dart';
@@ -88,6 +89,7 @@ class MainWebSocket {
     final UserModule userModule = new UserModule(messageSender);
 
     _modules = {
+      "meeting": new MeetingModule(messageSender),
       "ping": new PingModule(messageSender),
       "video": new VideoModule(messageSender, _meetingInfo),
       "user": userModule,
@@ -186,4 +188,7 @@ class MainWebSocket {
 
   /// Get the poll module of the websocket.
   PollModule get pollModule => _modules["poll"];
+
+  /// Get the meeting module of the websocket.
+  MeetingModule get meetingModule => _modules["meeting"];
 }

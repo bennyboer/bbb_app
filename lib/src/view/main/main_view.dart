@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/meeting/meeting.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/poll/model/option.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/poll/model/poll.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/video_connection.dart';
@@ -52,6 +53,9 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   /// Subscription to incoming poll events.
   StreamSubscription<Poll> _pollStreamSubscription;
 
+  /// Subscriptions to meeting events.
+  StreamSubscription<MeetingEvent> _meetingEventSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -87,7 +91,24 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
       _mainWebSocket.pollModule.vote(event.id, option.id);
     });
 
+    _meetingEventSubscription =
+        _mainWebSocket.meetingModule.events.listen((event) {
+      if (event.data.id == widget._meetingInfo.meetingID &&
+          event.data.meetingEnded) {
+        _onMeetingEnd();
+      }
+    });
+
     WidgetsBinding.instance.addObserver(this);
+  }
+
+  /// Called when the meeting is ended.
+  void _onMeetingEnd() {
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) {
+      return StartView(
+        snackBarText: AppLocalizations.of(context).get("main.meeting-ended"),
+      );
+    }));
   }
 
   @override
@@ -96,6 +117,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     _screenshareVideoConnectionsStreamSubscription.cancel();
     _unreadMessageCounterStreamSubscription.cancel();
     _pollStreamSubscription.cancel();
+    _meetingEventSubscription.cancel();
 
     _mainWebSocket.disconnect();
 
