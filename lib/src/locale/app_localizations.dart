@@ -154,6 +154,11 @@ class AppLocalizations {
       en: "The meeting has been ended by the moderator",
       de: "Das Meeting wurde vom Moderator beendet",
     ));
+    _addLocalization(_Localization(
+      "main.user-kicked",
+      en: "You have been removed from the meeting",
+      de: "Sie wurden vom Meeting entfernt",
+    ));
 
     _isInitialized = true;
   }
