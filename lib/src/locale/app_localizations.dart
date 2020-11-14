@@ -40,6 +40,11 @@ class AppLocalizations {
       de: "Zurück",
     ));
     _addLocalization(_Localization(
+      "cancel",
+      en: "Cancel",
+      de: "Abbrechen",
+    ));
+    _addLocalization(_Localization(
       "login.username",
       en: "Username",
       de: "Benutzername",
@@ -83,6 +88,21 @@ class AppLocalizations {
       "login.join-failed",
       en: "Could not join the meeting",
       de: "Dem Meeting konnte nicht beigetreten werden",
+    ));
+    _addLocalization(_Localization(
+      "login.waiting-room-declined",
+      en: "The moderator denied you access to the meeting",
+      de: "Der Zutritt zum Meeting wurde vom Moderator abgewiesen",
+    ));
+    _addLocalization(_Localization(
+      "login.in-waiting-room",
+      en: "In waiting room",
+      de: "Im Warteraum",
+    ));
+    _addLocalization(_Localization(
+      "login.in-waiting-room-message",
+      en: "Please wait until the moderator of the meeting is approving you joining the meeting.",
+      de: "Bitte warten Sie bis der Moderator Sie zum Meeting zulässt.",
     ));
     _addLocalization(_Localization(
       "settings.title",
@@ -148,6 +168,16 @@ class AppLocalizations {
       "main.poll-title",
       en: "Poll: Select an option",
       de: "Umfrage: Auswahl",
+    ));
+    _addLocalization(_Localization(
+      "main.meeting-ended",
+      en: "The meeting has been ended by the moderator",
+      de: "Das Meeting wurde vom Moderator beendet",
+    ));
+    _addLocalization(_Localization(
+      "main.user-kicked",
+      en: "You have been removed from the meeting",
+      de: "Sie wurden vom Meeting entfernt",
     ));
 
     _isInitialized = true;
