@@ -123,7 +123,7 @@ class _ChatViewState extends State<ChatView> {
 
     // Restore text draft (if any saved previously)
     _textFieldController.text = widget._mainWebSocket.chatModule
-            .restoreTestDraft(widget._chatGroup.id) ??
+            .restoreTextDraft(widget._chatGroup.id) ??
         "";
 
     _scrollToEnd();

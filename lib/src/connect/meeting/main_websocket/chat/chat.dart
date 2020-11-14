@@ -388,7 +388,7 @@ class ChatModule extends Module {
 
   /// Restore a previously saved text draft for the given [chatID].
   /// Will return null if there is no draft saved.
-  String restoreTestDraft(String chatID) {
+  String restoreTextDraft(String chatID) {
     return _savedTextDraftsPerChatID.containsKey(chatID)
         ? _savedTextDraftsPerChatID[chatID]
         : null;
