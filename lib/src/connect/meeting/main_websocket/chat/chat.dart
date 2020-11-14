@@ -70,6 +70,9 @@ class ChatModule extends Module {
   /// Counters for unread messages.
   Map<String, int> _unreadMessageCounters = {};
 
+  /// Saved text drafts per chat ID.
+  Map<String, String> _savedTextDraftsPerChatID = {};
+
   ChatModule(
     MessageSender messageSender,
     this._meetingInfo,
@@ -349,7 +352,9 @@ class ChatModule extends Module {
 
     // Subscribe to messages of the chat group
     List<dynamic> params = chatID != defaultChatID
-        ? [["${group.id}"]]
+        ? [
+            ["${group.id}"]
+          ]
         : [];
     subscribe(_groupChatMessageTopic, params: params);
   }
@@ -374,6 +379,19 @@ class ChatModule extends Module {
       entry.value.completeError(
           "Chat module lost connection and thus could not receive confirmation whether a previously sent chat message has been received");
     }
+  }
+
+  /// Save the passed text draft for the given [chatID].
+  void saveTextDraft(String chatID, String draft) {
+    _savedTextDraftsPerChatID[chatID] = draft;
+  }
+
+  /// Restore a previously saved text draft for the given [chatID].
+  /// Will return null if there is no draft saved.
+  String restoreTextDraft(String chatID) {
+    return _savedTextDraftsPerChatID.containsKey(chatID)
+        ? _savedTextDraftsPerChatID[chatID]
+        : null;
   }
 
   /// Get a stream of incoming messages.

@@ -83,14 +83,45 @@ class _StartViewState extends State<StartView> {
                 padding: EdgeInsets.symmetric(horizontal: 30),
                 child: Column(
                   children: [
-                    Padding(
-                      padding: EdgeInsets.symmetric(vertical: 40),
-                      child: Text(
-                        AppLocalizations.of(context).get("app.title"),
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 32.0),
+                    if (MediaQuery.of(context).orientation ==
+                        Orientation.portrait)
+                      Image.asset(
+                        "assets/icon/icon.png",
+                        width: 128,
                       ),
-                    ),
+                    if (MediaQuery.of(context).orientation ==
+                        Orientation.portrait)
+                      Padding(
+                        padding: EdgeInsets.symmetric(vertical: 40),
+                        child: Text(
+                          AppLocalizations.of(context).get("app.title"),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 32.0),
+                        ),
+                      ),
+                    if (MediaQuery.of(context).orientation ==
+                        Orientation.landscape)
+                      Padding(
+                        padding: EdgeInsets.symmetric(vertical: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Image.asset(
+                              "assets/icon/icon.png",
+                              width: 64,
+                            ),
+                            Padding(
+                              padding: EdgeInsets.only(left: 15),
+                              child: Text(
+                                AppLocalizations.of(context).get("app.title"),
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 32.0),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     _buildForm(context),
                     Padding(
                       padding: EdgeInsets.only(top: 30, bottom: 0),
