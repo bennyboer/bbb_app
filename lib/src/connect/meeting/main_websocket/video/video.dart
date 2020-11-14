@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
-import 'package:bbb_app/src/connect/meeting/main_websocket/video/video_connection.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_screenshare_video_connection.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_webcam_video_connection.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/outgoing_webcam_video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 
 /// Module dealing with video stream stuff.
@@ -12,24 +14,27 @@ class VideoModule extends Module {
   static const _subscriptionTopicScreenshare = "screenshare";
 
   /// Controller over which we will publish updated video connection lists.
-  StreamController<Map<String, VideoConnection>> _videoConnectionsStreamController =
-      StreamController<Map<String, VideoConnection>>.broadcast();
+  StreamController<Map<String, IncomingWebcamVideoConnection>> _videoConnectionsStreamController =
+      StreamController<Map<String, IncomingWebcamVideoConnection>>.broadcast();
 
   /// Controller over which we will publish updated screenshare connection lists.
-  StreamController<Map<String, VideoConnection>> _screenshareVideoConnectionsStreamController =
-  StreamController<Map<String, VideoConnection>>.broadcast();
+  StreamController<Map<String, IncomingScreenshareVideoConnection>> _screenshareVideoConnectionsStreamController =
+  StreamController<Map<String, IncomingScreenshareVideoConnection>>.broadcast();
 
   /// List of video connections we currently have.
-  Map<String, VideoConnection> _videoConnectionsByCameraId = {};
+  Map<String, IncomingWebcamVideoConnection> _videoConnectionsByCameraId = {};
 
   /// Lookup of the camera ID by a stream ID.
   Map<String, String> _cameraIdByStreamIdLookup = {};
 
   /// video connection for screenshare stream.
-  Map<String, VideoConnection> _screenshareVideoConnections = {};
+  Map<String, IncomingScreenshareVideoConnection> _screenshareVideoConnections = {};
 
   /// Info for the current meeting.
   final MeetingInfo _meetingInfo;
+
+  /// Webcam the user shares.
+  OutgoingWebcamVideoConnection _webcamShare;
 
   VideoModule(messageSender, this._meetingInfo,) : super(messageSender);
 
@@ -49,6 +54,7 @@ class VideoModule extends Module {
     _screenshareVideoConnections.forEach((key, videoConnection) {
       videoConnection.close();
     });
+    unshareWebcam();
   }
 
   @override
@@ -63,7 +69,7 @@ class VideoModule extends Module {
         if (cameraID != null) {
           print("Adding new video stream...");
 
-          VideoConnection v = VideoConnection(_meetingInfo, cameraID, VideoConnectionType.VIDEO);
+          IncomingWebcamVideoConnection v = IncomingWebcamVideoConnection(_meetingInfo, cameraID);
           _videoConnectionsByCameraId[cameraID] = v;
 
           v.init().then((value) => {
@@ -82,7 +88,7 @@ class VideoModule extends Module {
         if (id != null) {
           print("Adding new screenshare stream...");
 
-          VideoConnection v = VideoConnection(_meetingInfo, null, VideoConnectionType.SCREENSHARE);
+          IncomingScreenshareVideoConnection v = IncomingScreenshareVideoConnection(_meetingInfo);
           _screenshareVideoConnections[id] = v;
 
           v.init().then((value) => {
@@ -104,7 +110,7 @@ class VideoModule extends Module {
         String streamID = msg["id"];
         String cameraID = _cameraIdByStreamIdLookup[streamID];
 
-        VideoConnection v = _videoConnectionsByCameraId.remove(cameraID);
+        IncomingWebcamVideoConnection v = _videoConnectionsByCameraId.remove(cameraID);
 
         // Publish changed video connections list
         _videoConnectionsStreamController.add(_videoConnectionsByCameraId);
@@ -116,7 +122,7 @@ class VideoModule extends Module {
 
         String id = msg["id"];
 
-        VideoConnection v = _screenshareVideoConnections.remove(id);
+        IncomingScreenshareVideoConnection v = _screenshareVideoConnections.remove(id);
 
         // Publish changed video connections list
         _screenshareVideoConnectionsStreamController.add(_screenshareVideoConnections);
@@ -126,17 +132,31 @@ class VideoModule extends Module {
     }
   }
 
+  void shareWebcam() {
+    if(_webcamShare == null) {
+      _webcamShare = OutgoingWebcamVideoConnection(_meetingInfo, messageSender);
+      _webcamShare.init();
+    }
+  }
+
+  void unshareWebcam() {
+    if(_webcamShare != null) {
+      _webcamShare.close();
+      _webcamShare = null;
+    }
+  }
+
   /// Get a stream of video connections lists that are updated when new camera IDs pop up
   /// or are removed.
-  Stream<Map<String, VideoConnection>> get videoConnectionsStream => _videoConnectionsStreamController.stream;
+  Stream<Map<String, IncomingWebcamVideoConnection>> get videoConnectionsStream => _videoConnectionsStreamController.stream;
 
   /// Get a stream of screenshare connections lists that are updated when new screenshares pop up
   /// or are removed.
-  Stream<Map<String, VideoConnection>> get screenshareVideoConnectionsStream => _screenshareVideoConnectionsStreamController.stream;
+  Stream<Map<String, IncomingScreenshareVideoConnection>> get screenshareVideoConnectionsStream => _screenshareVideoConnectionsStreamController.stream;
 
   /// Get the currently listed video connections.
-  Map<String, VideoConnection> get videoConnections => _videoConnectionsByCameraId;
+  Map<String, IncomingWebcamVideoConnection> get videoConnections => _videoConnectionsByCameraId;
 
   /// Get the currently listed screenshare connections.
-  Map<String, VideoConnection> get screenshareVideoConnections => _screenshareVideoConnections;
+  Map<String, IncomingScreenshareVideoConnection> get screenshareVideoConnections => _screenshareVideoConnections;
 }

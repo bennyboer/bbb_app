@@ -4,8 +4,8 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/poll/model/option.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/poll/model/poll.dart';
-import 'package:bbb_app/src/connect/meeting/main_websocket/video/outgoing_video_connection.dart';
-import 'package:bbb_app/src/connect/meeting/main_websocket/video/video_connection.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_screenshare_video_connection.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_webcam_video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
 import 'package:bbb_app/src/view/main/presentation/presentation_widget.dart';
@@ -32,10 +32,10 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   MainWebSocket _mainWebSocket;
 
   /// List of video streams we currently display.
-  Map<String, VideoConnection> _videoConnections;
+  Map<String, IncomingWebcamVideoConnection> _videoConnections;
 
   /// List of screenshare streams we currently display.
-  Map<String, VideoConnection> _screenshareVideoConnections;
+  Map<String, IncomingScreenshareVideoConnection> _screenshareVideoConnections;
 
   /// Counter for total unread messages.
   int _totalUnreadMessages = 0;
@@ -52,8 +52,6 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
 
   /// Subscription to incoming poll events.
   StreamSubscription<Poll> _pollStreamSubscription;
-
-  List<OutgoingVideoConnection> _vcl = [];
 
   @override
   void initState() {
@@ -192,16 +190,6 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                         RTCVideoViewObjectFit.RTCVideoViewObjectFitContain),
               ),
             ),
-          if (_vcl.length > 0)
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                child: RTCVideoView(
-                    _vcl[0].localRenderer,
-                    objectFit:
-                    RTCVideoViewObjectFit.RTCVideoViewObjectFitContain),
-              ),
-            ),
           ElevatedButton(
             onPressed: () => _shareWebcam(context),
             child: new Text(
@@ -215,10 +203,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   }
 
   _shareWebcam(BuildContext context) {
-    OutgoingVideoConnection vc = OutgoingVideoConnection(widget._meetingInfo, OutgoingVideoConnectionType.WEBCAM, _mainWebSocket);
-    vc.init().then((value) => setState(
-            () =>_vcl.add(vc)));
-    //TODO create module
+    _mainWebSocket.videoModule.shareWebcam();
   }
 
   /// Build the main views application bar.

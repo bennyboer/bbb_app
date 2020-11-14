@@ -52,4 +52,6 @@ abstract class Module {
       "id": subscriptionID,
     });
   }
+
+  MessageSender get messageSender => _messageSender;
 }
