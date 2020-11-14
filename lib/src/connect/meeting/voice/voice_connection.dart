@@ -9,6 +9,7 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
   VoiceModule _module;
   Call _call;
   bool _audioMuted = false;
+  bool _secondStream = false;
 
   VoiceConnection(this.info, this._module) : super(null) {
     helper.addSipUaHelperListener(this);
@@ -40,7 +41,11 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
         _call.unmute(true, false);
         break;
       case CallStateEnum.STREAM:
-        _call.sendDTMF("1", {"length": 2000});
+        if (!_secondStream) {
+          _secondStream = true;
+        } else {
+          _call.sendDTMF("1", {"duration": 2000});
+        }
         break;
       default:
     }
