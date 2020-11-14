@@ -49,7 +49,8 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
     _userMap = widget._mainWebSocket.userModule.userMap;
     _userChangesStreamSubscription =
         widget._mainWebSocket.userModule.changes.listen((userMap) {
-      setState(() => _userMap = userMap);
+      setState(
+          () => _userMap = Map.of(widget._mainWebSocket.userModule.userMap));
     });
 
     _chatGroups.addAll(widget._mainWebSocket.chatModule.activeChatGroups);
@@ -299,7 +300,13 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
                   Icons.desktop_windows,
                   size: 20.0,
                 )),
-          Text(user.name),
+          Expanded(
+            child: Text(
+              user.name,
+              overflow: TextOverflow.fade,
+              softWrap: false,
+            ),
+          ),
           if (isCurrentUser)
             Text(" (" +
                 AppLocalizations.of(context).get("meeting-info.you") +

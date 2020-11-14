@@ -6,7 +6,7 @@ import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
 /// Module dealing with meeting participants/user information.
 class UserModule extends Module {
   /// Stream controller to publish participant changes with.
-  StreamController<Map<String, UserModel>> _userStreamController =
+  StreamController<UserEvent> _userStreamController =
       StreamController.broadcast();
 
   /// Map of users we currently have fetched from the web socket.
@@ -33,58 +33,56 @@ class UserModule extends Module {
       String collectionName = msg["collection"];
 
       if (collectionName == "users") {
-        _handleUsersMsg(msg);
+        _handleUsersMsg(msg, UserEventType.ADDED);
       }
     } else if (method == "changed") {
       String collectionName = msg["collection"];
 
       if (collectionName == "users") {
-        _handleUsersMsg(msg);
+        _handleUsersMsg(msg, UserEventType.CHANGED);
       }
     }
   }
 
-  void _handleUsersMsg(jsonMsg) {
+  void _handleUsersMsg(Map<String, dynamic> jsonMsg, UserEventType type) {
     if (jsonMsg['id'] != null) {
-
       UserModel u = _userMap.putIfAbsent(jsonMsg['id'], () => UserModel());
 
       //TODO create some nicer mapper
 
-      if(jsonMsg['fields']['name'] != null)
-        u.name = jsonMsg['fields']['name'];
+      if (jsonMsg['fields']['name'] != null) u.name = jsonMsg['fields']['name'];
 
-      if(jsonMsg['fields']['sortName'] != null)
+      if (jsonMsg['fields']['sortName'] != null)
         u.sortName = jsonMsg['fields']['sortName'];
 
-      if(jsonMsg['fields']['intId'] != null)
+      if (jsonMsg['fields']['intId'] != null)
         u.internalId = jsonMsg['fields']['intId'];
 
-      if(jsonMsg['fields']['color'] != null)
+      if (jsonMsg['fields']['color'] != null)
         u.color = jsonMsg['fields']['color'];
 
-      if(jsonMsg['fields']['role'] != null)
-        u.role = jsonMsg['fields']['role'];
+      if (jsonMsg['fields']['role'] != null) u.role = jsonMsg['fields']['role'];
 
-      if(jsonMsg['fields']['presenter'] != null)
+      if (jsonMsg['fields']['presenter'] != null)
         u.isPresenter = jsonMsg['fields']['presenter'];
 
-      if(jsonMsg['fields']['connectionStatus'] != null)
+      if (jsonMsg['fields']['connectionStatus'] != null)
         u.connectionStatus = jsonMsg['fields']['connectionStatus'];
 
-      _userMap[jsonMsg['id']] = u; //this has to id, not internal ID (internalID is not included in all received messages relating this user)
+      _userMap[jsonMsg['id']] =
+          u; // this has to id, not internal ID (internalID is not included in all received messages relating this user)
 
-      if(u.internalId != null) {
+      if (u.internalId != null) {
         _userMapByInternalId[u.internalId] = u;
       }
 
       // Publish changed user map
-      _userStreamController.add(_userMap);
+      _userStreamController.add(UserEvent(type, u));
     }
   }
 
   /// Get changes of the current meetings users.
-  Stream<Map<String, UserModel>> get changes => _userStreamController.stream;
+  Stream<UserEvent> get changes => _userStreamController.stream;
 
   /// Get the current user map.
   Map<String, UserModel> get userMap => _userMap;
@@ -92,3 +90,17 @@ class UserModule extends Module {
   /// Get the current user map by internal ID.
   Map<String, UserModel> get userMapByInternalId => _userMapByInternalId;
 }
+
+/// Event for users.
+class UserEvent {
+  /// Type of the event.
+  final UserEventType type;
+
+  /// Data the event relates to.
+  final UserModel data;
+
+  UserEvent(this.type, this.data);
+}
+
+/// Available user event types.
+enum UserEventType { ADDED, CHANGED }

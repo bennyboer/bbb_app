@@ -1,8 +1,7 @@
 class UserModel {
-
-  static String ROLE_MODERATOR = "MODERATOR";
-  static String CONNECTIONSTATUS_ONLINE = "online";
-
+  static const String ROLE_MODERATOR = "MODERATOR";
+  static const String CONNECTIONSTATUS_ONLINE = "online";
+  static const String CONNECTIONSTATUS_OFFLINE = "offline";
 
   String name = "";
 
@@ -16,7 +15,10 @@ class UserModel {
 
   bool isPresenter = false;
 
-  String connectionStatus = "offline";
+  String connectionStatus = CONNECTIONSTATUS_OFFLINE;
 
   UserModel();
+
+  /// Check whether the user is currently online.
+  bool isOnline() => connectionStatus == CONNECTIONSTATUS_ONLINE;
 }
