@@ -48,6 +48,11 @@ class VideoModule extends Module {
   }
 
   @override
+  void onDisconnectBeforeWebsocketClose() {
+    _unshareWebcam();
+  }
+
+  @override
   Future<void> onDisconnect() {
     _videoConnectionsStreamController.close();
     _screenshareVideoConnectionsStreamController.close();

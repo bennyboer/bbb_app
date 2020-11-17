@@ -73,6 +73,10 @@ class MainWebSocket {
       "params": [],
     });
 
+    for (MapEntry<String, Module> moduleEntry in _modules.entries) {
+      moduleEntry.value.onDisconnectBeforeWebsocketClose();
+    }
+
     _webSocket.close();
 
     // Call logout URL

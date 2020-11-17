@@ -22,6 +22,9 @@ abstract class Module {
   /// Process a special task when the web socket is about to be disconnected.
   Future<void> onDisconnect();
 
+  /// Process a special task when the web socket is about to be disconnected.
+  void onDisconnectBeforeWebsocketClose() {}
+
   /// Process an incoming message from the web socket.
   void processMessage(Map<String, dynamic> msg);
 

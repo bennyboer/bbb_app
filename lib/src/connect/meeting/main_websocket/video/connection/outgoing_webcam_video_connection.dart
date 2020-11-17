@@ -30,8 +30,6 @@ class OutgoingWebcamVideoConnection extends VideoConnection {
 
   @override
   void close() {
-    super.close();
-    _localStream.dispose();
 
     _messageSender({
       "msg": "method",
@@ -41,6 +39,17 @@ class OutgoingWebcamVideoConnection extends VideoConnection {
       ],
       "id": MainWebSocketUtil.getRandomHex(32),
     });
+
+    send({
+      'cameraId': _cameraId,
+      'id': 'stop',
+      'role': 'share',
+      'type': 'video'
+    });
+
+    super.close();
+    _localStream.dispose();
+
   }
 
   @override
