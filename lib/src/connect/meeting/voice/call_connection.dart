@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/voice/call_module.dart';
@@ -12,6 +13,7 @@ class CallConnection extends CallManager implements SipUaHelperListener {
   Call _call;
   bool _audioMuted = false;
   bool _secondStream = false;
+  StreamController<bool> _muteStreamController = StreamController.broadcast();
 
   CallConnection(this.info, this._module) : super(null) {
     helper.addSipUaHelperListener(this);
@@ -23,6 +25,7 @@ class CallConnection extends CallManager implements SipUaHelperListener {
 
   void disconnect() {
     helper.stop();
+    _muteStreamController.close();
   }
 
   void toggleMute() {
@@ -31,7 +34,6 @@ class CallConnection extends CallManager implements SipUaHelperListener {
     } else {
       _call.mute();
     }
-    _audioMuted = !_audioMuted;
   }
 
   @override
@@ -52,6 +54,14 @@ class CallConnection extends CallManager implements SipUaHelperListener {
             call.sendDTMF("1", {"duration": 2000});
           }.call(_call);
         }
+        break;
+      case CallStateEnum.MUTED:
+        _audioMuted = true;
+        _muteStreamController.add(_audioMuted);
+        break;
+      case CallStateEnum.UNMUTED:
+        _audioMuted = false;
+        _muteStreamController.add(_audioMuted);
         break;
       default:
     }
@@ -75,4 +85,6 @@ class CallConnection extends CallManager implements SipUaHelperListener {
       helper.call(super.buildEcho(), true);
     }
   }
+
+  Stream<bool> get callMuteStream => _muteStreamController.stream;
 }

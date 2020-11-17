@@ -60,6 +60,10 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   /// Subscription to user events.
   StreamSubscription<UserEvent> _userEventStreamSubscription;
 
+  StreamSubscription<bool> _muteStreamSubscription;
+
+  bool _muteStatus = false;
+
   @override
   void initState() {
     super.initState();
@@ -111,6 +115,13 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
       }
     });
 
+    _muteStreamSubscription =
+        _mainWebSocket.callModule.callMuteStream.listen((event) {
+      setState(() {
+        _updateMuteStatus(event);
+      });
+    });
+
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -140,6 +151,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     _pollStreamSubscription.cancel();
     _meetingEventSubscription.cancel();
     _userEventStreamSubscription.cancel();
+    _muteStreamSubscription.cancel();
 
     _mainWebSocket.disconnect();
 
@@ -193,6 +205,10 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     _mainWebSocket.callModule.toggleAudio();
   }
 
+  void _updateMuteStatus(bool status) {
+    _muteStatus = status;
+  }
+
   @override
   Widget build(BuildContext context) {
     String screenshareKey;
@@ -240,7 +256,11 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.mic_outlined, size: 30, color: Theme.of(context).iconTheme.color,),
+        child: Icon(
+          _muteStatus ? Icons.mic_off_outlined : Icons.mic_outlined,
+          size: 30,
+          color: Theme.of(context).iconTheme.color,
+        ),
         onPressed: _micClick,
         elevation: 4.0,
         backgroundColor: Theme.of(context).buttonTheme.colorScheme.primary,
