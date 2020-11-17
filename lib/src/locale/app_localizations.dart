@@ -30,6 +30,11 @@ class AppLocalizations {
       de: "BBB App",
     ));
     _addLocalization(_Localization(
+      "load-error",
+      en: "Content could not be loaded",
+      de: "Inhalt konnte nicht geladen werden",
+    ));
+    _addLocalization(_Localization(
       "start.bbb-trademark",
       en: "This app uses BigBlueButton and is not endorsed or certified by BigBlueButton Inc. BigBlueButton and the BigBlueButton Logo are trademarks of BigBlueButton Inc.",
       de: "Diese App verwendet BigBlueButton, ist jedoch keine offizielle und zertifizierte App von BigBlueButton Inc. BigBlueButton sowie das BigBlueButton Logo sind Warenzeichen von BigBlueButton Inc.",
@@ -178,6 +183,11 @@ class AppLocalizations {
       "main.user-kicked",
       en: "You have been removed from the meeting",
       de: "Sie wurden vom Meeting entfernt",
+    ));
+    _addLocalization(_Localization(
+      "privacy-policy.title",
+      en: "Privacy policy",
+      de: "Datenschutzerklärung",
     ));
 
     _isInitialized = true;

@@ -6,6 +6,7 @@ import 'package:bbb_app/src/connect/meeting/load/meeting_info_loaders.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
 import 'package:bbb_app/src/view/main/main_view.dart';
+import 'package:bbb_app/src/view/privacy_policy/privacy_policy_view.dart';
 import 'package:day_night_switcher/day_night_switcher.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -138,9 +139,25 @@ class _StartViewState extends State<StartView> {
                                         listen: false)
                                     .darkModeEnabled = isDarkModeEnabled,
                           ),
-                          IconButton(
-                            icon: Icon(Icons.info),
-                            onPressed: () => showAboutDialog(context: context),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.info),
+                                onPressed: () =>
+                                    showAboutDialog(context: context),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.privacy_tip),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            PrivacyPolicyView()),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ],
                       ),

@@ -11,6 +11,7 @@ import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
 import 'package:bbb_app/src/view/main/presentation/presentation_widget.dart';
 import 'package:bbb_app/src/view/meeting_info/meeting_info_view.dart';
+import 'package:bbb_app/src/view/privacy_policy/privacy_policy_view.dart';
 import 'package:bbb_app/src/view/settings/settings_view.dart';
 import 'package:bbb_app/src/view/start/start_view.dart';
 import 'package:flutter/material.dart';
@@ -298,6 +299,11 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
             );
           } else if (value == "about") {
             showAboutDialog(context: context);
+          } else if (value == "privacy_policy") {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => PrivacyPolicyView()),
+            );
           }
         },
         itemBuilder: (context) {
@@ -329,6 +335,22 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                     ),
                   ),
                   Text(AppLocalizations.of(context).get("main.about")),
+                ],
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: "privacy_policy",
+              child: Row(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(right: 10),
+                    child: Icon(
+                      Icons.privacy_tip,
+                      color: Theme.of(context).textTheme.bodyText1.color,
+                    ),
+                  ),
+                  Text(
+                      AppLocalizations.of(context).get("privacy-policy.title")),
                 ],
               ),
             ),
