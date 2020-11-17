@@ -189,6 +189,10 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
         .forEach((key, value) => _totalUnreadMessages += value);
   }
 
+  void _micClick() {
+    _mainWebSocket.callModule.toggleAudio();
+  }
+
   @override
   Widget build(BuildContext context) {
     String screenshareKey;
@@ -235,6 +239,11 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
             )
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.mic),
+        onPressed: _micClick,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 

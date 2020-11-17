@@ -5,13 +5,13 @@ import 'dart:convert';
 
 import '../meeting_info.dart';
 
-class VoiceManager {
+class CallManager {
 
   SIPUAHelper _helper;
   MeetingInfo info;
   int _audioSessionNumber = 1;
 
-  VoiceManager(this.info) {
+  CallManager(this.info) {
     _helper = new SIPUAHelper();
   }
 

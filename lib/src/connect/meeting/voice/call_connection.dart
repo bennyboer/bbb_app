@@ -1,17 +1,19 @@
-import 'package:bbb_app/src/connect/meeting/main_websocket/voice/voice_module.dart';
+import 'dart:io';
+
+import 'package:bbb_app/src/connect/meeting/main_websocket/voice/call_module.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
-import 'package:bbb_app/src/connect/meeting/voice/voice_manager.dart';
+import 'package:bbb_app/src/connect/meeting/voice/call_manager.dart';
 import 'package:sip_ua/sip_ua.dart';
 
 
-class VoiceConnection extends VoiceManager implements SipUaHelperListener {
+class CallConnection extends CallManager implements SipUaHelperListener {
   MeetingInfo info;
-  VoiceModule _module;
+  CallModule _module;
   Call _call;
   bool _audioMuted = false;
   bool _secondStream = false;
 
-  VoiceConnection(this.info, this._module) : super(null) {
+  CallConnection(this.info, this._module) : super(null) {
     helper.addSipUaHelperListener(this);
   }
 
@@ -23,11 +25,11 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
     helper.stop();
   }
 
-  void toggleMute(Call call) {
+  void toggleMute() {
     if (_audioMuted) {
-      call.unmute(true, false);
+      _call.unmute();
     } else {
-      call.mute(true, false);
+      _call.mute();
     }
     _audioMuted = !_audioMuted;
   }
@@ -44,7 +46,11 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
         if (!_secondStream) {
           _secondStream = true;
         } else {
-          _call.sendDTMF("1", {"duration": 2000});
+          // TODO! This is dirty and should be replaced by listening to the stream of voiceCallStatus
+          (Call call) async {
+            sleep(Duration(seconds: 3));
+            call.sendDTMF("1", {"duration": 2000});
+          }.call(_call);
         }
         break;
       default:
