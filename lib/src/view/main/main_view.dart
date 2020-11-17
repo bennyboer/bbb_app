@@ -190,20 +190,41 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                         RTCVideoViewObjectFit.RTCVideoViewObjectFitContain),
               ),
             ),
-          ElevatedButton(
-            onPressed: () => _shareWebcam(context),
-            child: new Text(
-              AppLocalizations.of(context).get("login.join"),
-              style: TextStyle(fontSize: 20.0),
+          if(!_mainWebSocket.videoModule.isWebcamActive())
+            ElevatedButton(
+              onPressed: () => _toggleWebcamOnOff(context),
+              child: new Text(
+                "start",
+                style: TextStyle(fontSize: 20.0),
+              ),
             ),
-          )
+          if(_mainWebSocket.videoModule.isWebcamActive())
+            ElevatedButton(
+              onPressed: () => _toggleWebcamOnOff(context),
+              child: new Text(
+                "stop",
+                style: TextStyle(fontSize: 20.0),
+              ),
+            ),
+          if(_mainWebSocket.videoModule.isWebcamActive())
+            ElevatedButton(
+              onPressed: () => _toggleWebcamFrontBack(context),
+              child: new Text(
+                "switch cam",
+                style: TextStyle(fontSize: 20.0),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  _shareWebcam(BuildContext context) {
-    _mainWebSocket.videoModule.shareWebcam();
+  _toggleWebcamOnOff(BuildContext context) {
+    _mainWebSocket.videoModule.toggleWebcamOnOff();
+  }
+
+  _toggleWebcamFrontBack(BuildContext context) {
+    _mainWebSocket.videoModule.toggleWebcamFrontBack();
   }
 
   /// Build the main views application bar.

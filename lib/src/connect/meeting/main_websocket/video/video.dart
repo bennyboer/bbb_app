@@ -36,6 +36,9 @@ class VideoModule extends Module {
   /// Webcam the user shares.
   OutgoingWebcamVideoConnection _webcamShare;
 
+  /// Type of webcam user shares.
+  CAMERATYPE _camtype = CAMERATYPE.FRONT;
+
   VideoModule(messageSender, this._meetingInfo,) : super(messageSender);
 
   @override
@@ -54,7 +57,7 @@ class VideoModule extends Module {
     _screenshareVideoConnections.forEach((key, videoConnection) {
       videoConnection.close();
     });
-    unshareWebcam();
+    _unshareWebcam();
   }
 
   @override
@@ -132,18 +135,42 @@ class VideoModule extends Module {
     }
   }
 
-  void shareWebcam() {
+  void _shareWebcam() {
     if(_webcamShare == null) {
-      _webcamShare = OutgoingWebcamVideoConnection(_meetingInfo, messageSender);
+      _webcamShare = OutgoingWebcamVideoConnection(_meetingInfo, messageSender, _camtype);
       _webcamShare.init();
     }
   }
 
-  void unshareWebcam() {
+  void _unshareWebcam() {
     if(_webcamShare != null) {
       _webcamShare.close();
       _webcamShare = null;
     }
+  }
+
+  void toggleWebcamOnOff() {
+    if(_webcamShare == null) {
+      _shareWebcam();
+    } else if(_webcamShare != null) {
+      _unshareWebcam();
+    }
+  }
+
+  void toggleWebcamFrontBack() {
+    _unshareWebcam();
+
+    if(_camtype == CAMERATYPE.BACK) {
+      _camtype = CAMERATYPE.FRONT;
+    } else if(_camtype == CAMERATYPE.FRONT) {
+      _camtype = CAMERATYPE.BACK;
+    }
+
+    _shareWebcam();
+  }
+
+  bool isWebcamActive() {
+    return _webcamShare != null;
   }
 
   /// Get a stream of video connections lists that are updated when new camera IDs pop up

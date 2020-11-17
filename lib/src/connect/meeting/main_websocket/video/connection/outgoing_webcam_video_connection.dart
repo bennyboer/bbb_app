@@ -2,6 +2,11 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/util/util.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/video_connection.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+enum CAMERATYPE {
+  FRONT,
+  BACK
+}
+
 /// Sender function for messages.
 typedef MessageSender = void Function(Map<String, dynamic> msg);
 
@@ -16,8 +21,26 @@ class OutgoingWebcamVideoConnection extends VideoConnection {
   /// The webcam stream.
   MediaStream _localStream;
 
-  OutgoingWebcamVideoConnection(var meetingInfo, MessageSender messageSender) : super(meetingInfo) {
+  CAMERATYPE _camtype;
+
+  OutgoingWebcamVideoConnection(var meetingInfo, MessageSender messageSender, CAMERATYPE camtype) : super(meetingInfo) {
     _messageSender = messageSender;
+    _camtype = camtype;
+  }
+
+  @override
+  void close() {
+    super.close();
+    _localStream.dispose();
+
+    _messageSender({
+      "msg": "method",
+      "method": "userUnshareWebcam",
+      "params": [
+        _cameraId,
+      ],
+      "id": MainWebSocketUtil.getRandomHex(32),
+    });
   }
 
   @override
@@ -80,7 +103,7 @@ class OutgoingWebcamVideoConnection extends VideoConnection {
           'minHeight': '200', //TODO
           'minFrameRate': '5', //TODO
         },
-        'facingMode': 'user', //TODO
+        'facingMode': _camtype == CAMERATYPE.FRONT ? 'user' : 'environment',
         'optional': [],
       }
     };
