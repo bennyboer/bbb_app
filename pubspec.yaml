@@ -38,6 +38,7 @@ dependencies:
   sprintf: ^5.0.0
   flutter_svg: ^0.19.1
   sip_ua: ^0.3.1
+  flutter_markdown: ^0.5.0
 
 dev_dependencies:
   flutter_test:
@@ -57,6 +58,8 @@ flutter:
 
   assets:
     - assets/icon/icon.png
+    - assets/privacy_policy/de.md
+    - assets/privacy_policy/en.md
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.
