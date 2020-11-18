@@ -9,7 +9,7 @@ jobs:
     name: Setup environment variables
     runs-on: ubuntu-latest
     steps:
-      - name: Allow set-env usage
+    - name: Allow set-env usage
       run: |
         echo 'ACTIONS_ALLOW_UNSECURE_COMMANDS=true' >> $GITHUB_ENV
   version:
