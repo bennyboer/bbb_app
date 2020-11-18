@@ -10,6 +10,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - run: |
+          echo "${{ secrets.SIGNING_KEYSTORE }}" > release.keystore.asc
+          gpg -d --passphrase "${{ secrets.SIGNING_KEYSTORE_PGP_PASSWORD }}" --batch release.keystore.asc > android/release.keystore
+      - shell: bash
+        run: |
+          cat << EOF > android/key.properties
+          storePassword=${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          keyAlias=key
+          storeFile=release.keystore
+          EOF
       - uses: actions/setup-java@v1
         with:
           java-version: '12.x'
