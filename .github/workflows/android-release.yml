@@ -33,7 +33,7 @@ jobs:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
     steps:
       - uses: actions/checkout@v2
-      - name: Get appbundle from artifacts
+      - name: Retrieve previously saved app bundle from artifacts
         uses: actions/download-artifact@v2
         with:
           name: appbundle
