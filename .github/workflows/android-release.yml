@@ -1,8 +1,8 @@
-name: Beta release
+name: Android release
 
 on:
-  push:
-    branches: [ beta ]
+  release:
+    types: [published]
 
 jobs:
   build:
