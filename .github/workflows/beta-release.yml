@@ -5,16 +5,11 @@ on:
     branches: [ beta ]
 
 jobs:
-  setup:
-    name: Setup environment variables
-    runs-on: ubuntu-latest
-    steps:
-    - name: Allow set-env usage
-      run: |
-        echo 'ACTIONS_ALLOW_UNSECURE_COMMANDS=true' >> $GITHUB_ENV
   version:
     name: Create version number
     runs-on: ubuntu-latest
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
     steps:
     - uses: actions/checkout@v1
     - name: Fetch all history for all tags and branches
@@ -39,6 +34,8 @@ jobs:
     name: Build Android app bundles for release
     needs: [ version ]
     runs-on: ubuntu-latest
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
     steps:
     - uses: actions/checkout@v1
     - name: Get version.txt
@@ -80,6 +77,8 @@ jobs:
     name: Release app to beta track
     needs: [ build ]
     runs-on: ubuntu-latest
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
     steps:
     - uses: actions/checkout@v1
     - name: Get appbundle from artifacts
