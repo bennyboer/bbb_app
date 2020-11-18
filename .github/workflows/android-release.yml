@@ -8,6 +8,8 @@ jobs:
   build:
     name: Build Android app bundles for release
     runs-on: ubuntu-latest
+    env:
+      BUILD_RELEASE: true
     steps:
       - uses: actions/checkout@v2
       - run: |

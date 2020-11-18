@@ -58,15 +58,15 @@ android {
 
     signingConfigs {
         release {
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-            storePassword keystoreProperties['storePassword']
+            keyAlias System.getenv('BUILD_RELEASE') ? keystoreProperties['keyAlias'] : null
+            keyPassword System.getenv('BUILD_RELEASE') ? keystoreProperties['keyPassword'] : null
+            storeFile System.getenv('BUILD_RELEASE') ? (keystoreProperties['storeFile'] ? rootProject.file(keystoreProperties['storeFile']) : null) : null
+            storePassword System.getenv('BUILD_RELEASE') ? keystoreProperties['storePassword'] : null
         }
     }
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            signingConfig System.getenv('BUILD_RELEASE') ? signingConfigs.release : signingConfigs.debug
         }
     }
 }
