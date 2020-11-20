@@ -76,6 +76,10 @@ class MainWebSocket {
       "params": [],
     });
 
+    for (MapEntry<String, Module> moduleEntry in _modules.entries) {
+      moduleEntry.value.onDisconnectBeforeWebsocketClose();
+    }
+
     _webSocket.close();
 
     // Call logout URL
@@ -164,11 +168,10 @@ class MainWebSocket {
         _meetingInfo.authToken,
         _meetingInfo.externUserID,
       ],
-      "id": "${msgIdCounter++}",
     });
   }
 
-  /// Send a message over the websocket.
+    /// Send a message over the websocket.
   void _sendMessage(Map<String, dynamic> msgMap) {
     msgMap["id"] = "${msgIdCounter++}"; // Add global message ID
 

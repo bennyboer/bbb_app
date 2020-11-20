@@ -6,7 +6,8 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/meeting/meeting.dart'
 import 'package:bbb_app/src/connect/meeting/main_websocket/poll/model/option.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/poll/model/poll.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
-import 'package:bbb_app/src/connect/meeting/main_websocket/video/video_connection.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_screenshare_video_connection.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_webcam_video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
 import 'package:bbb_app/src/view/main/presentation/presentation_widget.dart';
@@ -34,10 +35,10 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   MainWebSocket _mainWebSocket;
 
   /// List of video streams we currently display.
-  Map<String, VideoConnection> _videoConnections;
+  Map<String, IncomingWebcamVideoConnection> _videoConnections;
 
   /// List of screenshare streams we currently display.
-  Map<String, VideoConnection> _screenshareVideoConnections;
+  Map<String, IncomingScreenshareVideoConnection> _screenshareVideoConnections;
 
   /// Counter for total unread messages.
   int _totalUnreadMessages = 0;
@@ -233,10 +234,42 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                     objectFit:
                         RTCVideoViewObjectFit.RTCVideoViewObjectFitContain),
               ),
-            )
+            ),
+          if(!_mainWebSocket.videoModule.isWebcamActive())
+            ElevatedButton(
+              onPressed: () => _toggleWebcamOnOff(context),
+              child: new Text(
+                "start",
+                style: TextStyle(fontSize: 20.0),
+              ),
+            ),
+          if(_mainWebSocket.videoModule.isWebcamActive())
+            ElevatedButton(
+              onPressed: () => _toggleWebcamOnOff(context),
+              child: new Text(
+                "stop",
+                style: TextStyle(fontSize: 20.0),
+              ),
+            ),
+          if(_mainWebSocket.videoModule.isWebcamActive())
+            ElevatedButton(
+              onPressed: () => _toggleWebcamFrontBack(context),
+              child: new Text(
+                "switch cam",
+                style: TextStyle(fontSize: 20.0),
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  _toggleWebcamOnOff(BuildContext context) {
+    _mainWebSocket.videoModule.toggleWebcamOnOff();
+  }
+
+  _toggleWebcamFrontBack(BuildContext context) {
+    _mainWebSocket.videoModule.toggleWebcamFrontBack();
   }
 
   /// Build the main views application bar.
