@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:bbb_app/src/connect/meeting/load/exception/meeting_info_load_exception.dart';
 import 'package:bbb_app/src/connect/meeting/load/meeting_info_loader.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
+import 'package:bbb_app/src/utils/websocket.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
 import 'package:http/http.dart' as http;
@@ -25,6 +27,9 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
 
   /// Cookie to use.
   String _cookie = "";
+
+  int _maxRetries = 10;
+  int _retries = 0;
 
   @override
   Future<MeetingInfo> load(
@@ -211,6 +216,17 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
 
     _setCookie(response);
 
+    if(response.statusCode == HttpStatus.ok) {
+      await _waitForMeetingToStart(meetingUrl);
+      if(_retries < _maxRetries) {
+        _retries++;
+        return _postJoinForm(meetingUrl, authenticityToken, name);
+      } else {
+        _retries = 0;
+        throw new Exception("Failed to join meeting. Meeting should already have started!");
+      }
+    }
+
     if (response.statusCode != HttpStatus.found) {
       throw new Exception(
           "Request to fetch join URL returned unexpected status code ${response.statusCode} in the response. Expected 302 Found.");
@@ -221,6 +237,47 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
     _cookie = response.headers["set-cookie"];
 
     return initialJoinUrl;
+  }
+
+  Future<String> _waitForMeetingToStart(String meetingUrl) {
+
+    var completer = new Completer<String>();
+
+    String wsUrl = Uri.parse(meetingUrl).replace(queryParameters: null).replace(path: "/b/cable").toString();
+    String origin = Uri.parse(meetingUrl).replace(queryParameters: null).replace(path: "").toString();
+
+    String meetingName = meetingUrl.split("/")[meetingUrl.split("/").length-1];
+
+    Map<String, String> headers = {};
+    headers["Sec-WebSocket-Extensions"] = "permessage-deflate; client_max_window_bits";
+    headers["Sec-WebSocket-Protocol"] = "actioncable-v1-json, actioncable-unsupported";
+    headers["Origin"] = origin; //ActionCable requires this header. Results in 404 otherwise.
+
+    //Create ActionCable websocket
+    SimpleWebSocket ws = SimpleWebSocket(wsUrl, additionalHeaders: headers);
+
+    ws.onOpen = () {};
+
+    ws.onMessage = (message) {
+      print(message);
+      var jsonMsg = json.decode(message);
+      if(jsonMsg["type"] == "welcome") {
+        print("welcome");
+        ws.send("{\"command\":\"subscribe\",\"identifier\":\"{\\\"channel\\\":\\\"WaitingChannel\\\",\\\"roomuid\\\":\\\"" + meetingName + "\\\",\\\"useruid\\\":\\\"anonymous\\\"}\"}");
+      } else if (jsonMsg["identifier"] != null && jsonMsg["message"] != null && jsonMsg["identifier"].toString().contains(meetingName) && jsonMsg["message"]["action"] == "started") {
+        print("meeting started!");
+        ws.close();
+        completer.complete("meeting started!");
+      }
+    };
+
+    ws.onClose = (int code, String reason) async {
+      print("websocket closed [$code => $reason]!");
+    };
+
+    ws.connect();
+
+    return completer.future;
   }
 
   /// Load the authenticity token from the given [meetingUrl].

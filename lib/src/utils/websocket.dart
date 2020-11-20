@@ -10,6 +10,7 @@ typedef void OnOpenCallback();
 class SimpleWebSocket {
   final String _url;
   final String _cookie;
+  final Map<String, String> _additionalHeaders;
   WebSocket _socket;
   OnOpenCallback onOpen;
   OnMessageCallback onMessage;
@@ -18,7 +19,8 @@ class SimpleWebSocket {
   SimpleWebSocket(
     this._url, {
     String cookie,
-  }) : _cookie = cookie;
+        Map<String, String> additionalHeaders,
+  }) : _cookie = cookie, _additionalHeaders = additionalHeaders;
 
   connect() async {
     try {
@@ -65,6 +67,12 @@ class SimpleWebSocket {
       request.headers.add('Upgrade', 'websocket');
       request.headers.add('Sec-WebSocket-Version', '13');
       request.headers.add('Sec-WebSocket-Key', key.toLowerCase());
+
+      if(_additionalHeaders != null) {
+        _additionalHeaders.entries.forEach((e) {
+          request.headers.add(e.key, e.value);
+        });
+      }
 
       if (cookie != null) {
         request.headers.add("Cookie", cookie);
