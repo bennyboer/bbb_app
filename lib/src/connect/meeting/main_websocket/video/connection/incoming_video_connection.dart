@@ -5,6 +5,7 @@ class IncomingVideoConnection extends VideoConnection {
 
   IncomingVideoConnection(var meetingInfo) : super(meetingInfo);
 
+  /// Renderer for displaying the stream.
   RTCVideoRenderer remoteRenderer = RTCVideoRenderer();
 
   @override
