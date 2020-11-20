@@ -7,8 +7,12 @@ class IncomingWebcamVideoConnection extends IncomingVideoConnection {
   /// Camera ID to display stream for.
   String _cameraId;
 
-  IncomingWebcamVideoConnection(meetingInfo, cameraId) : super(meetingInfo) {
+  /// ID of the user that this stream belongs to.
+  String internalUserId;
+
+  IncomingWebcamVideoConnection(meetingInfo, cameraId, userId) : super(meetingInfo) {
     this._cameraId = cameraId;
+    this.internalUserId = userId;
   }
 
   @override
