@@ -352,12 +352,19 @@ class _StartViewState extends State<StartView> {
   ) async {
     Completer<MeetingInfo> _completer = new Completer<MeetingInfo>();
 
+    _waitingRoomDialogShown = false;
+    _meetingNotStartedDialogShown = false;
+
     MeetingInfoLoaders().loader.load(
       meetingUrl,
       accessCode,
       username,
       waitingRoomStatusUpdater: (isWaitingRoom) {
         if (isWaitingRoom) {
+          if(_meetingNotStartedDialogShown) {
+            Navigator.of(context, rootNavigator: true).pop();
+            _meetingNotStartedDialogShown = false;
+          }
           _waitingRoomDialogShown = true;
           showDialog(
             context: context,
@@ -383,6 +390,7 @@ class _StartViewState extends State<StartView> {
                     onPressed: () {
                       Navigator.of(context).pop();
                       _waitingRoomDialogShown = false;
+                      MeetingInfoLoaders().loader.cancel();
                       _completer.complete(null);
                     },
                   ),
@@ -397,6 +405,7 @@ class _StartViewState extends State<StartView> {
           _meetingNotStartedDialogShown = true;
           showDialog(
             context: context,
+            barrierDismissible: false,
             builder: (BuildContext context) {
               return AlertDialog(
                 title: Text(

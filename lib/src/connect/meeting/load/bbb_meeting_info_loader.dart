@@ -31,6 +31,9 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
   int _maxRetries = 5;
   int _retries = 0;
 
+  int _attempt = 0;
+
+
   SimpleWebSocket _ws;
 
   MeetingNotStartedStatusUpdater _meetingNotStartedStatusUpdater;
@@ -45,6 +48,7 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
   }) async {
 
     _retries = 0;
+    _attempt = 0;
 
     _meetingNotStartedStatusUpdater = meetingNotStartedStatusUpdater;
 
@@ -125,7 +129,7 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
       "redirect": "false",
     });
 
-    for (int attempt = 0; attempt < _maxWaitingRoomPolls; attempt++) {
+    for (_attempt; _attempt < _maxWaitingRoomPolls; _attempt++) {
       http.Response response = await http.get(
         waitingRoomPollUrl,
         headers: {'Cookie': _cookie},
@@ -229,6 +233,7 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
     if(response.statusCode == HttpStatus.ok) {
       _meetingNotStartedStatusUpdater(true);
       await _waitForMeetingToStart(meetingUrl);
+      _meetingNotStartedStatusUpdater(false);
       if(_retries < _maxRetries) {
         _retries++;
         return _postJoinForm(meetingUrl, authenticityToken, name);
@@ -237,8 +242,6 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
         throw new Exception("Failed to join meeting. Meeting should already have started!");
       }
     }
-
-    _meetingNotStartedStatusUpdater(false);
 
     if (response.statusCode != HttpStatus.found) {
       throw new Exception(
@@ -288,7 +291,9 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
     _ws.onClose = (int code, String reason) async {
       print("websocket closed [$code => $reason]!");
       _ws = null;
-      completer.complete(null);
+      if(!completer.isCompleted) {
+        completer.complete(null);
+      }
     };
 
     _ws.connect();
@@ -338,8 +343,11 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
   @override
   void cancel() {
     print("cancel connecting");
-    _ws.close();
-    _ws = null;
+    if(_ws != null) {
+      _ws.close();
+      _ws = null;
+    }
     _retries = _maxRetries;
+    _attempt = _maxWaitingRoomPolls;
   }
 }
