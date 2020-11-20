@@ -28,16 +28,26 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
   /// Cookie to use.
   String _cookie = "";
 
-  int _maxRetries = 10;
+  int _maxRetries = 5;
   int _retries = 0;
+
+  SimpleWebSocket _ws;
+
+  MeetingNotStartedStatusUpdater _meetingNotStartedStatusUpdater;
 
   @override
   Future<MeetingInfo> load(
     String meetingUrl,
     String accessCode,
     String name, {
-    StatusUpdater statusUpdater,
+        WaitingRoomStatusUpdater waitingRoomStatusUpdater,
+        MeetingNotStartedStatusUpdater meetingNotStartedStatusUpdater,
   }) async {
+
+    _retries = 0;
+
+    _meetingNotStartedStatusUpdater = meetingNotStartedStatusUpdater;
+
     /// Gets initial csrf-token & sets the greenlight session token
     String authenticityToken = await _loadAuthenticityToken(meetingUrl);
 
@@ -59,7 +69,7 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
 
     // Check whether the initial join URL is actually the BBB waiting room
     if (_isWaitingRoom(joinUrl)) {
-      statusUpdater(true);
+      waitingRoomStatusUpdater(true);
 
       // Wait until user has either been accepted or declined
       joinUrl = await _waitForModeratorAccept(joinUrl, sessionToken);
@@ -217,15 +227,18 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
     _setCookie(response);
 
     if(response.statusCode == HttpStatus.ok) {
+      _meetingNotStartedStatusUpdater(true);
       await _waitForMeetingToStart(meetingUrl);
       if(_retries < _maxRetries) {
         _retries++;
         return _postJoinForm(meetingUrl, authenticityToken, name);
       } else {
-        _retries = 0;
+        print("reached max retries!");
         throw new Exception("Failed to join meeting. Meeting should already have started!");
       }
     }
+
+    _meetingNotStartedStatusUpdater(false);
 
     if (response.statusCode != HttpStatus.found) {
       throw new Exception(
@@ -254,28 +267,31 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
     headers["Origin"] = origin; //ActionCable requires this header. Results in 404 otherwise.
 
     //Create ActionCable websocket
-    SimpleWebSocket ws = SimpleWebSocket(wsUrl, additionalHeaders: headers);
+    _ws = SimpleWebSocket(wsUrl, additionalHeaders: headers);
 
-    ws.onOpen = () {};
+    _ws.onOpen = () {};
 
-    ws.onMessage = (message) {
+    _ws.onMessage = (message) {
       print(message);
       var jsonMsg = json.decode(message);
       if(jsonMsg["type"] == "welcome") {
         print("welcome");
-        ws.send("{\"command\":\"subscribe\",\"identifier\":\"{\\\"channel\\\":\\\"WaitingChannel\\\",\\\"roomuid\\\":\\\"" + meetingName + "\\\",\\\"useruid\\\":\\\"anonymous\\\"}\"}");
+        _ws.send("{\"command\":\"subscribe\",\"identifier\":\"{\\\"channel\\\":\\\"WaitingChannel\\\",\\\"roomuid\\\":\\\"" + meetingName + "\\\",\\\"useruid\\\":\\\"anonymous\\\"}\"}");
       } else if (jsonMsg["identifier"] != null && jsonMsg["message"] != null && jsonMsg["identifier"].toString().contains(meetingName) && jsonMsg["message"]["action"] == "started") {
         print("meeting started!");
-        ws.close();
+        _ws.close();
+        _ws = null;
         completer.complete("meeting started!");
       }
     };
 
-    ws.onClose = (int code, String reason) async {
+    _ws.onClose = (int code, String reason) async {
       print("websocket closed [$code => $reason]!");
+      _ws = null;
+      completer.complete(null);
     };
 
-    ws.connect();
+    _ws.connect();
 
     return completer.future;
   }
@@ -317,5 +333,13 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
       print("setCookie failed!");
     }
     return success;
+  }
+
+  @override
+  void cancel() {
+    print("cancel connecting");
+    _ws.close();
+    _ws = null;
+    _retries = _maxRetries;
   }
 }

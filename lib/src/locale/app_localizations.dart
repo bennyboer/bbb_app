@@ -110,6 +110,16 @@ class AppLocalizations {
       de: "Bitte warten Sie bis der Moderator Sie zum Meeting zulässt.",
     ));
     _addLocalization(_Localization(
+      "login.wait-for-meeting-to-start",
+      en: "The meeting hasn't started yet.",
+      de: "Die Konferenz hat noch nicht begonnen.",
+    ));
+    _addLocalization(_Localization(
+      "login.wait-for-meeting-to-start-message",
+      en: "You will automatically join when the meeting starts.",
+      de: "Sie treten der Konferenz automatisch bei, sobald sie begonnen hat.",
+    ));
+    _addLocalization(_Localization(
       "settings.title",
       en: "Settings",
       de: "Einstellungen",

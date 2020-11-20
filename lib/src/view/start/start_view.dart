@@ -54,6 +54,9 @@ class _StartViewState extends State<StartView> {
   /// Whether the waiting room dialog is currently visible.
   bool _waitingRoomDialogShown = false;
 
+  /// Whether the meeting-not-started dialog is currently visible.
+  bool _meetingNotStartedDialogShown = false;
+
   /// Timer of when the user stopped editing the meeting URL.
   Timer _userStoppedEditingMeetingUrlTimer;
 
@@ -353,11 +356,12 @@ class _StartViewState extends State<StartView> {
       meetingUrl,
       accessCode,
       username,
-      statusUpdater: (isWaitingRoom) {
+      waitingRoomStatusUpdater: (isWaitingRoom) {
         if (isWaitingRoom) {
           _waitingRoomDialogShown = true;
           showDialog(
             context: context,
+            barrierDismissible: false,
             builder: (BuildContext context) {
               return AlertDialog(
                 title: Text(
@@ -388,12 +392,52 @@ class _StartViewState extends State<StartView> {
           );
         }
       },
+      meetingNotStartedStatusUpdater: (meetingNotStarted) {
+        if (meetingNotStarted) {
+          _meetingNotStartedDialogShown = true;
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text(
+                    AppLocalizations.of(context).get("login.wait-for-meeting-to-start")),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.all(10),
+                      child: CircularProgressIndicator(),
+                    ),
+                    Text(AppLocalizations.of(context)
+                        .get("login.wait-for-meeting-to-start-message")),
+                  ],
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    child: Text(AppLocalizations.of(context).get("cancel")),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _meetingNotStartedDialogShown = false;
+                      MeetingInfoLoaders().loader.cancel();
+                      _completer.complete(null);
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+        }
+      },
     ).then((value) {
       if (!_completer.isCompleted) {
         _completer.complete(value);
 
         if (_waitingRoomDialogShown) {
           _waitingRoomDialogShown = false;
+          Navigator.of(context, rootNavigator: true).pop();
+        }
+        if (_meetingNotStartedDialogShown) {
+          _meetingNotStartedDialogShown = false;
           Navigator.of(context, rootNavigator: true).pop();
         }
       }
@@ -403,6 +447,10 @@ class _StartViewState extends State<StartView> {
 
         if (_waitingRoomDialogShown) {
           _waitingRoomDialogShown = false;
+          Navigator.of(context, rootNavigator: true).pop();
+        }
+        if (_meetingNotStartedDialogShown) {
+          _meetingNotStartedDialogShown = false;
           Navigator.of(context, rootNavigator: true).pop();
         }
       }
