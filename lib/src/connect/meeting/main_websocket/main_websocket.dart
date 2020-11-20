@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/meeting/meeting.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/ping/ping.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/poll/poll.dart';
@@ -9,7 +10,9 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/presenta
 import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/util/util.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/video.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/voice/voice_module.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
+import 'package:bbb_app/src/connect/meeting/voice/voice_connection.dart';
 import 'package:bbb_app/src/utils/websocket.dart';
 import 'package:http/http.dart' as http;
 
@@ -92,6 +95,7 @@ class MainWebSocket {
     final UserModule userModule = new UserModule(messageSender);
 
     _modules = {
+      "meeting": new MeetingModule(messageSender),
       "ping": new PingModule(messageSender),
       "video": new VideoModule(messageSender, _meetingInfo),
       "user": userModule,
@@ -102,6 +106,7 @@ class MainWebSocket {
       ),
       "presentation": new PresentationModule(messageSender, _meetingInfo),
       "poll": new PollModule(messageSender),
+      "voice": new VoiceModule(messageSender, _meetingInfo),
     };
   }
 
@@ -190,4 +195,7 @@ class MainWebSocket {
 
   /// Get the poll module of the websocket.
   PollModule get pollModule => _modules["poll"];
+
+  /// Get the meeting module of the websocket.
+  MeetingModule get meetingModule => _modules["meeting"];
 }

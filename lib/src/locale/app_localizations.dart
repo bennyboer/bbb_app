@@ -30,6 +30,11 @@ class AppLocalizations {
       de: "BBB App",
     ));
     _addLocalization(_Localization(
+      "load-error",
+      en: "Content could not be loaded",
+      de: "Inhalt konnte nicht geladen werden",
+    ));
+    _addLocalization(_Localization(
       "start.bbb-trademark",
       en: "This app uses BigBlueButton and is not endorsed or certified by BigBlueButton Inc. BigBlueButton and the BigBlueButton Logo are trademarks of BigBlueButton Inc.",
       de: "Diese App verwendet BigBlueButton, ist jedoch keine offizielle und zertifizierte App von BigBlueButton Inc. BigBlueButton sowie das BigBlueButton Logo sind Warenzeichen von BigBlueButton Inc.",
@@ -38,6 +43,11 @@ class AppLocalizations {
       "back",
       en: "Back",
       de: "Zurück",
+    ));
+    _addLocalization(_Localization(
+      "cancel",
+      en: "Cancel",
+      de: "Abbrechen",
     ));
     _addLocalization(_Localization(
       "login.username",
@@ -83,6 +93,21 @@ class AppLocalizations {
       "login.join-failed",
       en: "Could not join the meeting",
       de: "Dem Meeting konnte nicht beigetreten werden",
+    ));
+    _addLocalization(_Localization(
+      "login.waiting-room-declined",
+      en: "The moderator denied you access to the meeting",
+      de: "Der Zutritt zum Meeting wurde vom Moderator abgewiesen",
+    ));
+    _addLocalization(_Localization(
+      "login.in-waiting-room",
+      en: "In waiting room",
+      de: "Im Warteraum",
+    ));
+    _addLocalization(_Localization(
+      "login.in-waiting-room-message",
+      en: "Please wait until the moderator of the meeting is approving you joining the meeting.",
+      de: "Bitte warten Sie bis der Moderator Sie zum Meeting zulässt.",
     ));
     _addLocalization(_Localization(
       "settings.title",
@@ -148,6 +173,21 @@ class AppLocalizations {
       "main.poll-title",
       en: "Poll: Select an option",
       de: "Umfrage: Auswahl",
+    ));
+    _addLocalization(_Localization(
+      "main.meeting-ended",
+      en: "The meeting has been ended by the moderator",
+      de: "Das Meeting wurde vom Moderator beendet",
+    ));
+    _addLocalization(_Localization(
+      "main.user-kicked",
+      en: "You have been removed from the meeting",
+      de: "Sie wurden vom Meeting entfernt",
+    ));
+    _addLocalization(_Localization(
+      "privacy-policy.title",
+      en: "Privacy policy",
+      de: "Datenschutzerklärung",
     ));
 
     _isInitialized = true;

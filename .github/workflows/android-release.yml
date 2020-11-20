@@ -1,0 +1,59 @@
+name: Android release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build Android app bundles for release
+    runs-on: ubuntu-latest
+    env:
+      BUILD_RELEASE: true
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          echo "${{ secrets.SIGNING_KEYSTORE }}" > release.keystore.asc
+          gpg -d --passphrase "${{ secrets.SIGNING_KEYSTORE_PGP_PASSWORD }}" --batch release.keystore.asc > android/release.keystore
+      - shell: bash
+        run: |
+          cat << EOF > android/key.properties
+          storePassword=${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          keyAlias=key
+          storeFile=release.keystore
+          EOF
+      - uses: actions/setup-java@v1
+        with:
+          java-version: '12.x'
+      - uses: subosito/flutter-action@v1
+        with:
+          flutter-version: '1.22.3'
+          channel: 'stable'
+      - run: flutter pub get
+      - run: flutter test
+      - run: flutter build appbundle
+      - name: Upload app bundle for the subsequent workflow step
+        uses: actions/upload-artifact@v2
+        with:
+          name: appbundle
+          path: build/app/outputs/bundle/release/app-release.aab
+  release:
+    name: Release app to beta track
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Retrieve previously saved app bundle from artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: appbundle
+      - name: Release app to beta track
+        uses: r0adkll/upload-google-play@v1.0.4
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAYSTORE_ACCOUNT_KEY }}
+          packageName: edu.hm.cs.tape.bbb_app
+          releaseFile: app-release.aab
+          track: beta

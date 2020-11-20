@@ -2,14 +2,17 @@ import 'dart:async';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/meeting/meeting.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/poll/model/option.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/poll/model/poll.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_screenshare_video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_webcam_video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
 import 'package:bbb_app/src/view/main/presentation/presentation_widget.dart';
 import 'package:bbb_app/src/view/meeting_info/meeting_info_view.dart';
+import 'package:bbb_app/src/view/privacy_policy/privacy_policy_view.dart';
 import 'package:bbb_app/src/view/settings/settings_view.dart';
 import 'package:bbb_app/src/view/start/start_view.dart';
 import 'package:flutter/material.dart';
@@ -53,6 +56,12 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   /// Subscription to incoming poll events.
   StreamSubscription<Poll> _pollStreamSubscription;
 
+  /// Subscriptions to meeting events.
+  StreamSubscription<MeetingEvent> _meetingEventSubscription;
+
+  /// Subscription to user events.
+  StreamSubscription<UserEvent> _userEventStreamSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -88,7 +97,41 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
       _mainWebSocket.pollModule.vote(event.id, option.id);
     });
 
+    _meetingEventSubscription =
+        _mainWebSocket.meetingModule.events.listen((event) {
+      if (event.data.id == widget._meetingInfo.meetingID &&
+          event.data.meetingEnded) {
+        _onMeetingEnd();
+      }
+    });
+
+    _userEventStreamSubscription =
+        _mainWebSocket.userModule.changes.listen((event) {
+      if (event.data.internalId == widget._meetingInfo.internalUserID &&
+          !event.data.isOnline()) {
+        _onCurrentUserKicked();
+      }
+    });
+
     WidgetsBinding.instance.addObserver(this);
+  }
+
+  /// Called when the current user is removed from the meeting.
+  void _onCurrentUserKicked() {
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) {
+      return StartView(
+        snackBarText: AppLocalizations.of(context).get("main.user-kicked"),
+      );
+    }));
+  }
+
+  /// Called when the meeting is ended.
+  void _onMeetingEnd() {
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) {
+      return StartView(
+        snackBarText: AppLocalizations.of(context).get("main.meeting-ended"),
+      );
+    }));
   }
 
   @override
@@ -97,6 +140,8 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     _screenshareVideoConnectionsStreamSubscription.cancel();
     _unreadMessageCounterStreamSubscription.cancel();
     _pollStreamSubscription.cancel();
+    _meetingEventSubscription.cancel();
+    _userEventStreamSubscription.cancel();
 
     _mainWebSocket.disconnect();
 
@@ -287,6 +332,11 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
             );
           } else if (value == "about") {
             showAboutDialog(context: context);
+          } else if (value == "privacy_policy") {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => PrivacyPolicyView()),
+            );
           }
         },
         itemBuilder: (context) {
@@ -318,6 +368,22 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                     ),
                   ),
                   Text(AppLocalizations.of(context).get("main.about")),
+                ],
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: "privacy_policy",
+              child: Row(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(right: 10),
+                    child: Icon(
+                      Icons.privacy_tip,
+                      color: Theme.of(context).textTheme.bodyText1.color,
+                    ),
+                  ),
+                  Text(
+                      AppLocalizations.of(context).get("privacy-policy.title")),
                 ],
               ),
             ),

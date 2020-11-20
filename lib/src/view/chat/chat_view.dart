@@ -121,6 +121,11 @@ class _ChatViewState extends State<ChatView> {
       });
     });
 
+    // Restore text draft (if any saved previously)
+    _textFieldController.text = widget._mainWebSocket.chatModule
+            .restoreTextDraft(widget._chatGroup.id) ??
+        "";
+
     _scrollToEnd();
   }
 
@@ -141,6 +146,11 @@ class _ChatViewState extends State<ChatView> {
     _userTypingInfoStreamSubscription.cancel();
 
     _scrollController.dispose();
+
+    // Save current text draft
+    widget._mainWebSocket.chatModule
+        .saveTextDraft(widget._chatGroup.id, _textFieldController.text);
+
     super.dispose();
   }
 
