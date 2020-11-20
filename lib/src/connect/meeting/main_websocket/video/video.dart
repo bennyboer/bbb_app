@@ -74,10 +74,11 @@ class VideoModule extends Module {
 
       if (collectionName == "video-streams") {
         String cameraID = msg["fields"]["stream"];
-        if (cameraID != null) {
+        String userID = msg["fields"]["userId"];
+        if (cameraID != null && userID != null) {
           print("Adding new video stream...");
 
-          IncomingWebcamVideoConnection v = IncomingWebcamVideoConnection(_meetingInfo, cameraID);
+          IncomingWebcamVideoConnection v = IncomingWebcamVideoConnection(_meetingInfo, cameraID, userID);
           _videoConnectionsByCameraId[cameraID] = v;
 
           v.init().then((value) => {

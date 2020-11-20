@@ -1,7 +1,6 @@
 import 'dart:core';
 
 import 'package:bbb_app/src/broadcast/app_state_notifier.dart';
-import 'package:bbb_app/src/locale/app_localizations.dart';
 import 'package:bbb_app/src/locale/app_localizations_delegate.dart';
 import 'package:bbb_app/src/view/start/start_view.dart';
 import 'package:flutter/material.dart';

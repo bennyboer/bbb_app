@@ -9,6 +9,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_screenshare_video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_webcam_video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
+import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
 import 'package:bbb_app/src/view/main/presentation/presentation_widget.dart';
 import 'package:bbb_app/src/view/meeting_info/meeting_info_view.dart';
@@ -43,6 +44,9 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   /// Counter for total unread messages.
   int _totalUnreadMessages = 0;
 
+  /// Map of users currently in the meeting.
+  Map<String, UserModel> _userMapByInternalId = {};
+
   /// Subscription to video connection list changes.
   StreamSubscription _videoConnectionsStreamSubscription;
 
@@ -61,6 +65,9 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
 
   /// Subscription to user events.
   StreamSubscription<UserEvent> _userEventStreamSubscription;
+
+  /// Subscription to user changes.
+  StreamSubscription _userChangesStreamSubscription;
 
   @override
   void initState() {
@@ -113,6 +120,12 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
       }
     });
 
+    _userMapByInternalId = _mainWebSocket.userModule.userMapByInternalId;
+    _userChangesStreamSubscription =
+        _mainWebSocket.userModule.changes.listen((userMap) {
+          setState(() => _userMapByInternalId = Map.of(_mainWebSocket.userModule.userMapByInternalId));
+        });
+
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -142,6 +155,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     _pollStreamSubscription.cancel();
     _meetingEventSubscription.cancel();
     _userEventStreamSubscription.cancel();
+    _userChangesStreamSubscription.cancel();
 
     _mainWebSocket.disconnect();
 
@@ -213,9 +227,21 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                     return Container(
                       padding: const EdgeInsets.all(8),
                       width: MediaQuery.of(context).size.width,
-                      child: RTCVideoView(_videoConnections[key].remoteRenderer,
-                          objectFit: RTCVideoViewObjectFit
-                              .RTCVideoViewObjectFitContain),
+                      child: Stack(
+                          children: [
+                            RTCVideoView(_videoConnections[key].remoteRenderer, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain),
+                            Container(
+                              alignment: Alignment.topCenter,
+                              child: Container(
+                                  padding: const EdgeInsets.fromLTRB(6,2,6,2),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    color: Colors.white.withOpacity(0.7),
+                                  ),
+                                  child: Text(_userMapByInternalId[_videoConnections[key].internalUserId].name, style: TextStyle(color: Colors.black))),
+                            )
+                          ]
+                      ),
                     );
                   }),
             ),
