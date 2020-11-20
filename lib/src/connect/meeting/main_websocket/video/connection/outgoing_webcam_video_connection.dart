@@ -46,7 +46,6 @@ class OutgoingWebcamVideoConnection extends VideoConnection {
       "params": [
         _cameraId,
       ],
-      "id": MainWebSocketUtil.getRandomHex(32),
     });
 
     send({
@@ -69,7 +68,6 @@ class OutgoingWebcamVideoConnection extends VideoConnection {
       "params": [
         _cameraId,
       ],
-      "id": MainWebSocketUtil.getRandomHex(32),
     });
   }
 

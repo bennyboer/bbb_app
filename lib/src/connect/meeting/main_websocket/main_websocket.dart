@@ -168,7 +168,6 @@ class MainWebSocket {
         _meetingInfo.authToken,
         _meetingInfo.externUserID,
       ],
-      "id": "${msgIdCounter++}",
     });
   }
 
