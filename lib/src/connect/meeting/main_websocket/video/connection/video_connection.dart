@@ -41,7 +41,7 @@ abstract class VideoConnection {
     'optional': [],
   };
 
-  Future<void> init() {
+  Future<void> init() async {
     connect();
   }
 

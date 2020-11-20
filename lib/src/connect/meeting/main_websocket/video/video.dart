@@ -143,7 +143,9 @@ class VideoModule extends Module {
   void _shareWebcam() {
     if(_webcamShare == null) {
       _webcamShare = OutgoingWebcamVideoConnection(_meetingInfo, messageSender, _camtype);
-      _webcamShare.init();
+      _webcamShare.init().catchError((e) {
+        _webcamShare = null;
+      });
     }
   }
 

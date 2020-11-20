@@ -29,6 +29,15 @@ class OutgoingWebcamVideoConnection extends VideoConnection {
   }
 
   @override
+  Future<void> init() async {
+    _localStream = await _createWebcamStream();
+    if(_localStream == null) {
+      throw Exception("local stream was null");
+    }
+    return super.init();
+  }
+
+  @override
   void close() {
 
     _messageSender({
@@ -67,7 +76,6 @@ class OutgoingWebcamVideoConnection extends VideoConnection {
   @override
   afterCreatePeerConnection() async {
     _cameraId = meetingInfo.internalUserID + "_" + MainWebSocketUtil.getRandomHex(64);
-    _localStream = await _createWebcamStream();
     await pc.addStream(_localStream);
   }
 
@@ -116,7 +124,12 @@ class OutgoingWebcamVideoConnection extends VideoConnection {
         'optional': [],
       }
     };
-    MediaStream stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+
+    MediaStream stream = await navigator.mediaDevices.getUserMedia(mediaConstraints).catchError((e) {
+      print("error opening webcam stream: " + e);
+      return null;
+    });
+
     return stream;
   }
 

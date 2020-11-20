@@ -22,7 +22,7 @@ abstract class Module {
   /// Process a special task when the web socket is about to be disconnected.
   Future<void> onDisconnect();
 
-  /// Process a special task when the web socket is about to be disconnected.
+  /// Process a special task when the web socket is about to be disconnected. Executed before main websocket is closed.
   void onDisconnectBeforeWebsocketClose() {}
 
   /// Process an incoming message from the web socket.
