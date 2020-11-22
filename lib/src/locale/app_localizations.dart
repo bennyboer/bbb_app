@@ -35,6 +35,11 @@ class AppLocalizations {
       de: "Inhalt konnte nicht geladen werden",
     ));
     _addLocalization(_Localization(
+      "start.uni-link-failed",
+      en: "Opening the link with the app failed",
+      de: "Die App konnte nicht korrekt mit dem Link geladen werden",
+    ));
+    _addLocalization(_Localization(
       "start.bbb-trademark",
       en: "This app uses BigBlueButton and is not endorsed or certified by BigBlueButton Inc. BigBlueButton and the BigBlueButton Logo are trademarks of BigBlueButton Inc.",
       de: "Diese App verwendet BigBlueButton, ist jedoch keine offizielle und zertifizierte App von BigBlueButton Inc. BigBlueButton sowie das BigBlueButton Logo sind Warenzeichen von BigBlueButton Inc.",

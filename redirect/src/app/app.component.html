@@ -1,0 +1,30 @@
+<div class="container" *ngIf="hasMeetingUrl; else placeholder">
+	<h1>You have multiple options to join the meeting!</h1>
+
+	<div>
+		<a class="option-btn" [href]="openInBrowserLink">
+			Open in <strong>browser</strong>
+		</a>
+	</div>
+
+	<div>
+		<a class="option-btn" [href]="openInAppLink">
+			Open in <strong>app</strong>
+		</a>
+	</div>
+
+	<p class="notice">
+		If you do not have the app yet, you can get it on Google Play when you click <a target="_blank"
+																						href="https://play.google.com/store/apps/details?id=edu.hm.cs.tape.bbb_app">here</a>!
+	</p>
+</div>
+
+<ng-template #placeholder>
+	<div class="placeholder">
+		<h1>Please specify a BBB meeting URl in the address bar like the following example:</h1>
+
+		<code class="url-example">
+			{{ baseUrl }}?target=<span style="color: dodgerblue">https://my-bbb-instance.com/b/mee-tin-g42</span>
+		</code>
+	</div>
+</ng-template>

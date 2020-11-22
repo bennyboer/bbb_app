@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
+import 'package:uni_links/uni_links.dart';
 
 // Start view of the app where you'll be able to enter a meeting using the invitation link.
 class StartView extends StatefulWidget {
@@ -28,6 +29,9 @@ class StartView extends StatefulWidget {
 
 /// State of the start view.
 class _StartViewState extends State<StartView> {
+  /// Access code parameter of a uni link the app has been opened with.
+  static const String _uniLinkAccessCodeQueryParameter = "accessCode";
+
   /// Duration after the user stopped typing after which to check whether
   /// an access code is needed for the current meeting URL.
   static const Duration _checkForAccessCodeNeededDuration =
@@ -57,6 +61,9 @@ class _StartViewState extends State<StartView> {
   /// Timer of when the user stopped editing the meeting URL.
   Timer _userStoppedEditingMeetingUrlTimer;
 
+  /// Subscription to uni link changes.
+  StreamSubscription<Uri> _uniLinkSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -68,6 +75,64 @@ class _StartViewState extends State<StartView> {
           content: Text(widget._snackBarText),
         ));
       }
+
+      _initUniLinks();
+    });
+  }
+
+  @override
+  void dispose() {
+    if (_uniLinkSubscription != null) _uniLinkSubscription.cancel();
+
+    super.dispose();
+  }
+
+  /// Initialize uni links (deep linking).
+  Future<void> _initUniLinks() async {
+    try {
+      Uri initialLink = await getInitialUri();
+
+      _processUniLink(initialLink);
+    } catch (e) {
+      print(e);
+    }
+
+    _uniLinkSubscription = getUriLinksStream().listen((Uri uri) {
+      _processUniLink(uri);
+    });
+  }
+
+  /// Process the passed uni link.
+  void _processUniLink(Uri link) {
+    if (link == null) {
+      return;
+    }
+
+    Uri meetingUrl = link.replace(scheme: "https");
+
+    if (link.queryParameters.containsKey(_uniLinkAccessCodeQueryParameter)) {
+      String accessCode =
+          meetingUrl.queryParameters[_uniLinkAccessCodeQueryParameter];
+
+      Map<String, String> newQueryParams = Map.of(meetingUrl.queryParameters);
+      newQueryParams.remove(_uniLinkAccessCodeQueryParameter);
+      meetingUrl = meetingUrl.replace(queryParameters: newQueryParams);
+
+      _accessCodeVisible = true;
+      _accesscodeTextField.text = accessCode;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      String newMeetingUrl = meetingUrl.toString();
+      if (newMeetingUrl.endsWith("?")) {
+        newMeetingUrl = newMeetingUrl.substring(0, newMeetingUrl.length - 1);
+      }
+
+      _meetingURLController.text = newMeetingUrl;
     });
   }
 
