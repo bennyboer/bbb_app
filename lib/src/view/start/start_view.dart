@@ -94,12 +94,7 @@ class _StartViewState extends State<StartView> {
 
       _processUniLink(initialLink);
     } catch (e) {
-      Scaffold.of(context).showSnackBar(SnackBar(
-        content: Text(
-          AppLocalizations.of(context).get("start.uni-link-failed"),
-        ),
-        duration: Duration(seconds: 5),
-      ));
+      print(e);
     }
 
     _uniLinkSubscription = getUriLinksStream().listen((Uri uri) {
@@ -109,11 +104,19 @@ class _StartViewState extends State<StartView> {
 
   /// Process the passed uni link.
   void _processUniLink(Uri link) {
+    if (link == null) {
+      return;
+    }
+
     Uri meetingUrl = link.replace(scheme: "https");
 
     if (link.queryParameters.containsKey(_uniLinkAccessCodeQueryParameter)) {
       String accessCode =
-          meetingUrl.queryParameters.remove(_uniLinkAccessCodeQueryParameter);
+          meetingUrl.queryParameters[_uniLinkAccessCodeQueryParameter];
+
+      Map<String, String> newQueryParams = Map.of(meetingUrl.queryParameters);
+      newQueryParams.remove(_uniLinkAccessCodeQueryParameter);
+      meetingUrl = meetingUrl.replace(queryParameters: newQueryParams);
 
       _accessCodeVisible = true;
       _accesscodeTextField.text = accessCode;
@@ -124,7 +127,12 @@ class _StartViewState extends State<StartView> {
     }
 
     setState(() {
-      _meetingURLController.text = meetingUrl.toString();
+      String newMeetingUrl = meetingUrl.toString();
+      if (newMeetingUrl.endsWith("?")) {
+        newMeetingUrl = newMeetingUrl.substring(0, newMeetingUrl.length - 1);
+      }
+
+      _meetingURLController.text = newMeetingUrl;
     });
   }
 
