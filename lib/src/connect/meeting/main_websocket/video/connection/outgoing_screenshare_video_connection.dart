@@ -1,4 +1,5 @@
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/video_connection.dart';
+import 'package:bbb_app/src/utils/log.dart';
 import 'package:flutter_foreground_plugin/flutter_foreground_plugin.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
@@ -70,10 +71,10 @@ class OutgoingScreenshareVideoConnection extends VideoConnection {
     await FlutterForegroundPlugin.startForegroundService(
       holdWakeLock: false,
       onStarted: () {
-        print("Foreground on Started");
+        Log.info("[OutgoingScreenshareVideoConnection] Foreground on Started");
       },
       onStopped: () {
-        print("Foreground on Stopped");
+        Log.info("[OutgoingScreenshareVideoConnection] Foreground on Stopped");
       },
       title: "BBB App",
       content: "BBB App Screenshare",
@@ -100,7 +101,7 @@ class OutgoingScreenshareVideoConnection extends VideoConnection {
     await startForegroundService();
 
     MediaStream stream = await navigator.mediaDevices.getDisplayMedia(mediaConstraints).catchError((e) {
-      print("error opening screenshare stream: " + e);
+      Log.error("[OutgoingScreenshareVideoConnection] error opening screenshare stream: " + e);
       return null;
     });
 
