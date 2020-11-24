@@ -19,7 +19,7 @@
 	}
 }
 
-.container, .placeholder {
+.container {
 	padding: 1.0em;
 	box-sizing: border-box;
 	width: 100%;
@@ -28,6 +28,7 @@
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
+	text-align: center;
 }
 
 .notice > a {
@@ -36,4 +37,7 @@
 
 .url-example {
 	font-size: 1.5em;
+	background-color: #111;
+	padding: 0.5em 1.0em;
+	border-radius: 0.2em;
 }
