@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_screenshare_video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_webcam_video_connection.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/outgoing_screenshare_video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/outgoing_webcam_video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/utils/log.dart';
@@ -39,13 +41,25 @@ class VideoModule extends Module {
   /// Webcam the user shares.
   OutgoingWebcamVideoConnection _webcamShare;
 
+  /// Screen the user shares.
+  OutgoingScreenshareVideoConnection _screenShare;
+
   /// Type of webcam user shares.
   CAMERATYPE _camtype = CAMERATYPE.FRONT;
 
-  VideoModule(
-    messageSender,
-    this._meetingInfo,
-  ) : super(messageSender);
+  UserModule _userModule;
+
+  /// Subscription to user changes.
+  StreamSubscription _userChangesStreamSubscription;
+
+  VideoModule(messageSender, this._meetingInfo, this._userModule) : super(messageSender) {
+    _userChangesStreamSubscription =
+        _userModule.changes.listen((userEvent) {
+          if(userEvent.data.internalId != null && userEvent.data.internalId == _meetingInfo.internalUserID && !userEvent.data.isPresenter) {
+            _unshareScreen();
+          }
+        });
+  }
 
   @override
   void onConnected() {
@@ -69,6 +83,8 @@ class VideoModule extends Module {
       videoConnection.close();
     });
     _unshareWebcam();
+    _unshareScreen();
+    _userChangesStreamSubscription.cancel();
   }
 
   @override
@@ -184,6 +200,34 @@ class VideoModule extends Module {
 
   bool isWebcamActive() {
     return _webcamShare != null;
+  }
+
+  void _shareScreen() {
+    if(_screenShare == null) {
+      _screenShare = OutgoingScreenshareVideoConnection(_meetingInfo);
+      _screenShare.init().catchError((e) {
+        _screenShare = null;
+      });
+    }
+  }
+
+  void _unshareScreen() {
+    if(_screenShare != null) {
+      _screenShare.close();
+      _screenShare = null;
+    }
+  }
+
+  void toggleScreenshareOnOff() {
+    if(_screenShare == null) {
+      _shareScreen();
+    } else if(_screenShare != null) {
+      _unshareScreen();
+    }
+  }
+
+  bool isScreenshareActive() {
+    return _screenShare != null;
   }
 
   /// Get a stream of video connections lists that are updated when new camera IDs pop up
