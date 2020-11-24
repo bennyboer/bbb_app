@@ -1,8 +1,8 @@
 import 'package:bbb_app/src/connect/meeting/main_websocket/voice/voice_module.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/connect/meeting/voice/voice_manager.dart';
+import 'package:bbb_app/src/utils/log.dart';
 import 'package:sip_ua/sip_ua.dart';
-
 
 class VoiceConnection extends VoiceManager implements SipUaHelperListener {
   MeetingInfo info;
@@ -34,7 +34,8 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
 
   @override
   void callStateChanged(Call call, CallState state) {
-    print("[SIP] Call state changed, is now ${state.state}");
+    Log.info("[VoiceConnection] SIP call state changed to ${state.state}");
+
     _call = call;
     switch (state.state) {
       case CallStateEnum.CONFIRMED:
@@ -53,18 +54,19 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
 
   @override
   void onNewMessage(SIPMessageRequest msg) {
-    print("[SIP] New Message: ${msg.toString()}");
+    Log.info("[VoiceConnection] New message: '$msg'");
   }
 
   /// Probably useless, as we dont use registration
   @override
   void registrationStateChanged(RegistrationState state) {
-    print("[SIP] Registration Changed: ${state.state}");
+    Log.info("[VoiceConnection] Registration changed to '${state.state}'");
   }
 
   @override
   void transportStateChanged(TransportState state) {
-    print("[SIP] Transport Changed: ${state.state}");
+    Log.info("[VoiceConnection] Transport state changed to '${state.state}'");
+
     if (state.state == TransportStateEnum.CONNECTED) {
       helper.call(super.buildEcho(), true);
     }

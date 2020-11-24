@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'log.dart';
+
 typedef void OnMessageCallback(dynamic msg);
 typedef void OnCloseCallback(int code, String reason);
 typedef void OnOpenCallback();
@@ -19,8 +21,9 @@ class SimpleWebSocket {
   SimpleWebSocket(
     this._url, {
     String cookie,
-        Map<String, String> additionalHeaders,
-  }) : _cookie = cookie, _additionalHeaders = additionalHeaders;
+    Map<String, String> additionalHeaders,
+  })  : _cookie = cookie,
+        _additionalHeaders = additionalHeaders;
 
   connect() async {
     try {
@@ -39,7 +42,8 @@ class SimpleWebSocket {
   send(data) {
     if (_socket != null) {
       _socket.add(data);
-      print('send: $data');
+
+      Log.verbose("Send message on websocket: '$data'");
     }
   }
 
@@ -57,8 +61,8 @@ class SimpleWebSocket {
       HttpClient client = HttpClient(context: SecurityContext());
       client.badCertificateCallback =
           (X509Certificate cert, String host, int port) {
-        print(
-            'SimpleWebSocket: Allow self-signed certificate => $host:$port. ');
+        Log.debug(
+            "SimpleWebSocket: Allow self-signed certificate => $host:$port");
         return true;
       };
 
@@ -68,7 +72,7 @@ class SimpleWebSocket {
       request.headers.add('Sec-WebSocket-Version', '13');
       request.headers.add('Sec-WebSocket-Key', key.toLowerCase());
 
-      if(_additionalHeaders != null) {
+      if (_additionalHeaders != null) {
         _additionalHeaders.entries.forEach((e) {
           request.headers.add(e.key, e.value);
         });

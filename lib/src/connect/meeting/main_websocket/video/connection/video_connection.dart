@@ -1,12 +1,12 @@
 import 'dart:convert';
 
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
+import 'package:bbb_app/src/utils/log.dart';
 import 'package:bbb_app/src/utils/websocket.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 /// Class encapsulating a WebRTC video stream connection.
 abstract class VideoConnection {
-
   final String _BBB_SFU = "bbb-webrtc-sfu";
 
   /// Info of the current meeting.
@@ -51,30 +51,31 @@ abstract class VideoConnection {
   }
 
   void connect() async {
-
-    final uri =
-    Uri.parse(meetingInfo.joinUrl).replace(path: _BBB_SFU);
+    final uri = Uri.parse(meetingInfo.joinUrl).replace(path: _BBB_SFU);
 
     _socket = SimpleWebSocket(uri.toString());
 
-    print('connected to ${uri.toString()}');
+    Log.info("[VideoConnection] Connecting to ${uri.toString()}...");
 
     _socket.onOpen = () {
-      print('video connection websocket open');
+      Log.info("[VideoConnection] Connected");
+
       createOffer();
     };
 
     _socket.onMessage = (message) {
-      print('received on video connection websocket: ' + message);
+      Log.info("[VideoConnection] Received message: '$message'");
+
       try {
         onMessage(json.decode(message));
       } on FormatException catch (e) {
-        print('invalid JSON received on video connection websocket: ' + message);
+        Log.warning("[VideoConnection] Received invalid JSON: '$message'");
       }
     };
 
     _socket.onClose = (int code, String reason) {
-      print('video connection websocket closed by server [$code => $reason]!');
+      Log.info(
+          "[VideoConnection] Connection closed. Reason: '$reason', code: $code");
     };
 
     await _socket.connect();
@@ -84,8 +85,8 @@ abstract class VideoConnection {
     switch (message['id']) {
       case 'startResponse':
         {
-          print("startResponse");
-          await pc.setRemoteDescription(new RTCSessionDescription(message['sdpAnswer'], 'answer'));
+          await pc.setRemoteDescription(
+              new RTCSessionDescription(message['sdpAnswer'], 'answer'));
           onStartResponse(message);
         }
         break;
@@ -102,7 +103,6 @@ abstract class VideoConnection {
 
       case 'playStart':
         {
-          print("playStart");
           onPlayStart(message);
         }
         break;
@@ -114,23 +114,19 @@ abstract class VideoConnection {
 
   createOffer() async {
     try {
-
       pc = await createPeerConnection(_iceServers, _config);
 
       await afterCreatePeerConnection();
 
       pc.onIceCandidate = (candidate) {
-        print("onIceCandidate");
         onIceCandidate(candidate);
       };
 
       pc.onAddStream = (stream) {
-        print("onAddStream");
         onAddStream(stream);
       };
 
       pc.onRemoveStream = (stream) {
-        print("onRemoveStream");
         onRemoveStream(stream);
       };
 
@@ -138,9 +134,10 @@ abstract class VideoConnection {
       await pc.setLocalDescription(s);
 
       sendOffer(s);
-
     } catch (e) {
-      print(e.toString());
+      Log.error(
+          "[VideoConnection] Encountered an error while trying to create an offer",
+          e);
     }
   }
 
@@ -162,5 +159,4 @@ abstract class VideoConnection {
   onRemoveStream(stream) {}
 
   sendOffer(RTCSessionDescription s) {}
-
 }
