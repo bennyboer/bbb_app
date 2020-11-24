@@ -15,5 +15,6 @@ abstract class MeetingInfoLoader {
         MeetingNotStartedStatusUpdater meetingNotStartedStatusUpdater,
   });
 
+  /// Fired if connect attempt is canceled by user.
   void cancel();
 }

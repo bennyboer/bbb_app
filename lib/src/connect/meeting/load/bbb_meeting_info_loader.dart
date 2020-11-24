@@ -25,17 +25,22 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
   /// Duration to update the waiting room status after.
   static const Duration _updateWaitingRoomStatusDuration = Duration(seconds: 5);
 
+  /// How often polled already.
+  int _waitingRoomPollAttempts = 0;
+
   /// Cookie to use.
   String _cookie = "";
 
-  int _maxRetries = 5;
-  int _retries = 0;
+  /// Maximum amount of recursive retries for meeting not started.
+  static const int _maxMeetingNotStartedRetries = 5;
 
-  int _attempt = 0;
+  /// How many retries already executed.
+  int _meetingNotStartedRetries = 0;
 
-
+  /// Websocket for polling not yet started meetings.
   SimpleWebSocket _ws;
 
+  /// Used to notify UI about not-started meeting.
   MeetingNotStartedStatusUpdater _meetingNotStartedStatusUpdater;
 
   @override
@@ -47,8 +52,8 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
         MeetingNotStartedStatusUpdater meetingNotStartedStatusUpdater,
   }) async {
 
-    _retries = 0;
-    _attempt = 0;
+    _meetingNotStartedRetries = 0;
+    _waitingRoomPollAttempts = 0;
 
     _meetingNotStartedStatusUpdater = meetingNotStartedStatusUpdater;
 
@@ -129,7 +134,7 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
       "redirect": "false",
     });
 
-    for (_attempt; _attempt < _maxWaitingRoomPolls; _attempt++) {
+    for (_waitingRoomPollAttempts; _waitingRoomPollAttempts < _maxWaitingRoomPolls; _waitingRoomPollAttempts++) {
       http.Response response = await http.get(
         waitingRoomPollUrl,
         headers: {'Cookie': _cookie},
@@ -230,12 +235,14 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
 
     _setCookie(response);
 
+    // HTTP OK means we are not redirected to the BBB Frontend
+    // --> war are waiting for the meeting to start
     if(response.statusCode == HttpStatus.ok) {
       _meetingNotStartedStatusUpdater(true);
       await _waitForMeetingToStart(meetingUrl);
       _meetingNotStartedStatusUpdater(false);
-      if(_retries < _maxRetries) {
-        _retries++;
+      if(_meetingNotStartedRetries < _maxMeetingNotStartedRetries) {
+        _meetingNotStartedRetries++;
         return _postJoinForm(meetingUrl, authenticityToken, name);
       } else {
         print("reached max retries!");
@@ -255,6 +262,7 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
     return initialJoinUrl;
   }
 
+  /// Completes if received a message on websocket that meeting has started.
   Future<String> _waitForMeetingToStart(String meetingUrl) {
 
     var completer = new Completer<String>();
@@ -347,7 +355,7 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
       _ws.close();
       _ws = null;
     }
-    _retries = _maxRetries;
-    _attempt = _maxWaitingRoomPolls;
+    _meetingNotStartedRetries = _maxMeetingNotStartedRetries;
+    _waitingRoomPollAttempts = _maxWaitingRoomPolls;
   }
 }
