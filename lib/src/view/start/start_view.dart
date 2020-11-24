@@ -5,6 +5,7 @@ import 'package:bbb_app/src/connect/meeting/load/exception/meeting_info_load_exc
 import 'package:bbb_app/src/connect/meeting/load/meeting_info_loaders.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
+import 'package:bbb_app/src/utils/log.dart';
 import 'package:bbb_app/src/view/main/main_view.dart';
 import 'package:bbb_app/src/view/privacy_policy/privacy_policy_view.dart';
 import 'package:day_night_switcher/day_night_switcher.dart';
@@ -97,7 +98,7 @@ class _StartViewState extends State<StartView> {
 
       _processUniLink(initialLink);
     } catch (e) {
-      print(e);
+      Log.warning("Deep link processing failed");
     }
 
     _uniLinkSubscription = getUriLinksStream().listen((Uri uri) {

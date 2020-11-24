@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:bbb_app/src/connect/meeting/load/exception/meeting_info_load_exception.dart';
 import 'package:bbb_app/src/connect/meeting/load/meeting_info_loader.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
+import 'package:bbb_app/src/utils/log.dart';
 import 'package:bbb_app/src/utils/websocket.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
@@ -48,10 +49,9 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
     String meetingUrl,
     String accessCode,
     String name, {
-        WaitingRoomStatusUpdater waitingRoomStatusUpdater,
-        MeetingNotStartedStatusUpdater meetingNotStartedStatusUpdater,
+    WaitingRoomStatusUpdater waitingRoomStatusUpdater,
+    MeetingNotStartedStatusUpdater meetingNotStartedStatusUpdater,
   }) async {
-
     _meetingNotStartedRetries = 0;
     _waitingRoomPollAttempts = 0;
 
@@ -134,7 +134,9 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
       "redirect": "false",
     });
 
-    for (_waitingRoomPollAttempts; _waitingRoomPollAttempts < _maxWaitingRoomPolls; _waitingRoomPollAttempts++) {
+    for (_waitingRoomPollAttempts;
+        _waitingRoomPollAttempts < _maxWaitingRoomPolls;
+        _waitingRoomPollAttempts++) {
       http.Response response = await http.get(
         waitingRoomPollUrl,
         headers: {'Cookie': _cookie},
@@ -145,7 +147,6 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
             "During waiting for the moderator accept we encountered an illegal status code: ${response.statusCode}. Expected 200 OK");
       }
 
-      print(response.body);
       Map<String, dynamic> jsonResponse =
           json.decode(response.body)["response"];
       String guestStatus = jsonResponse["guestStatus"];
@@ -237,16 +238,19 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
 
     // HTTP OK means we are not redirected to the BBB Frontend
     // --> war are waiting for the meeting to start
-    if(response.statusCode == HttpStatus.ok) {
+    if (response.statusCode == HttpStatus.ok) {
       _meetingNotStartedStatusUpdater(true);
       await _waitForMeetingToStart(meetingUrl);
       _meetingNotStartedStatusUpdater(false);
-      if(_meetingNotStartedRetries < _maxMeetingNotStartedRetries) {
+      if (_meetingNotStartedRetries < _maxMeetingNotStartedRetries) {
         _meetingNotStartedRetries++;
         return _postJoinForm(meetingUrl, authenticityToken, name);
       } else {
-        print("reached max retries!");
-        throw new Exception("Failed to join meeting. Meeting should already have started!");
+        Log.info(
+            "Reached maximum number of retries for waiting for the meeting to start");
+
+        throw new Exception(
+            "Failed to join meeting. Meeting should already have started!");
       }
     }
 
@@ -264,18 +268,27 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
 
   /// Completes if received a message on websocket that meeting has started.
   Future<String> _waitForMeetingToStart(String meetingUrl) {
-
     var completer = new Completer<String>();
 
-    String wsUrl = Uri.parse(meetingUrl).replace(queryParameters: null).replace(path: "/b/cable").toString();
-    String origin = Uri.parse(meetingUrl).replace(queryParameters: null).replace(path: "").toString();
+    String wsUrl = Uri.parse(meetingUrl)
+        .replace(queryParameters: null)
+        .replace(path: "/b/cable")
+        .toString();
+    String origin = Uri.parse(meetingUrl)
+        .replace(queryParameters: null)
+        .replace(path: "")
+        .toString();
 
-    String meetingName = meetingUrl.split("/")[meetingUrl.split("/").length-1];
+    String meetingName =
+        meetingUrl.split("/")[meetingUrl.split("/").length - 1];
 
     Map<String, String> headers = {};
-    headers["Sec-WebSocket-Extensions"] = "permessage-deflate; client_max_window_bits";
-    headers["Sec-WebSocket-Protocol"] = "actioncable-v1-json, actioncable-unsupported";
-    headers["Origin"] = origin; //ActionCable requires this header. Results in 404 otherwise.
+    headers["Sec-WebSocket-Extensions"] =
+        "permessage-deflate; client_max_window_bits";
+    headers["Sec-WebSocket-Protocol"] =
+        "actioncable-v1-json, actioncable-unsupported";
+    headers["Origin"] =
+        origin; //ActionCable requires this header. Results in 404 otherwise.
 
     //Create ActionCable websocket
     _ws = SimpleWebSocket(wsUrl, additionalHeaders: headers);
@@ -283,13 +296,25 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
     _ws.onOpen = () {};
 
     _ws.onMessage = (message) {
-      print(message);
+      Log.info(
+          "[BBBMeetingInfoLoader] Received message while waiting for the meeting to start: '$message'");
+
       var jsonMsg = json.decode(message);
-      if(jsonMsg["type"] == "welcome") {
-        print("welcome");
-        _ws.send("{\"command\":\"subscribe\",\"identifier\":\"{\\\"channel\\\":\\\"WaitingChannel\\\",\\\"roomuid\\\":\\\"" + meetingName + "\\\",\\\"useruid\\\":\\\"anonymous\\\"}\"}");
-      } else if (jsonMsg["identifier"] != null && jsonMsg["message"] != null && jsonMsg["identifier"].toString().contains(meetingName) && jsonMsg["message"]["action"] == "started") {
-        print("meeting started!");
+      if (jsonMsg["type"] == "welcome") {
+        Log.info(
+            "[BBBMeetingInfoLoader] Received welcome message while waiting for the meeting to start");
+
+        _ws.send(
+            "{\"command\":\"subscribe\",\"identifier\":\"{\\\"channel\\\":\\\"WaitingChannel\\\",\\\"roomuid\\\":\\\"" +
+                meetingName +
+                "\\\",\\\"useruid\\\":\\\"anonymous\\\"}\"}");
+      } else if (jsonMsg["identifier"] != null &&
+          jsonMsg["message"] != null &&
+          jsonMsg["identifier"].toString().contains(meetingName) &&
+          jsonMsg["message"]["action"] == "started") {
+        Log.info(
+            "[BBBMeetingInfoLoader] The meeting the user was waiting for started");
+
         _ws.close();
         _ws = null;
         completer.complete("meeting started!");
@@ -297,9 +322,11 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
     };
 
     _ws.onClose = (int code, String reason) async {
-      print("websocket closed [$code => $reason]!");
+      Log.info(
+          "[BBBMeetingInfoLoader] Meeting start wait websocket closed. Reason: '$reason', code: $code");
+
       _ws = null;
-      if(!completer.isCompleted) {
+      if (!completer.isCompleted) {
         completer.complete(null);
       }
     };
@@ -343,15 +370,18 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
       _cookie = response.headers["set-cookie"];
       success = true;
     } else {
-      print("setCookie failed!");
+      Log.warning(
+          "[BBBMeetingInfoLoader] Could not set the 'set-cookie' HTTP header");
     }
     return success;
   }
 
   @override
   void cancel() {
-    print("cancel connecting");
-    if(_ws != null) {
+    Log.info(
+        "[BBBMeetingInfoLoader] Cancel requested for connecting to a meeting");
+
+    if (_ws != null) {
       _ws.close();
       _ws = null;
     }
