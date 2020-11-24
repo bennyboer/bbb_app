@@ -32,6 +32,7 @@ class VoiceUsersModule extends Module {
 
     if (method == "added") {
       model = _userModule.userMapByInternalId.putIfAbsent(fields["intId"], () => UserModel());
+      model.internalId = fields["intId"];
       model.muted = fields["muted"];
       model.listenOnly = fields["listenOnly"];
       model.joined = fields["joined"];
@@ -41,6 +42,6 @@ class VoiceUsersModule extends Module {
     }
     if (fields["talking"] != null)
       model.talking = fields["talking"];
-    _userModule.updateUserForId(fields["intId"], model);
+    _userModule.updateUserForId(model.internalId, model);
   }
 }
