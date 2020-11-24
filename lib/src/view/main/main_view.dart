@@ -265,7 +265,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
             ElevatedButton(
               onPressed: () => _toggleWebcamOnOff(context),
               child: new Text(
-                "start",
+                "start webcam",
                 style: TextStyle(fontSize: 20.0),
               ),
             ),
@@ -273,7 +273,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
             ElevatedButton(
               onPressed: () => _toggleWebcamOnOff(context),
               child: new Text(
-                "stop",
+                "stop webcam",
                 style: TextStyle(fontSize: 20.0),
               ),
             ),
@@ -282,6 +282,22 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
               onPressed: () => _toggleWebcamFrontBack(context),
               child: new Text(
                 "switch cam",
+                style: TextStyle(fontSize: 20.0),
+              ),
+            ),
+          if(!_mainWebSocket.videoModule.isScreenshareActive() && _isPresenter())
+            ElevatedButton(
+              onPressed: () => _toggleScreenshareOnOff(context),
+              child: new Text(
+                "start screenshare",
+                style: TextStyle(fontSize: 20.0),
+              ),
+            ),
+          if(_mainWebSocket.videoModule.isScreenshareActive())
+            ElevatedButton(
+              onPressed: () => _toggleScreenshareOnOff(context),
+              child: new Text(
+                "stop screenshare",
                 style: TextStyle(fontSize: 20.0),
               ),
             ),
@@ -296,6 +312,14 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
 
   _toggleWebcamFrontBack(BuildContext context) {
     _mainWebSocket.videoModule.toggleWebcamFrontBack();
+  }
+
+  _toggleScreenshareOnOff(BuildContext context) {
+    _mainWebSocket.videoModule.toggleScreenshareOnOff();
+  }
+
+  bool _isPresenter() {
+    return _userMapByInternalId[widget._meetingInfo.internalUserID] != null && _userMapByInternalId[widget._meetingInfo.internalUserID].isPresenter;
   }
 
   /// Build the main views application bar.

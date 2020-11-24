@@ -451,6 +451,37 @@ Below you'll find a copy of the license at the time of writing:
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
+## flutter_foreground_service_plugin
+
+We use flutter_foreground_service_plugin (See https://github.com/ChangJoo-Park/flutter_foreground_service_plugin) which is licensed under the MIT license license (See https://github.com/ChangJoo-Park/flutter_foreground_service_plugin/blob/master/LICENSE).
+Below you'll find a copy of the license at the time of writing:
+
+MIT License
+-----------
+
+Copyright (c) 2019 ChangJoo Park  (https://github.com/ChangJoo-Park/flutter_foreground_service_plugin)
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the "Software"), to deal in the Software without
+restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+
 ## Logger
 
 We use Logger (See https://github.com/leisim/logger) which is licensed under the MIT-license (See https://github.com/leisim/logger/blob/master/LICENSE).
