@@ -50,22 +50,24 @@ class UserModule extends Module {
     if (jsonMsg['id'] != null) {
       // this has to id, not internal ID (internalID is not included in all received messages relating this user)
       String internalId = _idToInternalId.putIfAbsent(jsonMsg['id'], () => jsonMsg['fields']['intId']);
+      _internalIdToId.putIfAbsent(internalId, () => jsonMsg['id']);
       UserModel u = _userMapByInternalId.putIfAbsent(internalId, () => UserModel());
 
       //TODO create some nicer mapper
+      if (internalId != null)
+        u.internalId = internalId;
 
-      if (jsonMsg['fields']['name'] != null) u.name = jsonMsg['fields']['name'];
+      if (jsonMsg['fields']['name'] != null)
+        u.name = jsonMsg['fields']['name'];
 
       if (jsonMsg['fields']['sortName'] != null)
         u.sortName = jsonMsg['fields']['sortName'];
 
-      if (internalId != null)
-        u.internalId = internalId;
-
       if (jsonMsg['fields']['color'] != null)
         u.color = jsonMsg['fields']['color'];
 
-      if (jsonMsg['fields']['role'] != null) u.role = jsonMsg['fields']['role'];
+      if (jsonMsg['fields']['role'] != null)
+        u.role = jsonMsg['fields']['role'];
 
       if (jsonMsg['fields']['presenter'] != null)
         u.isPresenter = jsonMsg['fields']['presenter'];
@@ -73,11 +75,8 @@ class UserModule extends Module {
       if (jsonMsg['fields']['connectionStatus'] != null)
         u.connectionStatus = jsonMsg['fields']['connectionStatus'];
 
-      if (u.internalId != null) {
+      if (u.internalId != null)
         _userMapByInternalId[u.internalId] = u;
-      }
-
-      _internalIdToId.putIfAbsent(u.internalId, () => jsonMsg['id']);
 
       // Publish changed user map
       _userStreamController.add(UserEvent(type, u));
