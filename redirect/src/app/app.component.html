@@ -1,30 +1,44 @@
-<div class="container" *ngIf="hasMeetingUrl; else placeholder">
-	<h1>You have multiple options to join the meeting!</h1>
+<div class="container">
 
-	<div>
-		<a class="option-btn" [href]="openInBrowserLink">
-			Open in <strong>browser</strong>
-		</a>
+	<div class="header">
+		<img src="assets/icon.png" width="128">
 	</div>
 
-	<div>
-		<a class="option-btn" [href]="openInAppLink">
-			Open in <strong>app</strong>
-		</a>
+	<div *ngIf="hasMeetingUrl; else placeholder">
+		<h1>{{ "welcome-msg" | i18n }}</h1>
+
+		<div>
+			<a class="option-btn" [href]="openInBrowserLink">
+				{{ "open-in-browser" | i18n }}
+			</a>
+		</div>
+
+		<div>
+			<a class="option-btn" [href]="openInAppLink">
+				{{ "open-in-app" | i18n }}
+			</a>
+		</div>
+
+		<p class="notice">
+			{{ "install-app-notice-prefix" | i18n }}
+			<a target="_blank"
+			   href="https://play.google.com/store/apps/details?id=edu.hm.cs.tape.bbb_app">{{ "install-app-notice-link" | i18n }}</a>
+			{{ "install-app-notice-postfix" | i18n }}
+		</p>
 	</div>
 
-	<p class="notice">
-		If you do not have the app yet, you can get it on Google Play when you click <a target="_blank"
-																						href="https://play.google.com/store/apps/details?id=edu.hm.cs.tape.bbb_app">here</a>!
-	</p>
 </div>
 
 <ng-template #placeholder>
-	<div class="placeholder">
-		<h1>Please specify a BBB meeting URl in the address bar like the following example:</h1>
+	<h1>{{ "example-header" | i18n }}</h1>
 
-		<code class="url-example">
-			{{ baseUrl }}?target=<span style="color: dodgerblue">https://my-bbb-instance.com/b/mee-tin-g42</span>
-		</code>
-	</div>
+	<code class="url-example">
+		{{ baseUrl }}<span style="color: dodgerblue">?target=https://my-bbb-instance.com/b/mee-tin-g42</span>
+	</code>
+
+	<h2>{{ "example-header-accesscode" | i18n }}</h2>
+
+	<code class="url-example">
+		{{ baseUrl }}<span style="color: dodgerblue">?target=https://my-bbb-instance.com/b/mee-tin-g42</span><span style="color: lightcoral">&accessCode=234343</span>
+	</code>
 </ng-template>

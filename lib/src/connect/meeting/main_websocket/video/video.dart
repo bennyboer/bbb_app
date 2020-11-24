@@ -7,21 +7,23 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/inco
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/outgoing_screenshare_video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/outgoing_webcam_video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
+import 'package:bbb_app/src/utils/log.dart';
 
 /// Module dealing with video stream stuff.
 class VideoModule extends Module {
-
   /// Video streams subscription topic to subscribe to.
   static const _subscriptionTopicVideo = "video-streams";
   static const _subscriptionTopicScreenshare = "screenshare";
 
   /// Controller over which we will publish updated video connection lists.
-  StreamController<Map<String, IncomingWebcamVideoConnection>> _videoConnectionsStreamController =
+  StreamController<Map<String, IncomingWebcamVideoConnection>>
+      _videoConnectionsStreamController =
       StreamController<Map<String, IncomingWebcamVideoConnection>>.broadcast();
 
   /// Controller over which we will publish updated screenshare connection lists.
-  StreamController<Map<String, IncomingScreenshareVideoConnection>> _screenshareVideoConnectionsStreamController =
-  StreamController<Map<String, IncomingScreenshareVideoConnection>>.broadcast();
+  StreamController<Map<String, IncomingScreenshareVideoConnection>>
+      _screenshareVideoConnectionsStreamController = StreamController<
+          Map<String, IncomingScreenshareVideoConnection>>.broadcast();
 
   /// List of video connections we currently have.
   Map<String, IncomingWebcamVideoConnection> _videoConnectionsByCameraId = {};
@@ -30,7 +32,8 @@ class VideoModule extends Module {
   Map<String, String> _cameraIdByStreamIdLookup = {};
 
   /// video connection for screenshare stream.
-  Map<String, IncomingScreenshareVideoConnection> _screenshareVideoConnections = {};
+  Map<String, IncomingScreenshareVideoConnection> _screenshareVideoConnections =
+      {};
 
   /// Info for the current meeting.
   final MeetingInfo _meetingInfo;
@@ -95,65 +98,63 @@ class VideoModule extends Module {
         String cameraID = msg["fields"]["stream"];
         String userID = msg["fields"]["userId"];
         if (cameraID != null && userID != null) {
-          print("Adding new video stream...");
+          Log.info("[VideoModule] Adding new video stream...");
 
-          IncomingWebcamVideoConnection v = IncomingWebcamVideoConnection(_meetingInfo, cameraID, userID);
+          IncomingWebcamVideoConnection v =
+              IncomingWebcamVideoConnection(_meetingInfo, cameraID, userID);
           _videoConnectionsByCameraId[cameraID] = v;
 
           v.init().then((value) => {
-
-            // Publish changed video connections list
-            _videoConnectionsStreamController.add(_videoConnectionsByCameraId)
-
-          });
+                // Publish changed video connections list
+                _videoConnectionsStreamController
+                    .add(_videoConnectionsByCameraId)
+              });
 
           _cameraIdByStreamIdLookup[msg["id"]] = cameraID;
-
         }
-
       } else if (collectionName == "screenshare") {
         String id = msg["id"];
         if (id != null) {
-          print("Adding new screenshare stream...");
+          Log.info("[VideoModule] Adding new screenshare stream...");
 
-          IncomingScreenshareVideoConnection v = IncomingScreenshareVideoConnection(_meetingInfo);
+          IncomingScreenshareVideoConnection v =
+              IncomingScreenshareVideoConnection(_meetingInfo);
           _screenshareVideoConnections[id] = v;
 
           v.init().then((value) => {
-
-            //Publish changed screenshare connections list
-            _screenshareVideoConnectionsStreamController.add(_screenshareVideoConnections)
-
-          });
-
+                //Publish changed screenshare connections list
+                _screenshareVideoConnectionsStreamController
+                    .add(_screenshareVideoConnections)
+              });
         }
       }
-
     } else if (method == "removed") {
       String collectionName = msg["collection"];
 
       if (collectionName == "video-streams") {
-        print("Removing video stream...");
+        Log.info("[VideoModule] Removing video stream...]");
 
         String streamID = msg["id"];
         String cameraID = _cameraIdByStreamIdLookup[streamID];
 
-        IncomingWebcamVideoConnection v = _videoConnectionsByCameraId.remove(cameraID);
+        IncomingWebcamVideoConnection v =
+            _videoConnectionsByCameraId.remove(cameraID);
 
         // Publish changed video connections list
         _videoConnectionsStreamController.add(_videoConnectionsByCameraId);
 
         v.close();
-
       } else if (collectionName == "screenshare") {
-        print("Removing screenshare stream...");
+        Log.info("[VideoModule] Removing screenshare stream...");
 
         String id = msg["id"];
 
-        IncomingScreenshareVideoConnection v = _screenshareVideoConnections.remove(id);
+        IncomingScreenshareVideoConnection v =
+            _screenshareVideoConnections.remove(id);
 
         // Publish changed video connections list
-        _screenshareVideoConnectionsStreamController.add(_screenshareVideoConnections);
+        _screenshareVideoConnectionsStreamController
+            .add(_screenshareVideoConnections);
 
         v.close();
       }
@@ -161,8 +162,9 @@ class VideoModule extends Module {
   }
 
   void _shareWebcam() {
-    if(_webcamShare == null) {
-      _webcamShare = OutgoingWebcamVideoConnection(_meetingInfo, messageSender, _camtype);
+    if (_webcamShare == null) {
+      _webcamShare =
+          OutgoingWebcamVideoConnection(_meetingInfo, messageSender, _camtype);
       _webcamShare.init().catchError((e) {
         _webcamShare = null;
       });
@@ -170,16 +172,16 @@ class VideoModule extends Module {
   }
 
   void _unshareWebcam() {
-    if(_webcamShare != null) {
+    if (_webcamShare != null) {
       _webcamShare.close();
       _webcamShare = null;
     }
   }
 
   void toggleWebcamOnOff() {
-    if(_webcamShare == null) {
+    if (_webcamShare == null) {
       _shareWebcam();
-    } else if(_webcamShare != null) {
+    } else if (_webcamShare != null) {
       _unshareWebcam();
     }
   }
@@ -187,9 +189,9 @@ class VideoModule extends Module {
   void toggleWebcamFrontBack() {
     _unshareWebcam();
 
-    if(_camtype == CAMERATYPE.BACK) {
+    if (_camtype == CAMERATYPE.BACK) {
       _camtype = CAMERATYPE.FRONT;
-    } else if(_camtype == CAMERATYPE.FRONT) {
+    } else if (_camtype == CAMERATYPE.FRONT) {
       _camtype = CAMERATYPE.BACK;
     }
 
@@ -230,15 +232,20 @@ class VideoModule extends Module {
 
   /// Get a stream of video connections lists that are updated when new camera IDs pop up
   /// or are removed.
-  Stream<Map<String, IncomingWebcamVideoConnection>> get videoConnectionsStream => _videoConnectionsStreamController.stream;
+  Stream<Map<String, IncomingWebcamVideoConnection>>
+      get videoConnectionsStream => _videoConnectionsStreamController.stream;
 
   /// Get a stream of screenshare connections lists that are updated when new screenshares pop up
   /// or are removed.
-  Stream<Map<String, IncomingScreenshareVideoConnection>> get screenshareVideoConnectionsStream => _screenshareVideoConnectionsStreamController.stream;
+  Stream<Map<String, IncomingScreenshareVideoConnection>>
+      get screenshareVideoConnectionsStream =>
+          _screenshareVideoConnectionsStreamController.stream;
 
   /// Get the currently listed video connections.
-  Map<String, IncomingWebcamVideoConnection> get videoConnections => _videoConnectionsByCameraId;
+  Map<String, IncomingWebcamVideoConnection> get videoConnections =>
+      _videoConnectionsByCameraId;
 
   /// Get the currently listed screenshare connections.
-  Map<String, IncomingScreenshareVideoConnection> get screenshareVideoConnections => _screenshareVideoConnections;
+  Map<String, IncomingScreenshareVideoConnection>
+      get screenshareVideoConnections => _screenshareVideoConnections;
 }

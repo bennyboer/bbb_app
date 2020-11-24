@@ -1,17 +1,14 @@
 import 'package:bbb_app/src/connect/meeting/main_websocket/util/util.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/video_connection.dart';
+import 'package:bbb_app/src/utils/log.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
-enum CAMERATYPE {
-  FRONT,
-  BACK
-}
+enum CAMERATYPE { FRONT, BACK }
 
 /// Sender function for messages.
 typedef MessageSender = void Function(Map<String, dynamic> msg);
 
 class OutgoingWebcamVideoConnection extends VideoConnection {
-
   /// Sender to send message over the websocket with.
   MessageSender _messageSender;
 
@@ -23,7 +20,9 @@ class OutgoingWebcamVideoConnection extends VideoConnection {
 
   CAMERATYPE _camtype;
 
-  OutgoingWebcamVideoConnection(var meetingInfo, MessageSender messageSender, CAMERATYPE camtype) : super(meetingInfo) {
+  OutgoingWebcamVideoConnection(
+      var meetingInfo, MessageSender messageSender, CAMERATYPE camtype)
+      : super(meetingInfo) {
     _messageSender = messageSender;
     _camtype = camtype;
   }
@@ -31,7 +30,7 @@ class OutgoingWebcamVideoConnection extends VideoConnection {
   @override
   Future<void> init() async {
     _localStream = await _createWebcamStream();
-    if(_localStream == null) {
+    if (_localStream == null) {
       throw Exception("local stream was null");
     }
     return super.init();
@@ -39,7 +38,6 @@ class OutgoingWebcamVideoConnection extends VideoConnection {
 
   @override
   void close() {
-
     _messageSender({
       "msg": "method",
       "method": "userUnshareWebcam",
@@ -57,7 +55,6 @@ class OutgoingWebcamVideoConnection extends VideoConnection {
 
     super.close();
     _localStream.dispose();
-
   }
 
   @override
@@ -73,7 +70,8 @@ class OutgoingWebcamVideoConnection extends VideoConnection {
 
   @override
   afterCreatePeerConnection() async {
-    _cameraId = meetingInfo.internalUserID + "_" + MainWebSocketUtil.getRandomHex(64);
+    _cameraId =
+        meetingInfo.internalUserID + "_" + MainWebSocketUtil.getRandomHex(64);
     await pc.addStream(_localStream);
   }
 
@@ -123,12 +121,13 @@ class OutgoingWebcamVideoConnection extends VideoConnection {
       }
     };
 
-    MediaStream stream = await navigator.mediaDevices.getUserMedia(mediaConstraints).catchError((e) {
-      print("error opening webcam stream: " + e);
+    MediaStream stream = await navigator.mediaDevices
+        .getUserMedia(mediaConstraints)
+        .catchError((e) {
+      Log.error("An error occurred while trying to open a webcam stream: '$e'");
       return null;
     });
 
     return stream;
   }
-
 }

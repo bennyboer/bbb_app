@@ -12,7 +12,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/util/util.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/video.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/voice/voice_module.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
-import 'package:bbb_app/src/connect/meeting/voice/voice_connection.dart';
+import 'package:bbb_app/src/utils/log.dart';
 import 'package:bbb_app/src/utils/websocket.dart';
 import 'package:http/http.dart' as http;
 
@@ -41,19 +41,20 @@ class MainWebSocket {
                 "html5client/sockjs/${MainWebSocketUtil.getRandomDigits(3)}/${MainWebSocketUtil.getRandomAlphanumeric(8)}/websocket");
 
     _webSocket = SimpleWebSocket(uri.toString(), cookie: _meetingInfo.cookie);
-    print("connect to ${uri.toString()}");
+    Log.info("Connecting to main websocket at '${uri.toString()}'");
 
     _webSocket.onOpen = () {
-      print("onOpen mainWebsocket");
+      Log.info("Main websocket opened successfully");
     };
 
     _webSocket.onMessage = (message) {
-      print("received data on mainWebsocket: " + message);
+      Log.verbose("[MainWebsocket] (Received data) | '$message'");
       _processMessage(message);
     };
 
     _webSocket.onClose = (int code, String reason) async {
-      print("mainWebsocket closed [$code => $reason]!");
+      Log.info(
+          "Main websocket connection closed. Reason: '$reason', code: $code");
 
       for (MapEntry<String, Module> moduleEntry in _modules.entries) {
         await moduleEntry.value.onDisconnect();
@@ -142,8 +143,8 @@ class MainWebSocket {
             }
           }
         });
-      } on FormatException catch (e) {
-        print("invalid JSON received on mainWebsocket: $message");
+      } on FormatException catch (_) {
+        Log.warning("[MainWebsocket] Received invalid JSON: '$message'");
       }
     }
   }
@@ -171,7 +172,7 @@ class MainWebSocket {
     });
   }
 
-    /// Send a message over the websocket.
+  /// Send a message over the websocket.
   void _sendMessage(Map<String, dynamic> msgMap) {
     msgMap["id"] = "${msgIdCounter++}"; // Add global message ID
 
