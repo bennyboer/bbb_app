@@ -1,27 +1,20 @@
-# Redirect
+# Redirect web app
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 10.1.6.
+This web app is an example on how to start the BBB App from deep links.
+The app supports deep links of the following format: `bbb-app://my-bbb-instance.com/b/mee-tin-g42?accessCode=233423`.
+Note that the access code query parameter is optional for access code protected meetings.
 
-## Development server
+You can now use this web app like the start page suggests:
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+![Start page](docs/screenshot2.png)
 
-## Code scaffolding
+If you send links of the suggested format to your users that point to this web application instead of the BBB meeting directly, they will be prompted with the following choice to either open the meeting in the browser or in the BBB app:
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+![Redirect page](docs/screenshot1.png)
 
-## Build
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build.
+## Getting started
 
-## Running unit tests
+This app is an Angular app and thus can be developed using the Angular development server by calling `ng serve` on the terminal (You need to have Angular installed first, but check their documentation for instructions).
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+If you want to produce a production ready version in the `dist/redirect` folder under this folder, you will need to call `ng build --prod` from the terminal.
