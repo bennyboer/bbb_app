@@ -11,6 +11,8 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/util/util.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/video.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/voice/call_module.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/voice/voice_call_states.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/voice/voice_users.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/connect/meeting/voice/call_connection.dart';
 import 'package:bbb_app/src/utils/websocket.dart';
@@ -89,6 +91,7 @@ class MainWebSocket {
     final MessageSender messageSender = (msg) => _sendMessage(msg);
 
     final UserModule userModule = new UserModule(messageSender);
+    final VoiceCallStatesModule voiceCallStatesModule = new VoiceCallStatesModule(messageSender);
 
     _modules = {
       "meeting": new MeetingModule(messageSender),
@@ -102,7 +105,9 @@ class MainWebSocket {
       ),
       "presentation": new PresentationModule(messageSender, _meetingInfo),
       "poll": new PollModule(messageSender),
-      "call": new CallModule(messageSender, _meetingInfo),
+      "call": new CallModule(messageSender, _meetingInfo, voiceCallStatesModule),
+      "voiceUsers": new VoiceUsersModule(messageSender, userModule),
+      "voiceCallState": voiceCallStatesModule,
     };
   }
 

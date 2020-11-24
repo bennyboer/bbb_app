@@ -15,6 +15,14 @@ class UserModel {
 
   bool isPresenter = false;
 
+  bool talking = false;
+
+  bool listenOnly = false;
+
+  bool muted = false;
+
+  bool joined = false;
+
   String connectionStatus = CONNECTIONSTATUS_OFFLINE;
 
   UserModel();
