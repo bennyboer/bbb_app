@@ -123,8 +123,9 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     _userMapByInternalId = _mainWebSocket.userModule.userMapByInternalId;
     _userChangesStreamSubscription =
         _mainWebSocket.userModule.changes.listen((userMap) {
-          setState(() => _userMapByInternalId = Map.of(_mainWebSocket.userModule.userMapByInternalId));
-        });
+      setState(() => _userMapByInternalId =
+          Map.of(_mainWebSocket.userModule.userMapByInternalId));
+    });
 
     WidgetsBinding.instance.addObserver(this);
   }
@@ -227,21 +228,27 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                     return Container(
                       padding: const EdgeInsets.all(8),
                       width: MediaQuery.of(context).size.width,
-                      child: Stack(
-                          children: [
-                            RTCVideoView(_videoConnections[key].remoteRenderer, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain),
-                            Container(
-                              alignment: Alignment.topCenter,
-                              child: Container(
-                                  padding: const EdgeInsets.fromLTRB(6,2,6,2),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(10),
-                                    color: Colors.white.withOpacity(0.7),
-                                  ),
-                                  child: Text(_userMapByInternalId[_videoConnections[key].internalUserId].name, style: TextStyle(color: Colors.black))),
-                            )
-                          ]
-                      ),
+                      child: Stack(children: [
+                        if (!_videoConnections[key].remoteRenderer.renderVideo)
+                          Center(child: CircularProgressIndicator()),
+                        RTCVideoView(_videoConnections[key].remoteRenderer,
+                            objectFit: RTCVideoViewObjectFit
+                                .RTCVideoViewObjectFitContain),
+                        Container(
+                          alignment: Alignment.topCenter,
+                          child: Container(
+                              padding: const EdgeInsets.fromLTRB(6, 2, 6, 2),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                color: Colors.white.withOpacity(0.7),
+                              ),
+                              child: Text(
+                                  _userMapByInternalId[
+                                          _videoConnections[key].internalUserId]
+                                      .name,
+                                  style: TextStyle(color: Colors.black))),
+                        )
+                      ]),
                     );
                   }),
             ),
@@ -255,13 +262,23 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(8),
-                child: RTCVideoView(
-                    _screenshareVideoConnections[screenshareKey].remoteRenderer,
-                    objectFit:
-                        RTCVideoViewObjectFit.RTCVideoViewObjectFitContain),
+                child: Stack(
+                  children: [
+                    if (!_screenshareVideoConnections[screenshareKey]
+                        .remoteRenderer
+                        .renderVideo)
+                      Center(child: CircularProgressIndicator()),
+                    RTCVideoView(
+                      _screenshareVideoConnections[screenshareKey]
+                          .remoteRenderer,
+                      objectFit:
+                          RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
+                    ),
+                  ],
+                ),
               ),
             ),
-          if(!_mainWebSocket.videoModule.isWebcamActive())
+          if (!_mainWebSocket.videoModule.isWebcamActive())
             ElevatedButton(
               onPressed: () => _toggleWebcamOnOff(context),
               child: new Text(
@@ -269,7 +286,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                 style: TextStyle(fontSize: 20.0),
               ),
             ),
-          if(_mainWebSocket.videoModule.isWebcamActive())
+          if (_mainWebSocket.videoModule.isWebcamActive())
             ElevatedButton(
               onPressed: () => _toggleWebcamOnOff(context),
               child: new Text(
@@ -277,7 +294,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                 style: TextStyle(fontSize: 20.0),
               ),
             ),
-          if(_mainWebSocket.videoModule.isWebcamActive())
+          if (_mainWebSocket.videoModule.isWebcamActive())
             ElevatedButton(
               onPressed: () => _toggleWebcamFrontBack(context),
               child: new Text(

@@ -105,7 +105,7 @@ class VideoModule extends Module {
               IncomingScreenshareVideoConnection(_meetingInfo);
           _screenshareVideoConnections[id] = v;
 
-          v.init().then((value) => {
+          v.init().then((_) => {
                 //Publish changed screenshare connections list
                 _screenshareVideoConnectionsStreamController
                     .add(_screenshareVideoConnections)
