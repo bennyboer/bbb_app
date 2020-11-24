@@ -5,6 +5,7 @@ import 'package:bbb_app/src/connect/meeting/load/exception/meeting_info_load_exc
 import 'package:bbb_app/src/connect/meeting/load/meeting_info_loaders.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
+import 'package:bbb_app/src/preference/preferences.dart';
 import 'package:bbb_app/src/utils/log.dart';
 import 'package:bbb_app/src/view/main/main_view.dart';
 import 'package:bbb_app/src/view/privacy_policy/privacy_policy_view.dart';
@@ -68,10 +69,19 @@ class _StartViewState extends State<StartView> {
   /// Subscription to uni link changes.
   StreamSubscription<Uri> _uniLinkSubscription;
 
+  /// Subscription to dark mode enabled changes.
+  StreamSubscription<bool> _darkModeSubscription;
+
   @override
   void initState() {
     super.initState();
     initializeDateFormatting();
+
+    _darkModeSubscription =
+        Preferences().darkModeEnabledChanges.listen((event) {
+      Provider.of<AppStateNotifier>(context, listen: false).darkModeEnabled =
+          event;
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget._snackBarText != null) {
@@ -87,6 +97,7 @@ class _StartViewState extends State<StartView> {
   @override
   void dispose() {
     if (_uniLinkSubscription != null) _uniLinkSubscription.cancel();
+    _darkModeSubscription.cancel();
 
     super.dispose();
   }
@@ -427,7 +438,7 @@ class _StartViewState extends State<StartView> {
       username,
       waitingRoomStatusUpdater: (isWaitingRoom) {
         if (isWaitingRoom) {
-          if(_meetingNotStartedDialogShown) {
+          if (_meetingNotStartedDialogShown) {
             Navigator.of(context, rootNavigator: true).pop();
             _meetingNotStartedDialogShown = false;
           }
@@ -474,8 +485,8 @@ class _StartViewState extends State<StartView> {
             barrierDismissible: false,
             builder: (BuildContext context) {
               return AlertDialog(
-                title: Text(
-                    AppLocalizations.of(context).get("login.wait-for-meeting-to-start")),
+                title: Text(AppLocalizations.of(context)
+                    .get("login.wait-for-meeting-to-start")),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
