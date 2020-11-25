@@ -456,6 +456,7 @@ Below you'll find a copy of the license at the time of writing:
 We use flutter_foreground_service_plugin (See https://github.com/ChangJoo-Park/flutter_foreground_service_plugin) which is licensed under the MIT license license (See https://github.com/ChangJoo-Park/flutter_foreground_service_plugin/blob/master/LICENSE).
 Below you'll find a copy of the license at the time of writing:
 
+```
 MIT License
 -----------
 
@@ -480,7 +481,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-
+```
 
 ## Logger
 
