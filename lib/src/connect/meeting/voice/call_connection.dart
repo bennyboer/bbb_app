@@ -1,11 +1,10 @@
 import 'dart:async';
 
-import 'package:bbb_app/src/connect/meeting/main_websocket/voice/call_module.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/connect/meeting/voice/call_manager.dart';
 import 'package:sip_ua/sip_ua.dart';
 
-
+/// The connection that handles the Sip call itself.
 class CallConnection extends CallManager implements SipUaHelperListener {
   MeetingInfo info;
   Call _call;
@@ -67,12 +66,14 @@ class CallConnection extends CallManager implements SipUaHelperListener {
   @override
   void transportStateChanged(TransportState state) {
     print("[SIP] Transport Changed: ${state.state}");
+    /// As soon as we are connected, connect to the echo call
     if (state.state == TransportStateEnum.CONNECTED) {
       helper.call(super.buildEcho(), true);
     }
   }
 
   /// Attempts to unmute the echo test
+  /// (DTMF tones are the tones you hear when you press on your phone keypad)
   void doEchoTest() {
     _call.sendDTMF("1", {"duration": 2000});
   }

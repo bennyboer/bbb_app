@@ -7,7 +7,7 @@ import 'package:bbb_app/src/connect/meeting/voice/call_connection.dart';
 
 const String ECHO_STATE = "IN_ECHO_TEST";
 
-/// This Module handles Voice Stream Initialisation and sends the EchoTest end message
+/// This Module handles Voice Stream Initialisation
 class CallModule extends Module {
   MeetingInfo _info;
   CallConnection _connection;

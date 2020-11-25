@@ -4,8 +4,12 @@ import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
 
 const String VOICE_USERS = "voiceUsers";
 
+/// Apparently, the Voice Users in BBB are somewhat separate from the regular users.
+/// Because we want to simplify things, we use the same data for both.
 class VoiceUsersModule extends Module {
   UserModule _userModule;
+  /// voice users have their own, unique message id which is mapped to the users internal id
+  /// on method: "add".
   Map<String, String> _voiceIdToInternalId = {};
 
   VoiceUsersModule(messageSender, this._userModule) : super(messageSender);

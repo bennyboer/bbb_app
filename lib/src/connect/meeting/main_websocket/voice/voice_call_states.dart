@@ -4,6 +4,9 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
 
 const String CALL_STATE = "voiceCallStates";
 
+/// The voice call states are only send for our user - maybe this is different
+/// for other parts of the server, however we just broadcast the state so we can
+/// attempt to pass the echo test as soon as the server tells us that we are connected.
 class VoiceCallStatesModule extends Module {
   String _callState;
   StreamController<String> _voiceStateStreamController =
