@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/meeting/meeting.dart';
@@ -87,7 +88,7 @@ class MainWebSocket {
       moduleEntry.value.onDisconnectBeforeWebsocketClose();
     }
 
-    _webSocket.close();
+    _webSocket.closeWithReason(WebSocketStatus.goingAway);
 
     // Call logout URL
     await http.get(_meetingInfo.logoutUrl, headers: {
