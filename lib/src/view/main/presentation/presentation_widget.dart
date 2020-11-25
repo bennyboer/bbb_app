@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/presentation_slide.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/presentation.dart';
+import 'package:bbb_app/src/view/fullscreen/fullscreen_view.dart';
 import 'package:bbb_app/src/view/main/presentation/presentation_painter.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -57,7 +58,7 @@ class _PresentationWidgetState extends State<PresentationWidget> {
     _slideSvg = await svg.fromSvgString(response.body, response.body);
 
     //check if this widget is still in tree. (might have been removed from tree during the http.get)
-    if(mounted) {
+    if (mounted) {
       setState(() {});
     }
   }
@@ -70,22 +71,52 @@ class _PresentationWidgetState extends State<PresentationWidget> {
   }
 
   @override
-  Widget build(BuildContext context) => Center(
-        child: _currentSlide != null && _currentSlide.bounds != null
-            ? AspectRatio(
-                aspectRatio:
-                    _currentSlide.bounds.width / _currentSlide.bounds.height,
-                child: ClipRect(
-                  child: CustomPaint(
-                    painter: PresentationPainter(
-                      _slideSvg,
-                      _currentSlide.bounds,
-                      _currentSlide.annotations.values.toList(growable: false)
-                        ..sort((o1, o2) => o1.position.compareTo(o2.position)),
-                    ),
-                  ),
-                ),
-              )
-            : const CircularProgressIndicator(),
+  Widget build(BuildContext context) {
+    bool hasSlide = _currentSlide != null && _currentSlide.bounds != null;
+
+    if (hasSlide) {
+      Widget presentation = AspectRatio(
+        aspectRatio: _currentSlide.bounds.width / _currentSlide.bounds.height,
+        child: ClipRect(
+          child: CustomPaint(
+            painter: PresentationPainter(
+              _slideSvg,
+              _currentSlide.bounds,
+              _currentSlide.annotations.values.toList(growable: false)
+                ..sort((o1, o2) => o1.position.compareTo(o2.position)),
+            ),
+          ),
+        ),
       );
+
+      return Center(
+        child: AspectRatio(
+          aspectRatio: _currentSlide.bounds.width / _currentSlide.bounds.height,
+          child: Stack(
+            children: [
+              presentation,
+              Align(
+                alignment: Alignment.topRight,
+                child: IconButton(
+                  icon: Icon(Icons.fullscreen),
+                  color: Colors.grey,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            FullscreenView(child: presentation),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      return Center(child: CircularProgressIndicator());
+    }
+  }
 }

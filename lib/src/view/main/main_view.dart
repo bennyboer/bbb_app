@@ -11,6 +11,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/inco
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
+import 'package:bbb_app/src/view/fullscreen/fullscreen_view.dart';
 import 'package:bbb_app/src/view/main/presentation/presentation_widget.dart';
 import 'package:bbb_app/src/view/meeting_info/meeting_info_view.dart';
 import 'package:bbb_app/src/view/privacy_policy/privacy_policy_view.dart';
@@ -206,126 +207,227 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
         .forEach((key, value) => _totalUnreadMessages += value);
   }
 
+  /// Build the button list.
+  List<Widget> _buildButtonList() {
+    return [
+      if (!_mainWebSocket.videoModule.isWebcamActive())
+        ElevatedButton(
+          onPressed: () => _toggleWebcamOnOff(context),
+          child: new Text(
+            "start webcam",
+            style: TextStyle(fontSize: 20.0),
+          ),
+        ),
+      if (_mainWebSocket.videoModule.isWebcamActive())
+        ElevatedButton(
+          onPressed: () => _toggleWebcamOnOff(context),
+          child: new Text(
+            "stop webcam",
+            style: TextStyle(fontSize: 20.0),
+          ),
+        ),
+      if (_mainWebSocket.videoModule.isWebcamActive())
+        ElevatedButton(
+          onPressed: () => _toggleWebcamFrontBack(context),
+          child: new Text(
+            "switch cam",
+            style: TextStyle(fontSize: 20.0),
+          ),
+        ),
+      if (!_mainWebSocket.videoModule.isScreenshareActive() && _isPresenter())
+        ElevatedButton(
+          onPressed: () => _toggleScreenshareOnOff(context),
+          child: new Text(
+            "start screenshare",
+            style: TextStyle(fontSize: 20.0),
+          ),
+        ),
+      if (_mainWebSocket.videoModule.isScreenshareActive())
+        ElevatedButton(
+          onPressed: () => _toggleScreenshareOnOff(context),
+          child: new Text(
+            "stop screenshare",
+            style: TextStyle(fontSize: 20.0),
+          ),
+        ),
+    ];
+  }
+
+  /// Build the screen share widget.
+  Widget _buildScreenShareWidget() {
+    String screenshareKey = _screenshareVideoConnections.keys.first;
+
+    RTCVideoView videoView = RTCVideoView(
+      _screenshareVideoConnections[screenshareKey].remoteRenderer,
+      objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      child: Stack(
+        children: [
+          if (!_screenshareVideoConnections[screenshareKey]
+              .remoteRenderer
+              .renderVideo)
+            Center(child: CircularProgressIndicator()),
+          videoView,
+          Align(
+            alignment: Alignment.topRight,
+            child: IconButton(
+              icon: Icon(Icons.fullscreen),
+              color: Colors.grey,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FullscreenView(child: videoView),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build the presentation widget to show.
+  Widget _buildPresentationWidget() {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      child: PresentationWidget(_mainWebSocket),
+    );
+  }
+
+  /// Build the webcam list.
+  Widget _buildCameraList(Axis axis) {
+    return PageView.builder(
+      scrollDirection: axis,
+      controller:
+          PageController(viewportFraction: axis == Axis.horizontal ? 0.6 : 0.4),
+      itemCount: _videoConnections.length,
+      itemBuilder: (BuildContext context, int index) {
+        String key = _videoConnections.keys.elementAt(index);
+
+        bool videoShown = _videoConnections[key].remoteRenderer.renderVideo;
+
+        RTCVideoRenderer remoteRenderer = _videoConnections[key].remoteRenderer;
+
+        RTCVideoView videoView = RTCVideoView(remoteRenderer,
+            objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain);
+
+        return Container(
+          margin: const EdgeInsets.all(8),
+          color: Colors.black87,
+          child: AspectRatio(
+            aspectRatio: 4 / 3,
+            child: Stack(
+              children: [
+                if (!videoShown) Center(child: CircularProgressIndicator()),
+                videoView,
+                Container(
+                  margin: EdgeInsets.only(top: 10),
+                  alignment: Alignment.topCenter,
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(6, 2, 6, 2),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.white.withOpacity(0.7),
+                    ),
+                    child: Text(
+                      _userMapByInternalId[
+                              _videoConnections[key].internalUserId]
+                          .name,
+                      style: TextStyle(color: Colors.black),
+                    ),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.topRight,
+                  child: IconButton(
+                    icon: Icon(Icons.fullscreen),
+                    color: Colors.grey,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              FullscreenView(child: videoView),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    String screenshareKey;
-    if (_screenshareVideoConnections.length > 0) {
-      screenshareKey = _screenshareVideoConnections.keys.elementAt(0);
-    }
-
     return Scaffold(
       appBar: _buildAppBar(),
-      body: Column(
-        children: <Widget>[
-          if (_videoConnections.length > 0)
-            Expanded(
-              child: PageView.builder(
-                scrollDirection: Axis.horizontal,
-                controller: PageController(viewportFraction: 0.6),
-                itemCount: _videoConnections.length,
-                itemBuilder: (BuildContext context, int index) {
-                  String key = _videoConnections.keys.elementAt(index);
-                  return Container(
-                    padding: const EdgeInsets.all(8),
-                    width: MediaQuery.of(context).size.width,
-                    child: Stack(children: [
-                      if (!_videoConnections[key].remoteRenderer.renderVideo)
-                        Center(child: CircularProgressIndicator()),
-                      RTCVideoView(_videoConnections[key].remoteRenderer,
-                          objectFit: RTCVideoViewObjectFit
-                              .RTCVideoViewObjectFitContain),
-                      if (_userMapByInternalId[
-                              _videoConnections[key].internalUserId] !=
-                          null)
-                        Container(
-                          alignment: Alignment.topCenter,
-                          child: Container(
-                            padding: const EdgeInsets.fromLTRB(6, 2, 6, 2),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              color: Colors.white.withOpacity(0.7),
-                            ),
-                            child: Text(
-                              _userMapByInternalId[
-                                      _videoConnections[key].internalUserId]
-                                  .name,
-                              style: TextStyle(color: Colors.black),
-                            ),
-                          ),
-                        )
-                    ]),
-                  );
-                },
-              ),
-            ),
-          if (_screenshareVideoConnections.length == 0)
-            Expanded(
-                child: Container(
-              padding: const EdgeInsets.all(8),
-              child: PresentationWidget(_mainWebSocket),
-            )),
-          if (_screenshareVideoConnections.length > 0)
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                child: Stack(
-                  children: [
-                    if (!_screenshareVideoConnections[screenshareKey]
-                        .remoteRenderer
-                        .renderVideo)
-                      Center(child: CircularProgressIndicator()),
-                    RTCVideoView(
-                      _screenshareVideoConnections[screenshareKey]
-                          .remoteRenderer,
-                      objectFit:
-                          RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
-                    ),
-                  ],
+      body: OrientationBuilder(
+        builder: (context, orientation) {
+          if (orientation == Orientation.portrait) {
+            return Column(
+              children: [
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: <Widget>[
+                      if (_videoConnections.length > 0)
+                        SizedBox(
+                          height: 160,
+                          child: _buildCameraList(Axis.horizontal),
+                        ),
+                      if (_screenshareVideoConnections.length == 0)
+                        Expanded(
+                          child: _buildPresentationWidget(),
+                        ),
+                      if (_screenshareVideoConnections.length > 0)
+                        Expanded(
+                          child: _buildScreenShareWidget(),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            ),
-          if (!_mainWebSocket.videoModule.isWebcamActive())
-            ElevatedButton(
-              onPressed: () => _toggleWebcamOnOff(context),
-              child: new Text(
-                "start webcam",
-                style: TextStyle(fontSize: 20.0),
-              ),
-            ),
-          if (_mainWebSocket.videoModule.isWebcamActive())
-            ElevatedButton(
-              onPressed: () => _toggleWebcamOnOff(context),
-              child: new Text(
-                "stop webcam",
-                style: TextStyle(fontSize: 20.0),
-              ),
-            ),
-          if (_mainWebSocket.videoModule.isWebcamActive())
-            ElevatedButton(
-              onPressed: () => _toggleWebcamFrontBack(context),
-              child: new Text(
-                "switch cam",
-                style: TextStyle(fontSize: 20.0),
-              ),
-            ),
-          if (!_mainWebSocket.videoModule.isScreenshareActive() &&
-              _isPresenter())
-            ElevatedButton(
-              onPressed: () => _toggleScreenshareOnOff(context),
-              child: new Text(
-                "start screenshare",
-                style: TextStyle(fontSize: 20.0),
-              ),
-            ),
-          if (_mainWebSocket.videoModule.isScreenshareActive())
-            ElevatedButton(
-              onPressed: () => _toggleScreenshareOnOff(context),
-              child: new Text(
-                "stop screenshare",
-                style: TextStyle(fontSize: 20.0),
-              ),
-            ),
-        ],
+                ..._buildButtonList()
+              ],
+            );
+          } else {
+            return Column(
+              children: [
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: <Widget>[
+                      if (_videoConnections.length > 0)
+                        SizedBox(
+                          width: 200,
+                          child: _buildCameraList(Axis.vertical),
+                        ),
+                      if (_screenshareVideoConnections.length == 0)
+                        Expanded(
+                          child: _buildPresentationWidget(),
+                        ),
+                      if (_screenshareVideoConnections.length > 0)
+                        Expanded(
+                          child: _buildScreenShareWidget(),
+                        ),
+                    ],
+                  ),
+                ),
+                Row(
+                  children: [..._buildButtonList()],
+                ),
+              ],
+            );
+          }
+        },
       ),
     );
   }
