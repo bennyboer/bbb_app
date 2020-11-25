@@ -17,6 +17,7 @@ class UserModule extends Module {
 
   @override
   void onConnected() {
+    subscribe("current-user");
     subscribe("users");
   }
 
