@@ -34,6 +34,9 @@ class MainWebSocket {
   /// ID of the msg validating the user. save for msg confirm purposes.
   String _validateAuthTokenMsgId;
 
+  /// how often validateAuthToken is sent already
+  int _validateAuthTokenMsgCount = 0;
+
   /// If the user is validated.
   bool _userIsValidated = false;
 
@@ -136,12 +139,24 @@ class MainWebSocket {
           final String method = jsonMsg["msg"];
           if (method != null) {
             if (method == "connected") {
+              _validateAuthTokenMsgCount++;
               _sendValidateAuthTokenMsg();
             } else if(method == "result" && jsonMsg["id"] != null && jsonMsg["id"] == _validateAuthTokenMsgId) {
-              _userIsValidated = true;
-              //now user is validated --> now we can send the subs.
-              for (MapEntry<String, Module> moduleEntry in _modules.entries) {
-                moduleEntry.value.onConnected();
+              if(_validateAuthTokenMsgCount == 1) {
+                _sendMessageWithoutID({
+                  "msg": "sub",
+                  "id": MainWebSocketUtil.getRandomAlphanumericWithCaps(17),
+                  "name": "current-user",
+                  "params": [],
+                });
+                _validateAuthTokenMsgCount++;
+                _sendValidateAuthTokenMsg();
+              } else {
+                _userIsValidated = true;
+                //now user is validated --> now we can send the subs.
+                for (MapEntry<String, Module> moduleEntry in _modules.entries) {
+                  moduleEntry.value.onConnected();
+                }
               }
             } else {
               // Delegate incoming message to the modules.
@@ -176,7 +191,7 @@ class MainWebSocket {
         _meetingInfo.meetingID,
         _meetingInfo.internalUserID,
         _meetingInfo.authToken,
-        _meetingInfo.externUserID,
+        if(_validateAuthTokenMsgCount == 1) _meetingInfo.externUserID,
       ],
       "id": _validateAuthTokenMsgId,
     });
