@@ -112,9 +112,7 @@ class OutgoingWebcamVideoConnection extends VideoConnection {
       'audio': false,
       'video': {
         'mandatory': {
-          'minWidth': '200', //TODO
-          'minHeight': '200', //TODO
-          'minFrameRate': '5', //TODO
+          'minFrameRate': '15',
         },
         'facingMode': _camtype == CAMERATYPE.FRONT ? 'user' : 'environment',
         'optional': [],
