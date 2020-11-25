@@ -27,7 +27,7 @@ class CallManager {
   }
 
   String _buildDisplayName() {
-    return "${info.internalUserID}_$_audioSessionNumber-bbbID-${info.fullUserName}}";
+    return "${info.internalUserID}_$_audioSessionNumber-bbbID-${info.fullUserName}";
   }
 
   Uri _buildWsUri(Uri joinUrl) {
