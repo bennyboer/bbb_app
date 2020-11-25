@@ -30,6 +30,12 @@ class MainWebSocket {
   /// Modules the web socket is delegating messages to.
   Map<String, Module> _modules;
 
+  /// ID of the msg validating the user. save for msg confirm purposes.
+  String _validateAuthTokenMsgId;
+
+  /// If the user is validated.
+  bool _userIsValidated = false;
+
   /// Create main web socket connection.
   MainWebSocket(this._meetingInfo) {
     _setupModules();
@@ -130,8 +136,9 @@ class MainWebSocket {
           if (method != null) {
             if (method == "connected") {
               _sendValidateAuthTokenMsg();
-
-              // Delegate incoming message to the modules.
+            } else if(method == "result" && jsonMsg["id"] != null && jsonMsg["id"] == _validateAuthTokenMsgId) {
+              _userIsValidated = true;
+              //now user is validated --> now we can send the subs.
               for (MapEntry<String, Module> moduleEntry in _modules.entries) {
                 moduleEntry.value.onConnected();
               }
@@ -160,7 +167,8 @@ class MainWebSocket {
 
   /// Send message to server to validate the auth token.
   void _sendValidateAuthTokenMsg() {
-    _sendMessage({
+    _validateAuthTokenMsgId = MainWebSocketUtil.getRandomHex(32);
+    _sendMessageWithoutID({
       "msg": "method",
       "method": "validateAuthToken",
       "params": [
@@ -169,15 +177,18 @@ class MainWebSocket {
         _meetingInfo.authToken,
         _meetingInfo.externUserID,
       ],
+      "id": _validateAuthTokenMsgId,
     });
   }
 
   /// Send a message over the websocket.
   void _sendMessage(Map<String, dynamic> msgMap) {
     msgMap["id"] = "${msgIdCounter++}"; // Add global message ID
+    _sendMessageWithoutID(msgMap);
+  }
 
+  void _sendMessageWithoutID(Map<String, dynamic> msgMap) {
     final String msg = json.encode(msgMap).replaceAll("\"", "\\\"");
-
     _webSocket.send("[\"$msg\"]");
   }
 
