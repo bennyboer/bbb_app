@@ -220,37 +220,43 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
           if (_videoConnections.length > 0)
             Expanded(
               child: PageView.builder(
-                  scrollDirection: Axis.horizontal,
-                  controller: PageController(viewportFraction: 1.0),
-                  itemCount: _videoConnections.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    String key = _videoConnections.keys.elementAt(index);
-                    return Container(
-                      padding: const EdgeInsets.all(8),
-                      width: MediaQuery.of(context).size.width,
-                      child: Stack(children: [
-                        if (!_videoConnections[key].remoteRenderer.renderVideo)
-                          Center(child: CircularProgressIndicator()),
-                        RTCVideoView(_videoConnections[key].remoteRenderer,
-                            objectFit: RTCVideoViewObjectFit
-                                .RTCVideoViewObjectFitContain),
+                scrollDirection: Axis.horizontal,
+                controller: PageController(viewportFraction: 0.6),
+                itemCount: _videoConnections.length,
+                itemBuilder: (BuildContext context, int index) {
+                  String key = _videoConnections.keys.elementAt(index);
+                  return Container(
+                    padding: const EdgeInsets.all(8),
+                    width: MediaQuery.of(context).size.width,
+                    child: Stack(children: [
+                      if (!_videoConnections[key].remoteRenderer.renderVideo)
+                        Center(child: CircularProgressIndicator()),
+                      RTCVideoView(_videoConnections[key].remoteRenderer,
+                          objectFit: RTCVideoViewObjectFit
+                              .RTCVideoViewObjectFitContain),
+                      if (_userMapByInternalId[
+                              _videoConnections[key].internalUserId] !=
+                          null)
                         Container(
                           alignment: Alignment.topCenter,
                           child: Container(
-                              padding: const EdgeInsets.fromLTRB(6, 2, 6, 2),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                                color: Colors.white.withOpacity(0.7),
-                              ),
-                              child: Text(
-                                  _userMapByInternalId[
-                                          _videoConnections[key].internalUserId]
-                                      .name,
-                                  style: TextStyle(color: Colors.black))),
+                            padding: const EdgeInsets.fromLTRB(6, 2, 6, 2),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                            child: Text(
+                              _userMapByInternalId[
+                                      _videoConnections[key].internalUserId]
+                                  .name,
+                              style: TextStyle(color: Colors.black),
+                            ),
+                          ),
                         )
-                      ]),
-                    );
-                  }),
+                    ]),
+                  );
+                },
+              ),
             ),
           if (_screenshareVideoConnections.length == 0)
             Expanded(
@@ -302,7 +308,8 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                 style: TextStyle(fontSize: 20.0),
               ),
             ),
-          if(!_mainWebSocket.videoModule.isScreenshareActive() && _isPresenter())
+          if (!_mainWebSocket.videoModule.isScreenshareActive() &&
+              _isPresenter())
             ElevatedButton(
               onPressed: () => _toggleScreenshareOnOff(context),
               child: new Text(
@@ -310,7 +317,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                 style: TextStyle(fontSize: 20.0),
               ),
             ),
-          if(_mainWebSocket.videoModule.isScreenshareActive())
+          if (_mainWebSocket.videoModule.isScreenshareActive())
             ElevatedButton(
               onPressed: () => _toggleScreenshareOnOff(context),
               child: new Text(
@@ -336,7 +343,8 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   }
 
   bool _isPresenter() {
-    return _userMapByInternalId[widget._meetingInfo.internalUserID] != null && _userMapByInternalId[widget._meetingInfo.internalUserID].isPresenter;
+    return _userMapByInternalId[widget._meetingInfo.internalUserID] != null &&
+        _userMapByInternalId[widget._meetingInfo.internalUserID].isPresenter;
   }
 
   /// Build the main views application bar.

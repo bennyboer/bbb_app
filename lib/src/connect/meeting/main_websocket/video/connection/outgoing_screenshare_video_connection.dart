@@ -90,9 +90,7 @@ class OutgoingScreenshareVideoConnection extends VideoConnection {
       'audio': false,
       'video': {
         'mandatory': {
-          'minWidth': '200', //TODO
-          'minHeight': '200', //TODO
-          'minFrameRate': '5', //TODO
+          'minFrameRate': '15',
         },
         'optional': [],
       }
