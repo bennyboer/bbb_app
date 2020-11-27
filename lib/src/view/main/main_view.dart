@@ -41,6 +41,9 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   /// Counter for total unread messages.
   int _totalUnreadMessages = 0;
 
+  /// Users currently taling.
+  Set<String> _currentlyTalkingUsers = new Set<String>();
+
   /// Subscription to video connection list changes.
   StreamSubscription _videoConnectionsStreamSubscription;
 
@@ -112,6 +115,21 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
       if (event.data.internalId == widget._meetingInfo.internalUserID &&
           !event.data.isOnline()) {
         _onCurrentUserKicked();
+      }
+
+      // Check whether user is currently talking
+      if (event.type == UserEventType.CHANGED) {
+        if (!event.data.talking &&
+            _currentlyTalkingUsers.contains(event.data.name)) {
+          setState(() {
+            _currentlyTalkingUsers.remove(event.data.name);
+          });
+        } else if (event.data.talking &&
+            !_currentlyTalkingUsers.contains(event.data.name)) {
+          setState(() {
+            _currentlyTalkingUsers.add(event.data.name);
+          });
+        }
       }
     });
 
@@ -209,6 +227,38 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     _muteStatus = status;
   }
 
+  /// Build a list of currently talking users.
+  Widget _buildCurrentlyTalkingUserList() {
+    List<Widget> badges = _currentlyTalkingUsers
+        .map((e) => _buildCurrentlyTalkingUserBadge(e))
+        .toList(growable: false);
+
+    return SizedBox(
+      height: 30,
+      child: Row(
+        children: badges,
+      ),
+    );
+  }
+
+  /// Build badge for a currently talking user.
+  Widget _buildCurrentlyTalkingUserBadge(String userName) {
+    return new Flexible(
+      fit: FlexFit.loose,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          color: Theme.of(context).buttonColor,
+        ),
+        child: Text(
+          userName,
+          softWrap: false,
+          overflow: TextOverflow.fade,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     String screenshareKey;
@@ -220,6 +270,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
       appBar: _buildAppBar(),
       body: Column(
         children: <Widget>[
+          _buildCurrentlyTalkingUserList(),
           if (_videoConnections.length > 0)
             Expanded(
               child: PageView.builder(
