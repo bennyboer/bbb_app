@@ -107,6 +107,7 @@ class ChatModule extends Module {
 
   /// Start that the current user is typing for the passed chatID.
   void startUserTyping([String chatID]) {
+    print("Start user typing");
     sendMessage({
       "msg": "method",
       "method": "startUserTyping",
@@ -124,6 +125,7 @@ class ChatModule extends Module {
 
   /// Stop that the current user is typing.
   void stopUserTyping() {
+    print("Stop user typing...");
     sendMessage({
       "msg": "method",
       "method": "stopUserTyping",
@@ -289,9 +291,9 @@ class ChatModule extends Module {
           if (usersTyping != null) {
             usersTyping.remove(info.userName);
           }
-        }
 
-        _userTypingStatusController.add(info);
+          _userTypingStatusController.add(info);
+        }
       }
     }
   }

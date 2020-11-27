@@ -115,7 +115,7 @@ class _ChatViewState extends State<ChatView> {
         );
       }
 
-      _userTypingTimer = Timer(Duration(seconds: 3), () {
+      _userTypingTimer = Timer(Duration(seconds: 2), () {
         widget._mainWebSocket.chatModule.stopUserTyping();
         _userTypingTimer = null;
       });
