@@ -19,13 +19,6 @@ abstract class VideoConnection {
   SimpleWebSocket _socket;
   RTCPeerConnection pc;
 
-  //TODO custom TURN/STUN server returned by BBB
-  Map<String, dynamic> _iceServers = {
-    'iceServers': [
-      {'url': 'stun:stun.l.google.com:19302'},
-    ]
-  };
-
   final Map<String, dynamic> _config = {
     'mandatory': {},
     'optional': [
@@ -114,7 +107,7 @@ abstract class VideoConnection {
 
   createOffer() async {
     try {
-      pc = await createPeerConnection(_iceServers, _config);
+      pc = await createPeerConnection(meetingInfo.iceServers, _config);
 
       await afterCreatePeerConnection();
 
