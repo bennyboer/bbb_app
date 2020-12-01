@@ -60,6 +60,9 @@ class MeetingInfo {
   /// Whether to mute the user on start.
   bool _muteOnStart;
 
+  /// STUN / TURN servers.
+  Map<String, dynamic> _iceServers;
+
   MeetingInfo({
     String meetingUrl,
     String joinUrl,
@@ -81,6 +84,7 @@ class MeetingInfo {
     String logoutUrl,
     bool isBreakout = false,
     bool muteOnStart = true,
+    Map<String, dynamic> iceServers,
   })  : this._meetingUrl = meetingUrl,
         this._joinUrl = joinUrl,
         this._sessionToken = sessionToken,
@@ -100,7 +104,8 @@ class MeetingInfo {
         this._webVoiceConf = webVoiceConf,
         this._isBreakout = isBreakout,
         this._muteOnStart = muteOnStart,
-        this._logoutUrl = logoutUrl;
+        this._logoutUrl = logoutUrl,
+        this._iceServers = iceServers;
 
   bool get muteOnStart => _muteOnStart;
 
@@ -141,4 +146,6 @@ class MeetingInfo {
   String get joinUrl => _joinUrl;
 
   String get meetingUrl => _meetingUrl;
+
+  Map<String, dynamic> get iceServers => _iceServers;
 }
