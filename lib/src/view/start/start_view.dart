@@ -379,9 +379,16 @@ class _StartViewState extends State<StartView> {
   /// Submit the form and validate input fields.
   Future<void> _submitForm(BuildContext context) async {
     if (_formKey.currentState.validate()) {
-      final String meetingURL = _meetingURLController.text;
+      String meetingURL = _meetingURLController.text;
       final String username = _usernameTextField.text;
       final String accesscode = _accesscodeTextField.text;
+
+      //handle input mistakes made by user
+      meetingURL = meetingURL.trim();
+      if(!meetingURL.startsWith("http://") && !meetingURL.startsWith("https://")) {
+        meetingURL = "https://" + meetingURL;
+      }
+      _meetingURLController.text = meetingURL;
 
       // Show a snack bar until all information to join the meeting has been loaded
       var snackBarController = Scaffold.of(context).showSnackBar(SnackBar(
