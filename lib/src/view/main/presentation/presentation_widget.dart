@@ -90,28 +90,33 @@ class _PresentationWidgetState extends State<PresentationWidget> {
       );
 
       return Center(
-        child: AspectRatio(
-          aspectRatio: _currentSlide.bounds.width / _currentSlide.bounds.height,
-          child: Stack(
-            children: [
-              presentation,
-              Align(
-                alignment: Alignment.topRight,
-                child: IconButton(
-                  icon: Icon(Icons.fullscreen),
-                  color: Colors.grey,
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            FullscreenView(child: presentation),
-                      ),
-                    );
-                  },
+        child: Container(
+          decoration: BoxDecoration(
+              border: Border.all(color: Theme.of(context).textTheme.bodyText1.color)
+          ),
+          child: AspectRatio(
+            aspectRatio: _currentSlide.bounds.width / _currentSlide.bounds.height,
+            child: Stack(
+              children: [
+                presentation,
+                Align(
+                  alignment: Alignment.topRight,
+                  child: IconButton(
+                    icon: Icon(Icons.fullscreen),
+                    color: Colors.grey,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              FullscreenView(child: presentation),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );
