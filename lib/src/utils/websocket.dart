@@ -62,7 +62,7 @@ class SimpleWebSocket {
   }) async {
     try {
       Random r = new Random();
-      String key = base64.encode(List<int>.generate(8, (_) => r.nextInt(255)));
+      String key = base64.encode(List<int>.generate(16, (_) => r.nextInt(255)));
       HttpClient client = HttpClient(context: SecurityContext());
       client.badCertificateCallback =
           (X509Certificate cert, String host, int port) {
@@ -88,6 +88,13 @@ class SimpleWebSocket {
       }
 
       HttpClientResponse response = await request.close();
+
+      // if(response.statusCode == 400) {
+      //   response.transform(utf8.decoder).listen((contents) {
+      //     print(contents);
+      //   });
+      // }
+
       Socket socket = await response.detachSocket();
       var webSocket = WebSocket.fromUpgradedSocket(
         socket,
