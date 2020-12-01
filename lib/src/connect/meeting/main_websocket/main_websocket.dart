@@ -172,8 +172,8 @@ class MainWebSocket {
             }
           }
         });
-      } on FormatException catch (_) {
-        Log.warning("[MainWebsocket] Received invalid JSON: '$message'");
+      } on FormatException catch (e) {
+        print("invalid JSON received on mainWebsocket: $message");
       }
     }
   }
