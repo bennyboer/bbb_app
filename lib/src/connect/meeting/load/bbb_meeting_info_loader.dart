@@ -95,6 +95,9 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
         await http.get(parsedUri, headers: {"cookie": _cookie});
     Map<String, dynamic> enterJson = json.decode(response.body)["response"];
 
+    Map<String, dynamic> iceServers = await _loadIceServers(joinUrl);
+    Log.info("STUN / TURN servers: " + iceServers.toString());
+
     return MeetingInfo(
       meetingUrl: meetingUrl,
       joinUrl: joinUrl,
@@ -116,6 +119,7 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
       webVoiceConf: enterJson["webvoiceconf"],
       isBreakout: enterJson["isBreakout"],
       muteOnStart: enterJson["muteOnStart"],
+      iceServers: iceServers,
     );
   }
 
@@ -362,6 +366,74 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
     }
 
     return element.attributes["content"];
+  }
+
+  Future<Map<String, dynamic>> _loadIceServers(String joinUrl) async {
+    try {
+
+      Uri parsedUri = Uri.parse(joinUrl);
+      parsedUri = parsedUri.replace(path: "/bigbluebutton/api/stuns");
+      http.Response response =
+          await http.get(parsedUri, headers: {"cookie": _cookie});
+      Map<String, dynamic> responseJson = json.decode(response.body);
+
+      List<dynamic> iceServers = [];
+
+      List<dynamic> stunServers = responseJson["stunServers"];
+      if(stunServers != null) {
+        stunServers.forEach((e) {
+          Map<String, dynamic> iceServer = _createIceServerEntry(e["url"], null, null);
+          if(iceServer != null) {
+            iceServers.add(iceServer);
+          }
+        });
+      }
+
+      List<dynamic> turnServers = responseJson["turnServers"];
+      if(turnServers != null) {
+        turnServers.forEach((e) {
+          Map<String, dynamic> iceServer = _createIceServerEntry(e["url"], e["username"], e["password"]);
+          if(iceServer != null) {
+            iceServers.add(iceServer);
+          }
+        });
+      }
+
+      if(iceServers.isEmpty) {
+        return _fallbackIceServer();
+      }
+
+      return {
+        'iceServers': iceServers
+      };
+
+    } on Exception catch (e) {
+      Log.error(e);
+      return _fallbackIceServer();
+    }
+  }
+
+  Map<String, dynamic> _fallbackIceServer() {
+    return {
+      'iceServers': [
+        {'url': 'stun:stun.l.google.com:19302'},
+      ]
+    };
+  }
+
+  Map<String, dynamic> _createIceServerEntry(String url, String username, String credential) {
+    Map<String, dynamic> iceServer = {};
+    if(url == null) {
+      return null;
+    }
+    iceServer["url"] = url;
+    if(username != null) {
+      iceServer["username"] = username;
+    }
+    if(credential != null) {
+      iceServer["credential"] = credential;
+    }
+    return iceServer;
   }
 
   bool _setCookie(http.Response response) {
