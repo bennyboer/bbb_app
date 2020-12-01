@@ -53,7 +53,11 @@ abstract class VideoConnection {
   void connect() async {
     final uri = Uri.parse(meetingInfo.joinUrl).replace(path: _BBB_SFU);
 
-    _socket = SimpleWebSocket(uri.toString());
+    String origin = Uri.parse(meetingInfo.joinUrl).origin;
+    Map<String, String> headers = {};
+    headers["Origin"] = origin;
+
+    _socket = SimpleWebSocket(uri.toString(), additionalHeaders: headers);
 
     Log.info("[VideoConnection] Connecting to ${uri.toString()}...");
 
