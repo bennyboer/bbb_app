@@ -1,0 +1,44 @@
+<div class="container">
+
+	<div class="header">
+		<img src="assets/icon.png" width="128">
+	</div>
+
+	<div *ngIf="hasMeetingUrl; else placeholder">
+		<h1>{{ "welcome-msg" | i18n }}</h1>
+
+		<div>
+			<a class="option-btn" [href]="openInBrowserLink">
+				{{ "open-in-browser" | i18n }}
+			</a>
+		</div>
+
+		<div>
+			<a class="option-btn" [href]="openInAppLink">
+				{{ "open-in-app" | i18n }}
+			</a>
+		</div>
+
+		<p class="notice">
+			{{ "install-app-notice-prefix" | i18n }}
+			<a target="_blank"
+			   href="https://play.google.com/store/apps/details?id=edu.hm.cs.tape.bbb_app">{{ "install-app-notice-link" | i18n }}</a>
+			{{ "install-app-notice-postfix" | i18n }}
+		</p>
+	</div>
+
+</div>
+
+<ng-template #placeholder>
+	<h1>{{ "example-header" | i18n }}</h1>
+
+	<code class="url-example">
+		{{ baseUrl }}<span style="color: dodgerblue">?target=https://my-bbb-instance.com/b/mee-tin-g42</span>
+	</code>
+
+	<h2>{{ "example-header-accesscode" | i18n }}</h2>
+
+	<code class="url-example">
+		{{ baseUrl }}<span style="color: dodgerblue">?target=https://my-bbb-instance.com/b/mee-tin-g42</span><span style="color: lightcoral">&accessCode=234343</span>
+	</code>
+</ng-template>

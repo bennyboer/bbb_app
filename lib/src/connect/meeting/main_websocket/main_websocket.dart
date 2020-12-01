@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/meeting/meeting.dart';
@@ -15,6 +16,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/voice/voice_call_stat
 import 'package:bbb_app/src/connect/meeting/main_websocket/voice/voice_users.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/connect/meeting/voice/call_connection.dart';
+import 'package:bbb_app/src/utils/log.dart';
 import 'package:bbb_app/src/utils/websocket.dart';
 import 'package:http/http.dart' as http;
 
@@ -32,6 +34,15 @@ class MainWebSocket {
   /// Modules the web socket is delegating messages to.
   Map<String, Module> _modules;
 
+  /// ID of the msg validating the user. save for msg confirm purposes.
+  String _validateAuthTokenMsgId;
+
+  /// how often validateAuthToken is sent already
+  int _validateAuthTokenMsgCount = 0;
+
+  /// If the user is validated.
+  bool _userIsValidated = false;
+
   /// Create main web socket connection.
   MainWebSocket(this._meetingInfo) {
     _setupModules();
@@ -43,19 +54,20 @@ class MainWebSocket {
                 "html5client/sockjs/${MainWebSocketUtil.getRandomDigits(3)}/${MainWebSocketUtil.getRandomAlphanumeric(8)}/websocket");
 
     _webSocket = SimpleWebSocket(uri.toString(), cookie: _meetingInfo.cookie);
-    print("connect to ${uri.toString()}");
+    Log.info("Connecting to main websocket at '${uri.toString()}'");
 
     _webSocket.onOpen = () {
-      print("onOpen mainWebsocket");
+      Log.info("Main websocket opened successfully");
     };
 
     _webSocket.onMessage = (message) {
-      print("received data on mainWebsocket: " + message);
+      Log.verbose("[MainWebsocket] (Received data) | '$message'");
       _processMessage(message);
     };
 
     _webSocket.onClose = (int code, String reason) async {
-      print("mainWebsocket closed [$code => $reason]!");
+      Log.info(
+          "Main websocket connection closed. Reason: '$reason', code: $code");
 
       for (MapEntry<String, Module> moduleEntry in _modules.entries) {
         await moduleEntry.value.onDisconnect();
@@ -78,7 +90,11 @@ class MainWebSocket {
       "params": [],
     });
 
-    _webSocket.close();
+    for (MapEntry<String, Module> moduleEntry in _modules.entries) {
+      moduleEntry.value.onDisconnectBeforeWebsocketClose();
+    }
+
+    _webSocket.closeWithReason(WebSocketStatus.goingAway);
 
     // Call logout URL
     await http.get(_meetingInfo.logoutUrl, headers: {
@@ -96,7 +112,7 @@ class MainWebSocket {
     _modules = {
       "meeting": new MeetingModule(messageSender),
       "ping": new PingModule(messageSender),
-      "video": new VideoModule(messageSender, _meetingInfo),
+      "video": new VideoModule(messageSender, _meetingInfo, userModule),
       "user": userModule,
       "chat": new ChatModule(
         messageSender,
@@ -129,11 +145,24 @@ class MainWebSocket {
           final String method = jsonMsg["msg"];
           if (method != null) {
             if (method == "connected") {
+              _validateAuthTokenMsgCount++;
               _sendValidateAuthTokenMsg();
-
-              // Delegate incoming message to the modules.
-              for (MapEntry<String, Module> moduleEntry in _modules.entries) {
-                moduleEntry.value.onConnected();
+            } else if(method == "result" && jsonMsg["id"] != null && jsonMsg["id"] == _validateAuthTokenMsgId) {
+              if(_validateAuthTokenMsgCount == 1) {
+                _sendMessageWithoutID({
+                  "msg": "sub",
+                  "id": MainWebSocketUtil.getRandomAlphanumericWithCaps(17),
+                  "name": "current-user",
+                  "params": [],
+                });
+                _validateAuthTokenMsgCount++;
+                _sendValidateAuthTokenMsg();
+              } else {
+                _userIsValidated = true;
+                //now user is validated --> now we can send the subs.
+                for (MapEntry<String, Module> moduleEntry in _modules.entries) {
+                  moduleEntry.value.onConnected();
+                }
               }
             } else {
               // Delegate incoming message to the modules.
@@ -143,8 +172,8 @@ class MainWebSocket {
             }
           }
         });
-      } on FormatException catch (e) {
-        print("invalid JSON received on mainWebsocket: $message");
+      } on FormatException catch (_) {
+        Log.warning("[MainWebsocket] Received invalid JSON: '$message'");
       }
     }
   }
@@ -160,25 +189,28 @@ class MainWebSocket {
 
   /// Send message to server to validate the auth token.
   void _sendValidateAuthTokenMsg() {
-    _sendMessage({
+    _validateAuthTokenMsgId = MainWebSocketUtil.getRandomHex(32);
+    _sendMessageWithoutID({
       "msg": "method",
       "method": "validateAuthToken",
       "params": [
         _meetingInfo.meetingID,
         _meetingInfo.internalUserID,
         _meetingInfo.authToken,
-        _meetingInfo.externUserID,
+        if(_validateAuthTokenMsgCount == 1) _meetingInfo.externUserID,
       ],
-      "id": "${msgIdCounter++}",
+      "id": _validateAuthTokenMsgId,
     });
   }
 
   /// Send a message over the websocket.
   void _sendMessage(Map<String, dynamic> msgMap) {
     msgMap["id"] = "${msgIdCounter++}"; // Add global message ID
+    _sendMessageWithoutID(msgMap);
+  }
 
+  void _sendMessageWithoutID(Map<String, dynamic> msgMap) {
     final String msg = json.encode(msgMap).replaceAll("\"", "\\\"");
-
     _webSocket.send("[\"$msg\"]");
   }
 

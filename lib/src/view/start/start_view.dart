@@ -5,12 +5,16 @@ import 'package:bbb_app/src/connect/meeting/load/exception/meeting_info_load_exc
 import 'package:bbb_app/src/connect/meeting/load/meeting_info_loaders.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
+import 'package:bbb_app/src/preference/preferences.dart';
+import 'package:bbb_app/src/utils/log.dart';
 import 'package:bbb_app/src/view/main/main_view.dart';
+import 'package:bbb_app/src/view/privacy_policy/privacy_policy_view.dart';
 import 'package:day_night_switcher/day_night_switcher.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
+import 'package:uni_links/uni_links.dart';
 
 // Start view of the app where you'll be able to enter a meeting using the invitation link.
 class StartView extends StatefulWidget {
@@ -27,6 +31,9 @@ class StartView extends StatefulWidget {
 
 /// State of the start view.
 class _StartViewState extends State<StartView> {
+  /// Access code parameter of a uni link the app has been opened with.
+  static const String _uniLinkAccessCodeQueryParameter = "accessCode";
+
   /// Duration after the user stopped typing after which to check whether
   /// an access code is needed for the current meeting URL.
   static const Duration _checkForAccessCodeNeededDuration =
@@ -53,13 +60,28 @@ class _StartViewState extends State<StartView> {
   /// Whether the waiting room dialog is currently visible.
   bool _waitingRoomDialogShown = false;
 
+  /// Whether the meeting-not-started dialog is currently visible.
+  bool _meetingNotStartedDialogShown = false;
+
   /// Timer of when the user stopped editing the meeting URL.
   Timer _userStoppedEditingMeetingUrlTimer;
+
+  /// Subscription to uni link changes.
+  StreamSubscription<Uri> _uniLinkSubscription;
+
+  /// Subscription to dark mode enabled changes.
+  StreamSubscription<bool> _darkModeSubscription;
 
   @override
   void initState() {
     super.initState();
     initializeDateFormatting();
+
+    _darkModeSubscription =
+        Preferences().darkModeEnabledChanges.listen((event) {
+      Provider.of<AppStateNotifier>(context, listen: false).darkModeEnabled =
+          event;
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget._snackBarText != null) {
@@ -67,6 +89,65 @@ class _StartViewState extends State<StartView> {
           content: Text(widget._snackBarText),
         ));
       }
+
+      _initUniLinks();
+    });
+  }
+
+  @override
+  void dispose() {
+    if (_uniLinkSubscription != null) _uniLinkSubscription.cancel();
+    _darkModeSubscription.cancel();
+
+    super.dispose();
+  }
+
+  /// Initialize uni links (deep linking).
+  Future<void> _initUniLinks() async {
+    try {
+      Uri initialLink = await getInitialUri();
+
+      _processUniLink(initialLink);
+    } catch (e) {
+      Log.warning("Deep link processing failed");
+    }
+
+    _uniLinkSubscription = getUriLinksStream().listen((Uri uri) {
+      _processUniLink(uri);
+    });
+  }
+
+  /// Process the passed uni link.
+  void _processUniLink(Uri link) {
+    if (link == null) {
+      return;
+    }
+
+    Uri meetingUrl = link.replace(scheme: "https");
+
+    if (link.queryParameters.containsKey(_uniLinkAccessCodeQueryParameter)) {
+      String accessCode =
+          meetingUrl.queryParameters[_uniLinkAccessCodeQueryParameter];
+
+      Map<String, String> newQueryParams = Map.of(meetingUrl.queryParameters);
+      newQueryParams.remove(_uniLinkAccessCodeQueryParameter);
+      meetingUrl = meetingUrl.replace(queryParameters: newQueryParams);
+
+      _accessCodeVisible = true;
+      _accesscodeTextField.text = accessCode;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      String newMeetingUrl = meetingUrl.toString();
+      if (newMeetingUrl.endsWith("?")) {
+        newMeetingUrl = newMeetingUrl.substring(0, newMeetingUrl.length - 1);
+      }
+
+      _meetingURLController.text = newMeetingUrl;
     });
   }
 
@@ -138,9 +219,25 @@ class _StartViewState extends State<StartView> {
                                         listen: false)
                                     .darkModeEnabled = isDarkModeEnabled,
                           ),
-                          IconButton(
-                            icon: Icon(Icons.info),
-                            onPressed: () => showAboutDialog(context: context),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.info),
+                                onPressed: () =>
+                                    showAboutDialog(context: context),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.privacy_tip),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            PrivacyPolicyView()),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -282,9 +379,16 @@ class _StartViewState extends State<StartView> {
   /// Submit the form and validate input fields.
   Future<void> _submitForm(BuildContext context) async {
     if (_formKey.currentState.validate()) {
-      final String meetingURL = _meetingURLController.text;
+      String meetingURL = _meetingURLController.text;
       final String username = _usernameTextField.text;
       final String accesscode = _accesscodeTextField.text;
+
+      //handle input mistakes made by user
+      meetingURL = meetingURL.trim();
+      if(!meetingURL.startsWith("http://") && !meetingURL.startsWith("https://")) {
+        meetingURL = "https://" + meetingURL;
+      }
+      _meetingURLController.text = meetingURL;
 
       // Show a snack bar until all information to join the meeting has been loaded
       var snackBarController = Scaffold.of(context).showSnackBar(SnackBar(
@@ -332,15 +436,23 @@ class _StartViewState extends State<StartView> {
   ) async {
     Completer<MeetingInfo> _completer = new Completer<MeetingInfo>();
 
+    _waitingRoomDialogShown = false;
+    _meetingNotStartedDialogShown = false;
+
     MeetingInfoLoaders().loader.load(
       meetingUrl,
       accessCode,
       username,
-      statusUpdater: (isWaitingRoom) {
+      waitingRoomStatusUpdater: (isWaitingRoom) {
         if (isWaitingRoom) {
+          if (_meetingNotStartedDialogShown) {
+            Navigator.of(context, rootNavigator: true).pop();
+            _meetingNotStartedDialogShown = false;
+          }
           _waitingRoomDialogShown = true;
           showDialog(
             context: context,
+            barrierDismissible: false,
             builder: (BuildContext context) {
               return AlertDialog(
                 title: Text(
@@ -362,6 +474,44 @@ class _StartViewState extends State<StartView> {
                     onPressed: () {
                       Navigator.of(context).pop();
                       _waitingRoomDialogShown = false;
+                      MeetingInfoLoaders().loader.cancel();
+                      _completer.complete(null);
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+        }
+      },
+      meetingNotStartedStatusUpdater: (meetingNotStarted) {
+        if (meetingNotStarted) {
+          _meetingNotStartedDialogShown = true;
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text(AppLocalizations.of(context)
+                    .get("login.wait-for-meeting-to-start")),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.all(10),
+                      child: CircularProgressIndicator(),
+                    ),
+                    Text(AppLocalizations.of(context)
+                        .get("login.wait-for-meeting-to-start-message")),
+                  ],
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    child: Text(AppLocalizations.of(context).get("cancel")),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _meetingNotStartedDialogShown = false;
+                      MeetingInfoLoaders().loader.cancel();
                       _completer.complete(null);
                     },
                   ),
@@ -379,6 +529,10 @@ class _StartViewState extends State<StartView> {
           _waitingRoomDialogShown = false;
           Navigator.of(context, rootNavigator: true).pop();
         }
+        if (_meetingNotStartedDialogShown) {
+          _meetingNotStartedDialogShown = false;
+          Navigator.of(context, rootNavigator: true).pop();
+        }
       }
     }).catchError((error) {
       if (!_completer.isCompleted) {
@@ -386,6 +540,10 @@ class _StartViewState extends State<StartView> {
 
         if (_waitingRoomDialogShown) {
           _waitingRoomDialogShown = false;
+          Navigator.of(context, rootNavigator: true).pop();
+        }
+        if (_meetingNotStartedDialogShown) {
+          _meetingNotStartedDialogShown = false;
           Navigator.of(context, rootNavigator: true).pop();
         }
       }

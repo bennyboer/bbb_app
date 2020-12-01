@@ -1,7 +1,8 @@
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 
 /// Updater for the loading status.
-typedef void StatusUpdater(bool isWaitingRoom);
+typedef void WaitingRoomStatusUpdater(bool isWaitingRoom);
+typedef void MeetingNotStartedStatusUpdater(bool meetingNotStarted);
 
 /// Loader for meeting infos.
 abstract class MeetingInfoLoader {
@@ -10,6 +11,10 @@ abstract class MeetingInfoLoader {
     String meetingUrl,
     String password,
     String name, {
-    StatusUpdater statusUpdater,
+        WaitingRoomStatusUpdater waitingRoomStatusUpdater,
+        MeetingNotStartedStatusUpdater meetingNotStartedStatusUpdater,
   });
+
+  /// Fired if connect attempt is canceled by user.
+  void cancel();
 }
