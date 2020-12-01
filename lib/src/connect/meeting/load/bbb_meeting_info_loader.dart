@@ -278,10 +278,7 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
         .replace(queryParameters: null)
         .replace(path: "/b/cable")
         .toString();
-    String origin = Uri.parse(meetingUrl)
-        .replace(queryParameters: null)
-        .replace(path: "")
-        .toString();
+    String origin = Uri.parse(meetingUrl).origin;
 
     String meetingName =
         meetingUrl.split("/")[meetingUrl.split("/").length - 1];
