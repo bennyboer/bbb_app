@@ -30,6 +30,16 @@ class AppLocalizations {
       de: "BBB App",
     ));
     _addLocalization(_Localization(
+      "load-error",
+      en: "Content could not be loaded",
+      de: "Inhalt konnte nicht geladen werden",
+    ));
+    _addLocalization(_Localization(
+      "start.uni-link-failed",
+      en: "Opening the link with the app failed",
+      de: "Die App konnte nicht korrekt mit dem Link geladen werden",
+    ));
+    _addLocalization(_Localization(
       "start.bbb-trademark",
       en: "This app uses BigBlueButton and is not endorsed or certified by BigBlueButton Inc. BigBlueButton and the BigBlueButton Logo are trademarks of BigBlueButton Inc.",
       de: "Diese App verwendet BigBlueButton, ist jedoch keine offizielle und zertifizierte App von BigBlueButton Inc. BigBlueButton sowie das BigBlueButton Logo sind Warenzeichen von BigBlueButton Inc.",
@@ -105,6 +115,16 @@ class AppLocalizations {
       de: "Bitte warten Sie bis der Moderator Sie zum Meeting zulässt.",
     ));
     _addLocalization(_Localization(
+      "login.wait-for-meeting-to-start",
+      en: "The meeting hasn't started yet.",
+      de: "Die Konferenz hat noch nicht begonnen.",
+    ));
+    _addLocalization(_Localization(
+      "login.wait-for-meeting-to-start-message",
+      en: "You will automatically join when the meeting starts.",
+      de: "Sie treten der Konferenz automatisch bei, sobald sie begonnen hat.",
+    ));
+    _addLocalization(_Localization(
       "settings.title",
       en: "Settings",
       de: "Einstellungen",
@@ -178,6 +198,11 @@ class AppLocalizations {
       "main.user-kicked",
       en: "You have been removed from the meeting",
       de: "Sie wurden vom Meeting entfernt",
+    ));
+    _addLocalization(_Localization(
+      "privacy-policy.title",
+      en: "Privacy policy",
+      de: "Datenschutzerklärung",
     ));
 
     _isInitialized = true;

@@ -1,8 +1,8 @@
 <p align="center">
-    <img src="assets/icon/icon.svg" width="200">
+    <img src="assets/icon/icon.png" width="200">
 </p>
 
-# App client for BigBlueButton
+# App client for BigBlueButton services
 
 This app uses BigBlueButton and is not endorsed or certified by BigBlueButton Inc. BigBlueButton and the BigBlueButton Logo are trademarks of BigBlueButton Inc.
 

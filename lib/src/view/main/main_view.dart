@@ -6,11 +6,15 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/meeting/meeting.dart'
 import 'package:bbb_app/src/connect/meeting/main_websocket/poll/model/option.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/poll/model/poll.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
-import 'package:bbb_app/src/connect/meeting/main_websocket/video/video_connection.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_screenshare_video_connection.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_webcam_video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
+import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
+import 'package:bbb_app/src/view/fullscreen/fullscreen_view.dart';
 import 'package:bbb_app/src/view/main/presentation/presentation_widget.dart';
 import 'package:bbb_app/src/view/meeting_info/meeting_info_view.dart';
+import 'package:bbb_app/src/view/privacy_policy/privacy_policy_view.dart';
 import 'package:bbb_app/src/view/settings/settings_view.dart';
 import 'package:bbb_app/src/view/start/start_view.dart';
 import 'package:flutter/material.dart';
@@ -33,16 +37,19 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   MainWebSocket _mainWebSocket;
 
   /// List of video streams we currently display.
-  Map<String, VideoConnection> _videoConnections;
+  Map<String, IncomingWebcamVideoConnection> _videoConnections;
 
   /// List of screenshare streams we currently display.
-  Map<String, VideoConnection> _screenshareVideoConnections;
+  Map<String, IncomingScreenshareVideoConnection> _screenshareVideoConnections;
 
   /// Counter for total unread messages.
   int _totalUnreadMessages = 0;
 
   /// Users currently taling.
   Set<String> _currentlyTalkingUsers = new Set<String>();
+
+  /// Map of users currently in the meeting.
+  Map<String, UserModel> _userMapByInternalId = {};
 
   /// Subscription to video connection list changes.
   StreamSubscription _videoConnectionsStreamSubscription;
@@ -66,6 +73,9 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   StreamSubscription<bool> _muteStreamSubscription;
 
   bool _muteStatus = false;
+
+  /// Subscription to user changes.
+  StreamSubscription _userChangesStreamSubscription;
 
   @override
   void initState() {
@@ -133,6 +143,13 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
       }
     });
 
+    _userMapByInternalId = _mainWebSocket.userModule.userMapByInternalId;
+    _userChangesStreamSubscription =
+        _mainWebSocket.userModule.changes.listen((userMap) {
+      setState(() => _userMapByInternalId =
+          Map.of(_mainWebSocket.userModule.userMapByInternalId));
+    });
+
     _muteStreamSubscription =
         _mainWebSocket.callModule.callMuteStream.listen((event) {
       setState(() {
@@ -169,6 +186,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     _pollStreamSubscription.cancel();
     _meetingEventSubscription.cancel();
     _userEventStreamSubscription.cancel();
+    _userChangesStreamSubscription.cancel();
     _muteStreamSubscription.cancel();
 
     _mainWebSocket.disconnect();
@@ -259,52 +277,229 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     );
   }
 
+  /// Build the button list.
+  List<Widget> _buildButtonList() {
+    return [
+      if (!_mainWebSocket.videoModule.isWebcamActive())
+        ElevatedButton(
+          onPressed: () => _toggleWebcamOnOff(context),
+          child: new Text(
+            "start webcam",
+            style: TextStyle(fontSize: 20.0),
+          ),
+        ),
+      if (_mainWebSocket.videoModule.isWebcamActive())
+        ElevatedButton(
+          onPressed: () => _toggleWebcamOnOff(context),
+          child: new Text(
+            "stop webcam",
+            style: TextStyle(fontSize: 20.0),
+          ),
+        ),
+      if (_mainWebSocket.videoModule.isWebcamActive())
+        ElevatedButton(
+          onPressed: () => _toggleWebcamFrontBack(context),
+          child: new Text(
+            "switch cam",
+            style: TextStyle(fontSize: 20.0),
+          ),
+        ),
+      if (!_mainWebSocket.videoModule.isScreenshareActive() && _isPresenter())
+        ElevatedButton(
+          onPressed: () => _toggleScreenshareOnOff(context),
+          child: new Text(
+            "start screenshare",
+            style: TextStyle(fontSize: 20.0),
+          ),
+        ),
+      if (_mainWebSocket.videoModule.isScreenshareActive())
+        ElevatedButton(
+          onPressed: () => _toggleScreenshareOnOff(context),
+          child: new Text(
+            "stop screenshare",
+            style: TextStyle(fontSize: 20.0),
+          ),
+        ),
+    ];
+  }
+
+  /// Build the screen share widget.
+  Widget _buildScreenShareWidget() {
+    String screenshareKey = _screenshareVideoConnections.keys.first;
+
+    RTCVideoView videoView = RTCVideoView(
+      _screenshareVideoConnections[screenshareKey].remoteRenderer,
+      objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      child: Stack(
+        children: [
+          if (!_screenshareVideoConnections[screenshareKey]
+              .remoteRenderer
+              .renderVideo)
+            Center(child: CircularProgressIndicator()),
+          videoView,
+          Align(
+            alignment: Alignment.topRight,
+            child: IconButton(
+              icon: Icon(Icons.fullscreen),
+              color: Colors.grey,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FullscreenView(child: videoView),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build the presentation widget to show.
+  Widget _buildPresentationWidget() {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      child: PresentationWidget(_mainWebSocket),
+    );
+  }
+
+  /// Build the webcam list.
+  Widget _buildCameraList(Axis axis) {
+    return PageView.builder(
+      scrollDirection: axis,
+      controller:
+          PageController(viewportFraction: axis == Axis.horizontal ? 0.6 : 0.4),
+      itemCount: _videoConnections.length,
+      itemBuilder: (BuildContext context, int index) {
+        String key = _videoConnections.keys.elementAt(index);
+
+        bool videoShown = _videoConnections[key].remoteRenderer.renderVideo;
+
+        RTCVideoRenderer remoteRenderer = _videoConnections[key].remoteRenderer;
+
+        RTCVideoView videoView = RTCVideoView(remoteRenderer,
+            objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain);
+
+        return Container(
+          margin: const EdgeInsets.all(8),
+          color: Colors.black87,
+          child: AspectRatio(
+            aspectRatio: 4 / 3,
+            child: Stack(
+              children: [
+                if (!videoShown) Center(child: CircularProgressIndicator()),
+                videoView,
+                Container(
+                  margin: EdgeInsets.only(top: 10),
+                  alignment: Alignment.topCenter,
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(6, 2, 6, 2),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.white.withOpacity(0.7),
+                    ),
+                    child: Text(
+                      _userMapByInternalId[
+                              _videoConnections[key].internalUserId]
+                          .name,
+                      style: TextStyle(color: Colors.black),
+                    ),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.topRight,
+                  child: IconButton(
+                    icon: Icon(Icons.fullscreen),
+                    color: Colors.grey,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              FullscreenView(child: videoView),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    String screenshareKey;
-    if (_screenshareVideoConnections.length > 0) {
-      screenshareKey = _screenshareVideoConnections.keys.elementAt(0);
-    }
-
     return Scaffold(
       appBar: _buildAppBar(),
-      body: Column(
-        children: <Widget>[
-          _buildCurrentlyTalkingUserList(),
-          if (_videoConnections.length > 0)
-            Expanded(
-              child: PageView.builder(
-                  scrollDirection: Axis.horizontal,
-                  controller: PageController(viewportFraction: 1.0),
-                  itemCount: _videoConnections.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    String key = _videoConnections.keys.elementAt(index);
-                    return Container(
-                      padding: const EdgeInsets.all(8),
-                      width: MediaQuery.of(context).size.width,
-                      child: RTCVideoView(_videoConnections[key].remoteRenderer,
-                          objectFit: RTCVideoViewObjectFit
-                              .RTCVideoViewObjectFitContain),
-                    );
-                  }),
-            ),
-          if (_screenshareVideoConnections.length == 0)
-            Expanded(
-                child: Container(
-              padding: const EdgeInsets.all(8),
-              child: PresentationWidget(_mainWebSocket),
-            )),
-          if (_screenshareVideoConnections.length > 0)
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                child: RTCVideoView(
-                    _screenshareVideoConnections[screenshareKey].remoteRenderer,
-                    objectFit:
-                        RTCVideoViewObjectFit.RTCVideoViewObjectFitContain),
-              ),
-            )
-        ],
+      body: OrientationBuilder(
+        builder: (context, orientation) {
+          if (orientation == Orientation.portrait) {
+            return Column(
+              children: [
+                _buildCurrentlyTalkingUserList(),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: <Widget>[
+                      if (_videoConnections.length > 0)
+                        SizedBox(
+                          height: 160,
+                          child: _buildCameraList(Axis.horizontal),
+                        ),
+                      if (_screenshareVideoConnections.length == 0)
+                        Expanded(
+                          child: _buildPresentationWidget(),
+                        ),
+                      if (_screenshareVideoConnections.length > 0)
+                        Expanded(
+                          child: _buildScreenShareWidget(),
+                        ),
+                    ],
+                  ),
+                ),
+                ..._buildButtonList()
+              ],
+            );
+          } else {
+            return Column(
+              children: [
+                _buildCurrentlyTalkingUserList(),
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: <Widget>[
+                      if (_videoConnections.length > 0)
+                        SizedBox(
+                          width: 200,
+                          child: _buildCameraList(Axis.vertical),
+                        ),
+                      if (_screenshareVideoConnections.length == 0)
+                        Expanded(
+                          child: _buildPresentationWidget(),
+                        ),
+                      if (_screenshareVideoConnections.length > 0)
+                        Expanded(
+                          child: _buildScreenShareWidget(),
+                        ),
+                    ],
+                  ),
+                ),
+                Row(
+                  children: [..._buildButtonList()],
+                ),
+              ],
+            );
+          }
+        },
       ),
       floatingActionButton: FloatingActionButton(
         child: Icon(
@@ -368,6 +563,23 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     );
   }
 
+  _toggleWebcamOnOff(BuildContext context) {
+    _mainWebSocket.videoModule.toggleWebcamOnOff();
+  }
+
+  _toggleWebcamFrontBack(BuildContext context) {
+    _mainWebSocket.videoModule.toggleWebcamFrontBack();
+  }
+
+  _toggleScreenshareOnOff(BuildContext context) {
+    _mainWebSocket.videoModule.toggleScreenshareOnOff();
+  }
+
+  bool _isPresenter() {
+    return _userMapByInternalId[widget._meetingInfo.internalUserID] != null &&
+        _userMapByInternalId[widget._meetingInfo.internalUserID].isPresenter;
+  }
+
   /// Build the main views application bar.
   Widget _buildAppBar() => AppBar(
         title: Text(widget._meetingInfo.conferenceName),
@@ -428,6 +640,11 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
             );
           } else if (value == "about") {
             showAboutDialog(context: context);
+          } else if (value == "privacy_policy") {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => PrivacyPolicyView()),
+            );
           }
         },
         itemBuilder: (context) {
@@ -459,6 +676,22 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                     ),
                   ),
                   Text(AppLocalizations.of(context).get("main.about")),
+                ],
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: "privacy_policy",
+              child: Row(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(right: 10),
+                    child: Icon(
+                      Icons.privacy_tip,
+                      color: Theme.of(context).textTheme.bodyText1.color,
+                    ),
+                  ),
+                  Text(
+                      AppLocalizations.of(context).get("privacy-policy.title")),
                 ],
               ),
             ),

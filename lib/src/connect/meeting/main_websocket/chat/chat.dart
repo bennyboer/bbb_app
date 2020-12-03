@@ -289,9 +289,9 @@ class ChatModule extends Module {
           if (usersTyping != null) {
             usersTyping.remove(info.userName);
           }
-        }
 
-        _userTypingStatusController.add(info);
+          _userTypingStatusController.add(info);
+        }
       }
     }
   }
