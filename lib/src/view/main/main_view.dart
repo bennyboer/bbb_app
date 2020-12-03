@@ -45,6 +45,9 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   /// Counter for total unread messages.
   int _totalUnreadMessages = 0;
 
+  /// Users currently taling.
+  Set<String> _currentlyTalkingUsers = new Set<String>();
+
   /// Map of users currently in the meeting.
   Map<String, UserModel> _userMapByInternalId = {};
 
@@ -122,6 +125,21 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
       if (event.data.internalId == widget._meetingInfo.internalUserID &&
           !event.data.isOnline()) {
         _onCurrentUserKicked();
+      }
+
+      // Check whether user is currently talking
+      if (event.type == UserEventType.CHANGED) {
+        if (!event.data.talking &&
+            _currentlyTalkingUsers.contains(event.data.name)) {
+          setState(() {
+            _currentlyTalkingUsers.remove(event.data.name);
+          });
+        } else if (event.data.talking &&
+            !_currentlyTalkingUsers.contains(event.data.name)) {
+          setState(() {
+            _currentlyTalkingUsers.add(event.data.name);
+          });
+        }
       }
     });
 
@@ -225,6 +243,41 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
 
   void _updateMuteStatus(bool status) {
     _muteStatus = status;
+  }
+
+  /// Build a list of currently talking users.
+  Widget _buildCurrentlyTalkingUserList() {
+    List<Widget> badges = _currentlyTalkingUsers
+        .map((e) => _buildCurrentlyTalkingUserBadge(e))
+        .toList(growable: false);
+
+    return SizedBox(
+      height: 30,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: badges,
+      ),
+    );
+  }
+
+  /// Build badge for a currently talking user.
+  Widget _buildCurrentlyTalkingUserBadge(String userName) {
+    return new Flexible(
+      fit: FlexFit.loose,
+      child: Container(
+        margin: EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+        padding: EdgeInsets.symmetric(vertical: 2, horizontal: 5),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(9999),
+          color: Theme.of(context).buttonColor,
+        ),
+        child: Text(
+          userName,
+          softWrap: false,
+          overflow: TextOverflow.fade,
+        ),
+      ),
+    );
   }
 
   /// Build the button list.
@@ -395,6 +448,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
           if (orientation == Orientation.portrait) {
             return Column(
               children: [
+                _buildCurrentlyTalkingUserList(),
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -421,6 +475,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
           } else {
             return Column(
               children: [
+                _buildCurrentlyTalkingUserList(),
                 Expanded(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
