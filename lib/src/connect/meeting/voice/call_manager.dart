@@ -5,13 +5,13 @@ import 'dart:convert';
 
 import '../meeting_info.dart';
 
-class VoiceManager {
+class CallManager {
 
   SIPUAHelper _helper;
   MeetingInfo info;
   int _audioSessionNumber = 1;
 
-  VoiceManager(this.info) {
+  CallManager(this.info) {
     _helper = new SIPUAHelper();
   }
 
@@ -40,7 +40,7 @@ class VoiceManager {
     Random r = new Random();
 
     cookies["Cookie"] = info.cookie.split(";").where((element) => element.contains("JSESSIONID")).first;
-    String key = base64.encode(List<int>.generate(8, (_) => r.nextInt(255)));
+    String key = base64.encode(List<int>.generate(16, (_) => r.nextInt(255)));
     cookies['Sec-WebSocket-Key'] = key.toLowerCase();
     cookies['Sec-WebSocket-Protocol'] = "sip";
     cookies['Sec-WebSocket-Version'] = "13";
@@ -54,12 +54,19 @@ class VoiceManager {
 
   UaSettings buildSettings() {
     UaSettings settings = UaSettings();
+    List<Map<String, String>> iceServers = [{}];
+    for (var server in info.iceServers["iceServers"]) {
+      Map<String, String> entry = {};
+      entry["url"] = server["url"];
+      iceServers.add(entry);
+    }
 
     settings.webSocketUrl = _buildWsUri(Uri.parse(info.joinUrl)).toString();
     settings.webSocketSettings.extraHeaders = _createCookies();
     settings.webSocketSettings.allowBadCertificate = true;
     settings.webSocketSettings.userAgent = 'BigBlueButton';
-
+    settings.iceServers = iceServers;
+    settings.dtmfMode = DtmfMode.RFC2833;
     settings.displayName = _buildDisplayName();
     settings.uri = _buildUser();
     settings.userAgent = 'BigBlueButton';

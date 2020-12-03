@@ -1,17 +1,18 @@
-import 'package:bbb_app/src/connect/meeting/main_websocket/voice/voice_module.dart';
+import 'dart:async';
+
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
-import 'package:bbb_app/src/connect/meeting/voice/voice_manager.dart';
+import 'package:bbb_app/src/connect/meeting/voice/call_manager.dart';
 import 'package:bbb_app/src/utils/log.dart';
 import 'package:sip_ua/sip_ua.dart';
 
-class VoiceConnection extends VoiceManager implements SipUaHelperListener {
+/// The connection that handles the Sip call itself.
+class CallConnection extends CallManager implements SipUaHelperListener {
   MeetingInfo info;
-  VoiceModule _module;
   Call _call;
   bool _audioMuted = false;
-  bool _secondStream = false;
+  StreamController<bool> _muteStreamController = StreamController.broadcast();
 
-  VoiceConnection(this.info, this._module) : super(null) {
+  CallConnection(this.info) : super(null) {
     helper.addSipUaHelperListener(this);
   }
 
@@ -21,15 +22,15 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
 
   void disconnect() {
     helper.stop();
+    _muteStreamController.close();
   }
 
-  void toggleMute(Call call) {
+  void toggleMute() {
     if (_audioMuted) {
-      call.unmute(true, false);
+      _call.unmute();
     } else {
-      call.mute(true, false);
+      _call.mute();
     }
-    _audioMuted = !_audioMuted;
   }
 
   @override
@@ -41,12 +42,13 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
       case CallStateEnum.CONFIRMED:
         _call.unmute(true, false);
         break;
-      case CallStateEnum.STREAM:
-        if (!_secondStream) {
-          _secondStream = true;
-        } else {
-          _call.sendDTMF("1", {"duration": 2000});
-        }
+      case CallStateEnum.MUTED:
+        _audioMuted = true;
+        _muteStreamController.add(_audioMuted);
+        break;
+      case CallStateEnum.UNMUTED:
+        _audioMuted = false;
+        _muteStreamController.add(_audioMuted);
         break;
       default:
     }
@@ -67,8 +69,17 @@ class VoiceConnection extends VoiceManager implements SipUaHelperListener {
   void transportStateChanged(TransportState state) {
     Log.info("[VoiceConnection] Transport state changed to '${state.state}'");
 
+    /// As soon as we are connected, connect to the echo call
     if (state.state == TransportStateEnum.CONNECTED) {
       helper.call(super.buildEcho(), true);
     }
   }
+
+  /// Attempts to unmute the echo test
+  /// (DTMF tones are the tones you hear when you press on your phone keypad)
+  void doEchoTest() {
+    _call.sendDTMF("1", {"duration": 2000});
+  }
+
+  Stream<bool> get callMuteStream => _muteStreamController.stream;
 }

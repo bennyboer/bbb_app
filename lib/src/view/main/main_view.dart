@@ -67,6 +67,10 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   /// Subscription to user events.
   StreamSubscription<UserEvent> _userEventStreamSubscription;
 
+  StreamSubscription<bool> _muteStreamSubscription;
+
+  bool _muteStatus = false;
+
   /// Subscription to user changes.
   StreamSubscription _userChangesStreamSubscription;
 
@@ -128,6 +132,13 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
           Map.of(_mainWebSocket.userModule.userMapByInternalId));
     });
 
+    _muteStreamSubscription =
+        _mainWebSocket.callModule.callMuteStream.listen((event) {
+      setState(() {
+        _updateMuteStatus(event);
+      });
+    });
+
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -158,6 +169,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     _meetingEventSubscription.cancel();
     _userEventStreamSubscription.cancel();
     _userChangesStreamSubscription.cancel();
+    _muteStreamSubscription.cancel();
 
     _mainWebSocket.disconnect();
 
@@ -205,6 +217,14 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     _totalUnreadMessages = 0;
     _mainWebSocket.chatModule.unreadMessageCounters
         .forEach((key, value) => _totalUnreadMessages += value);
+  }
+
+  void _micClick() {
+    _mainWebSocket.callModule.toggleAudio();
+  }
+
+  void _updateMuteStatus(bool status) {
+    _muteStatus = status;
   }
 
   /// Build the button list.
@@ -428,6 +448,65 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
             );
           }
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(
+          _muteStatus ? Icons.mic_off_outlined : Icons.mic_outlined,
+          size: 30,
+          color: Theme.of(context).iconTheme.color,
+        ),
+        onPressed: _micClick,
+        elevation: 4.0,
+        backgroundColor: Theme.of(context).buttonTheme.colorScheme.primary,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        child: Container(
+          margin: EdgeInsets.only(left: 12.0, right: 12.0),
+          child: Row(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              IconButton(
+                //update the bottom app bar view each time an item is clicked
+                onPressed: () {},
+                iconSize: 27.0,
+                icon: Icon(
+                  Icons.home,
+                ),
+              ),
+              IconButton(
+                onPressed: () {},
+                iconSize: 27.0,
+                icon: Icon(
+                  Icons.call_made,
+                ),
+              ),
+              //to leave space in between the bottom app bar items and below the FAB
+              SizedBox(
+                width: 50.0,
+              ),
+              IconButton(
+                onPressed: () {},
+                iconSize: 27.0,
+                icon: Icon(
+                  Icons.call_received,
+                ),
+              ),
+              IconButton(
+                onPressed: () {},
+                iconSize: 27.0,
+                icon: Icon(
+                  Icons.settings,
+                ),
+              ),
+            ],
+          ),
+        ),
+        //to add a space between the FAB and BottomAppBar
+        shape: CircularNotchedRectangle(),
+        //color of the BottomAppBar
+        color: Theme.of(context).appBarTheme.color,
       ),
     );
   }
