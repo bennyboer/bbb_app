@@ -173,7 +173,7 @@ class MainWebSocket {
           }
         });
       } on FormatException catch (e) {
-        print("invalid JSON received on mainWebsocket: $message");
+        Log.info("invalid JSON received on mainWebsocket: $message");
       }
     }
   }
