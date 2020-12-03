@@ -254,6 +254,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     return SizedBox(
       height: 30,
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: badges,
       ),
     );
@@ -264,8 +265,10 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     return new Flexible(
       fit: FlexFit.loose,
       child: Container(
+        margin: EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+        padding: EdgeInsets.symmetric(vertical: 2, horizontal: 5),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(9999),
           color: Theme.of(context).buttonColor,
         ),
         child: Text(
