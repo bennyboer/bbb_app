@@ -18,7 +18,6 @@ import 'model/annotation/info/rectangle.dart';
 import 'model/annotation/info/text.dart';
 import 'model/annotation/info/triangle.dart';
 import 'model/presentation.dart';
-import 'package:vector_math/vector_math.dart';
 
 /// Module providing presentation-related stuff.
 class PresentationModule extends Module {
@@ -72,14 +71,9 @@ class PresentationModule extends Module {
   /// Subscription to slide events.
   StreamSubscription<PresentationSlideEvent> _slideEventSubscription;
 
-  /// Topic where stream-cursor messages are published.
-  final String _streamCursorTopic;
-
   PresentationModule(messageSender, this._meetingInfo)
       : _streamAnnotationsTopic =
             "stream-annotations-${_meetingInfo.meetingID}",
-        _streamCursorTopic =
-        "stream-cursor-${_meetingInfo.meetingID}",
         super(messageSender);
 
   @override
@@ -97,13 +91,6 @@ class PresentationModule extends Module {
     ]);
     subscribe(_streamAnnotationsTopic, params: [
       "removed",
-      {
-        "useCollection": false,
-        "args": [],
-      },
-    ]);
-    subscribe(_streamCursorTopic, params: [
-      "message",
       {
         "useCollection": false,
         "args": [],
@@ -158,9 +145,6 @@ class PresentationModule extends Module {
   void _onChanged(String collectionName, Map<String, dynamic> msg) {
     if (collectionName == _streamAnnotationsTopic) {
       _onStreamAnnotationChanged(msg);
-    }
-    if (collectionName == _streamCursorTopic){
-      _onStreamCursorChanged(msg);
     }
 
     switch (collectionName) {
@@ -220,38 +204,6 @@ class PresentationModule extends Module {
 
     _slideEventStreamController
         .add(PresentationSlideEvent(EventType.CHANGED, slide));
-  }
-
-  void _onStreamCursorChanged(Map<String, dynamic> msg) {
-    Map<String, dynamic> fields = msg["fields"];
-    List<dynamic> argsJson = fields["args"];
-    print("HEUREKA?!");
-    print("argsJson:");
-    print(argsJson);
-    print("cursors:");
-
-    Map<String, dynamic> argJson = argsJson[0];
-
-    Map<String, dynamic> cursorsJson = argJson["cursors"];
-
-    String cursorId = cursorsJson.keys.elementAt(0);
-
-    String slideId = cursorsJson[cursorsJson.keys.elementAt(0)]["whiteboardId"];
-
-    PresentationSlide slide = _slides[slideId];
-
-    //slide.cursorpos = Vector2(cursorsJson[cursorId]["xPercent"], cursorsJson[cursorId]["yPercent"]);
-
-    _currentSlide.cursorpos = Vector2(cursorsJson[cursorId]["xPercent"], cursorsJson[cursorId]["yPercent"]);
-
-    _slideEventStreamController
-          .add(PresentationSlideEvent(EventType.CHANGED, _currentSlide));
-
-    /*
-    print(argsJson["meetingId"]);
-    print(msg["cursors"]);
-    print(msg["cursors"]["xPercent"]);
-    print("xPercent: " +msg["cursors"]["xPercent"] + " yPercent: " +msg["cursors"]["xPercent"]);*/
   }
 
   /// Called when a stream annotation (paint) should be changed.

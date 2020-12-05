@@ -489,7 +489,7 @@ packages:
     source: hosted
     version: "2.2.2"
   vector_math:
-    dependency: "direct dev"
+    dependency: transitive
     description:
       name: vector_math
       url: "https://pub.dartlang.org"
