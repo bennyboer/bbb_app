@@ -12,6 +12,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/an
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/slide_bounds.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:vector_math/vector_math.dart' hide Colors;
 
 /// Painter for the presentation.
 class PresentationPainter extends CustomPainter {
@@ -24,16 +25,43 @@ class PresentationPainter extends CustomPainter {
   /// Annotations to draw.
   final List<Annotation> _annotations;
 
+  /// Hold the cursor position
+  Vector2 _cursorpos;
+
   PresentationPainter(
     this._svg,
     this._bounds,
     this._annotations,
+    this._cursorpos,
   );
 
   @override
   void paint(Canvas canvas, Size size) {
     _drawSVG(canvas, size);
     _drawAnnotations(canvas, size);
+    _drawCursor(canvas, size);
+  }
+
+  void _drawCursor(Canvas canvas, Size size){
+
+      double thickness = 10;//info.thickness * _bounds.width / 100;
+
+      Paint paint = Paint()
+        ..strokeWidth = thickness
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..color = Color( 70 | 0xFFF00000 );
+
+      //canvas.drawOval(Rect.fromLTWH(_cursorpos.x,_cursorpos.y,3,3),paint);
+
+      canvas.drawOval(
+          Rect.fromLTWH(
+            _cursorpos.x * _bounds.width / 100,
+            _cursorpos.y * _bounds.height / 100,
+            3,// * _bounds.width / 100,
+            3,// * _bounds.height / 100,
+          ),
+          paint);
   }
 
   /// Draw the SVG on the canvas.

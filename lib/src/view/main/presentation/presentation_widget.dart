@@ -84,6 +84,7 @@ class _PresentationWidgetState extends State<PresentationWidget> {
               _currentSlide.bounds,
               _currentSlide.annotations.values.toList(growable: false)
                 ..sort((o1, o2) => o1.position.compareTo(o2.position)),
+              _currentSlide.cursorpos,
             ),
           ),
         ),
