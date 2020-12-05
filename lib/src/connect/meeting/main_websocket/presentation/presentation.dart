@@ -154,6 +154,9 @@ class PresentationModule extends Module {
   Stream<PresentationEvent> get presentationEventsStream =>
       _presentationEventStreamController.stream;
 
+  /// Hacky-cursor-smoother
+  int _cursorskipper=0;
+
   /// Called when something should be changed for the given [collectionName].
   void _onChanged(String collectionName, Map<String, dynamic> msg) {
     if (collectionName == _streamAnnotationsTopic) {
@@ -222,36 +225,23 @@ class PresentationModule extends Module {
         .add(PresentationSlideEvent(EventType.CHANGED, slide));
   }
 
+  /// Reads x and yPercent from cursor-stream and adds it to _currentSlide
   void _onStreamCursorChanged(Map<String, dynamic> msg) {
     Map<String, dynamic> fields = msg["fields"];
     List<dynamic> argsJson = fields["args"];
-    print("HEUREKA?!");
-    print("argsJson:");
-    print(argsJson);
-    print("cursors:");
-
     Map<String, dynamic> argJson = argsJson[0];
-
     Map<String, dynamic> cursorsJson = argJson["cursors"];
-
     String cursorId = cursorsJson.keys.elementAt(0);
-
     String slideId = cursorsJson[cursorsJson.keys.elementAt(0)]["whiteboardId"];
-
-    PresentationSlide slide = _slides[slideId];
-
-    //slide.cursorpos = Vector2(cursorsJson[cursorId]["xPercent"], cursorsJson[cursorId]["yPercent"]);
+    //PresentationSlide slide = _slides[slideId];
 
     _currentSlide.cursorpos = Vector2(cursorsJson[cursorId]["xPercent"], cursorsJson[cursorId]["yPercent"]);
-
-    _slideEventStreamController
+    _cursorskipper=_cursorskipper+1;
+    if( _cursorskipper > 5 ) {
+      _cursorskipper = 0;
+      _slideEventStreamController
           .add(PresentationSlideEvent(EventType.CHANGED, _currentSlide));
-
-    /*
-    print(argsJson["meetingId"]);
-    print(msg["cursors"]);
-    print(msg["cursors"]["xPercent"]);
-    print("xPercent: " +msg["cursors"]["xPercent"] + " yPercent: " +msg["cursors"]["xPercent"]);*/
+    }
   }
 
   /// Called when a stream annotation (paint) should be changed.
