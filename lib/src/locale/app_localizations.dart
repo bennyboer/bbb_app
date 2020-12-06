@@ -204,6 +204,11 @@ class AppLocalizations {
       en: "Privacy policy",
       de: "Datenschutzerklärung",
     ));
+    _addLocalization(_Localization(
+      "main.share-without-presenter",
+      en: "You can't share your screen if you are not the current presenter.",
+      de: "Sie können Ihren Bildschirm nicht teilen, wenn Sie kein Präsentator sind.",
+    ));
 
     _isInitialized = true;
   }
