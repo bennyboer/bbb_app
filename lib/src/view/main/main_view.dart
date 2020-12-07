@@ -280,52 +280,6 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     );
   }
 
-  /// Build the button list.
-  List<Widget> _buildButtonList() {
-    return [
-      if (!_mainWebSocket.videoModule.isWebcamActive())
-        ElevatedButton(
-          onPressed: () => _toggleWebcamOnOff(context),
-          child: new Text(
-            "start webcam",
-            style: TextStyle(fontSize: 20.0),
-          ),
-        ),
-      if (_mainWebSocket.videoModule.isWebcamActive())
-        ElevatedButton(
-          onPressed: () => _toggleWebcamOnOff(context),
-          child: new Text(
-            "stop webcam",
-            style: TextStyle(fontSize: 20.0),
-          ),
-        ),
-      if (_mainWebSocket.videoModule.isWebcamActive())
-        ElevatedButton(
-          onPressed: () => _toggleWebcamFrontBack(context),
-          child: new Text(
-            "switch cam",
-            style: TextStyle(fontSize: 20.0),
-          ),
-        ),
-      if (!_mainWebSocket.videoModule.isScreenshareActive() && _isPresenter())
-        ElevatedButton(
-          onPressed: () => _toggleScreenshareOnOff(context),
-          child: new Text(
-            "start screenshare",
-            style: TextStyle(fontSize: 20.0),
-          ),
-        ),
-      if (_mainWebSocket.videoModule.isScreenshareActive())
-        ElevatedButton(
-          onPressed: () => _toggleScreenshareOnOff(context),
-          child: new Text(
-            "stop screenshare",
-            style: TextStyle(fontSize: 20.0),
-          ),
-        ),
-    ];
-  }
-
   /// Build the screen share widget.
   Widget _buildScreenShareWidget() {
     String screenshareKey = _screenshareVideoConnections.keys.first;
@@ -469,7 +423,6 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                     ],
                   ),
                 ),
-                ..._buildButtonList()
               ],
             );
           } else {
@@ -496,9 +449,6 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                     ],
                   ),
                 ),
-                Row(
-                  children: [..._buildButtonList()],
-                ),
               ],
             );
           }
@@ -515,72 +465,65 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
         backgroundColor: Theme.of(context).buttonTheme.colorScheme.primary,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomAppBar(
-        child: Container(
-          margin: EdgeInsets.only(left: 12.0, right: 12.0),
-          child: Row(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              IconButton(
-                //update the bottom app bar view each time an item is clicked
-                onPressed: () {},
-                iconSize: 27.0,
-                icon: Icon(
-                  Icons.home,
+      bottomNavigationBar: Builder(
+        builder: (context) => BottomAppBar(
+          child: Container(
+            margin: EdgeInsets.only(left: 12.0, right: 12.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                IconButton(
+                  onPressed: () => _toggleWebcamOnOff(context),
+                  iconSize: 27.0,
+                  icon: Icon(
+                    _mainWebSocket.videoModule.isWebcamActive()
+                        ? Icons.photo_camera
+                        : Icons.photo_camera_outlined,
+                  ),
                 ),
-              ),
-              IconButton(
-                onPressed: () {},
-                iconSize: 27.0,
-                icon: Icon(
-                  Icons.call_made,
+                IconButton(
+                  onPressed: () => _toggleWebcamFrontBack(context),
+                  iconSize: 27.0,
+                  icon: Icon(
+                    _mainWebSocket.videoModule.isWebcamActive()
+                        ? Icons.flip_camera_ios
+                        : Icons.flip_camera_ios_outlined,
+                  ),
                 ),
-              ),
-              //to leave space in between the bottom app bar items and below the FAB
-              SizedBox(
-                width: 50.0,
-              ),
-              IconButton(
-                onPressed: () {},
-                iconSize: 27.0,
-                icon: Icon(
-                  Icons.call_received,
+                //to leave space in between the bottom app bar items and below the FAB
+                SizedBox(
+                  width: 50.0,
                 ),
-              ),
-              IconButton(
-                onPressed: () {},
-                iconSize: 27.0,
-                icon: Icon(
-                  Icons.settings,
+                IconButton(
+                  onPressed: () => _toggleScreenshareOnOff(context),
+                  iconSize: 27.0,
+                  icon: Icon(
+                    _mainWebSocket.videoModule.isScreenshareActive()
+                        ? Icons.screen_share
+                        : Icons.screen_share_outlined,
+                  ),
                 ),
-              ),
-            ],
+                IconButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SettingsView()),
+                  ),
+                  iconSize: 27.0,
+                  icon: Icon(
+                    Icons.settings,
+                  ),
+                ),
+              ],
+            ),
           ),
+          //to add a space between the FAB and BottomAppBar
+          shape: CircularNotchedRectangle(),
+          //color of the BottomAppBar
+          color: Theme.of(context).appBarTheme.color,
         ),
-        //to add a space between the FAB and BottomAppBar
-        shape: CircularNotchedRectangle(),
-        //color of the BottomAppBar
-        color: Theme.of(context).appBarTheme.color,
       ),
     );
-  }
-
-  _toggleWebcamOnOff(BuildContext context) {
-    _mainWebSocket.videoModule.toggleWebcamOnOff();
-  }
-
-  _toggleWebcamFrontBack(BuildContext context) {
-    _mainWebSocket.videoModule.toggleWebcamFrontBack();
-  }
-
-  _toggleScreenshareOnOff(BuildContext context) {
-    _mainWebSocket.videoModule.toggleScreenshareOnOff();
-  }
-
-  bool _isPresenter() {
-    return _userMapByInternalId[widget._meetingInfo.internalUserID] != null &&
-        _userMapByInternalId[widget._meetingInfo.internalUserID].isPresenter;
   }
 
   /// Build the main views application bar.
@@ -714,4 +657,32 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
           ];
         },
       );
+
+  _toggleWebcamOnOff(BuildContext context) {
+    _mainWebSocket.videoModule.toggleWebcamOnOff();
+  }
+
+  _toggleWebcamFrontBack(BuildContext context) {
+    if (_mainWebSocket.videoModule.isWebcamActive()) {
+      _mainWebSocket.videoModule.toggleWebcamFrontBack();
+    }
+  }
+
+  _toggleScreenshareOnOff(BuildContext context) {
+    if (_isPresenter()) {
+      _mainWebSocket.videoModule.toggleScreenshareOnOff();
+    } else {
+      var snackBarController = Scaffold.of(context).showSnackBar(SnackBar(
+        content: Text(AppLocalizations.of(context).get("main.share-without-presenter")),
+      ));
+      Future.delayed(const Duration(seconds: 2), () => {
+        snackBarController.close()
+      });
+    }
+  }
+
+  bool _isPresenter() {
+    return _userMapByInternalId[widget._meetingInfo.internalUserID] != null &&
+        _userMapByInternalId[widget._meetingInfo.internalUserID].isPresenter;
+  }
 }
