@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-    Now available as early access version on [Google Play](https://play.google.com/store/apps/details?id=edu.hm.cs.tape.bbb_app).
+    Now available as early access version on <a href="https://play.google.com/store/apps/details?id=edu.hm.cs.tape.bbb_app">Google Play</a>.
 </p>
 
 # App client for BigBlueButton services
