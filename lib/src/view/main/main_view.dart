@@ -483,7 +483,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                   ),
                 ),
                 IconButton(
-                  onPressed: () => _toggleWebcamFrontBack(context),
+                  onPressed: _mainWebSocket.videoModule.isWebcamActive() ? _toggleWebcamFrontBack(context) : null,
                   iconSize: 27.0,
                   icon: Icon(
                     _mainWebSocket.videoModule.isWebcamActive()
@@ -496,7 +496,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                   width: 50.0,
                 ),
                 IconButton(
-                  onPressed: () => _toggleScreenshareOnOff(context),
+                  onPressed: _isPresenter() ? _toggleScreenshareOnOff(context) : null,
                   iconSize: 27.0,
                   icon: Icon(
                     _mainWebSocket.videoModule.isScreenshareActive()
@@ -659,7 +659,9 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
       );
 
   _toggleWebcamOnOff(BuildContext context) {
-    _mainWebSocket.videoModule.toggleWebcamOnOff();
+    setState(() {
+      _mainWebSocket.videoModule.toggleWebcamOnOff();
+    });
   }
 
   _toggleWebcamFrontBack(BuildContext context) {
