@@ -26,7 +26,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   cupertino_icons: ^1.0.0
-  flutter_webrtc: ^0.4.0
+  flutter_webrtc: ^0.5.7
   shared_preferences:
   shared_preferences_macos:
   shared_preferences_web:
@@ -37,7 +37,7 @@ dependencies:
   intl: ^0.16.1
   sprintf: ^5.0.0
   flutter_svg: ^0.19.1
-  sip_ua: ^0.3.1
+  sip_ua: ^0.3.3
   flutter_markdown: ^0.5.0
   uni_links: ^0.4.0
   flutter_foreground_plugin: ^0.6.0

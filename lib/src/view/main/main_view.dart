@@ -483,7 +483,9 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                   ),
                 ),
                 IconButton(
-                  onPressed: _mainWebSocket.videoModule.isWebcamActive() ? _toggleWebcamFrontBack(context) : null,
+                  onPressed: _mainWebSocket.videoModule.isWebcamActive()
+                      ? () => _toggleWebcamFrontBack(context)
+                      : null,
                   iconSize: 27.0,
                   icon: Icon(
                     _mainWebSocket.videoModule.isWebcamActive()
@@ -496,7 +498,9 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                   width: 50.0,
                 ),
                 IconButton(
-                  onPressed: _isPresenter() ? _toggleScreenshareOnOff(context) : null,
+                  onPressed: _isPresenter()
+                      ? () => _toggleScreenshareOnOff(context)
+                      : null,
                   iconSize: 27.0,
                   icon: Icon(
                     _mainWebSocket.videoModule.isScreenshareActive()
@@ -659,9 +663,9 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
       );
 
   _toggleWebcamOnOff(BuildContext context) {
-    setState(() {
-      _mainWebSocket.videoModule.toggleWebcamOnOff();
-    });
+    _mainWebSocket.videoModule
+        .toggleWebcamOnOff()
+        .then((value) => setState(() {}));
   }
 
   _toggleWebcamFrontBack(BuildContext context) {
@@ -675,11 +679,11 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
       _mainWebSocket.videoModule.toggleScreenshareOnOff();
     } else {
       var snackBarController = Scaffold.of(context).showSnackBar(SnackBar(
-        content: Text(AppLocalizations.of(context).get("main.share-without-presenter")),
+        content: Text(
+            AppLocalizations.of(context).get("main.share-without-presenter")),
       ));
-      Future.delayed(const Duration(seconds: 2), () => {
-        snackBarController.close()
-      });
+      Future.delayed(
+          const Duration(seconds: 2), () => {snackBarController.close()});
     }
   }
 

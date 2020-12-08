@@ -52,13 +52,15 @@ class VideoModule extends Module {
   /// Subscription to user changes.
   StreamSubscription _userChangesStreamSubscription;
 
-  VideoModule(messageSender, this._meetingInfo, this._userModule) : super(messageSender) {
-    _userChangesStreamSubscription =
-        _userModule.changes.listen((userEvent) {
-          if(userEvent.data.internalId != null && userEvent.data.internalId == _meetingInfo.internalUserID && !userEvent.data.isPresenter) {
-            _unshareScreen();
-          }
-        });
+  VideoModule(messageSender, this._meetingInfo, this._userModule)
+      : super(messageSender) {
+    _userChangesStreamSubscription = _userModule.changes.listen((userEvent) {
+      if (userEvent.data.internalId != null &&
+          userEvent.data.internalId == _meetingInfo.internalUserID &&
+          !userEvent.data.isPresenter) {
+        _unshareScreen();
+      }
+    });
   }
 
   @override
@@ -161,11 +163,11 @@ class VideoModule extends Module {
     }
   }
 
-  void _shareWebcam() {
+  Future<void> _shareWebcam() async {
     if (_webcamShare == null) {
       _webcamShare =
           OutgoingWebcamVideoConnection(_meetingInfo, messageSender, _camtype);
-      _webcamShare.init().catchError((e) {
+      await _webcamShare.init().catchError((e) {
         _webcamShare = null;
       });
     }
@@ -178,15 +180,15 @@ class VideoModule extends Module {
     }
   }
 
-  void toggleWebcamOnOff() {
+  Future<void> toggleWebcamOnOff() async {
     if (_webcamShare == null) {
-      _shareWebcam();
+      await _shareWebcam();
     } else if (_webcamShare != null) {
       _unshareWebcam();
     }
   }
 
-  void toggleWebcamFrontBack() {
+  Future<void> toggleWebcamFrontBack() async {
     _unshareWebcam();
 
     if (_camtype == CAMERATYPE.BACK) {
@@ -195,7 +197,7 @@ class VideoModule extends Module {
       _camtype = CAMERATYPE.BACK;
     }
 
-    _shareWebcam();
+    await _shareWebcam();
   }
 
   bool isWebcamActive() {
@@ -203,7 +205,7 @@ class VideoModule extends Module {
   }
 
   void _shareScreen() {
-    if(_screenShare == null) {
+    if (_screenShare == null) {
       _screenShare = OutgoingScreenshareVideoConnection(_meetingInfo);
       _screenShare.init().catchError((e) {
         _screenShare = null;
@@ -212,16 +214,16 @@ class VideoModule extends Module {
   }
 
   void _unshareScreen() {
-    if(_screenShare != null) {
+    if (_screenShare != null) {
       _screenShare.close();
       _screenShare = null;
     }
   }
 
   void toggleScreenshareOnOff() {
-    if(_screenShare == null) {
+    if (_screenShare == null) {
       _shareScreen();
-    } else if(_screenShare != null) {
+    } else if (_screenShare != null) {
       _unshareScreen();
     }
   }

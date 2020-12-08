@@ -117,48 +117,50 @@ class _PresentationWidgetState extends State<PresentationWidget> {
     bool hasSlide = _currentSlide != null && _currentSlide.bounds != null;
 
     if (hasSlide) {
-      Widget presentation = _buildPresentation();
+      return LayoutBuilder(builder: (context, constraints) {
+        Widget presentation = _buildPresentation();
 
-      return Center(
-        child: Container(
-          decoration: BoxDecoration(
-              border: Border.all(
-                  color: Theme.of(context).textTheme.bodyText1.color)),
-          child: AspectRatio(
-            aspectRatio:
-                _currentSlide.bounds.width / _currentSlide.bounds.height,
-            child: Stack(
-              children: [
-                presentation,
-                if (!widget._isFullscreen)
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: IconButton(
-                      icon: Icon(Icons.fullscreen),
-                      color: Colors.grey,
-                      onPressed: () {
-                        setState(() {
-                          widget._isFullscreen = true;
-                        });
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                FullscreenView(child: this.widget),
-                          ),
-                        ).then((_) {
+        return Center(
+          child: Container(
+            decoration: BoxDecoration(
+                border: Border.all(
+                    color: Theme.of(context).textTheme.bodyText1.color)),
+            child: AspectRatio(
+              aspectRatio:
+                  _currentSlide.bounds.width / _currentSlide.bounds.height,
+              child: Stack(
+                children: [
+                  presentation,
+                  if (!widget._isFullscreen)
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: IconButton(
+                        icon: Icon(Icons.fullscreen),
+                        color: Colors.grey,
+                        onPressed: () {
                           setState(() {
-                            widget._isFullscreen = false;
+                            widget._isFullscreen = true;
                           });
-                        });
-                      },
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  FullscreenView(child: this.widget),
+                            ),
+                          ).then((_) {
+                            setState(() {
+                              widget._isFullscreen = false;
+                            });
+                          });
+                        },
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      );
+        );
+      });
     } else {
       return Center(child: CircularProgressIndicator());
     }

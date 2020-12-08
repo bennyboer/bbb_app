@@ -167,7 +167,7 @@ packages:
       name: flutter_webrtc
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.1"
+    version: "0.5.7"
   html:
     dependency: "direct main"
     description:
@@ -335,7 +335,7 @@ packages:
       name: provider
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.3.2+2"
+    version: "4.3.2+3"
   random_string:
     dependency: transitive
     description:
@@ -405,7 +405,7 @@ packages:
       name: sip_ua
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.3.2"
+    version: "0.3.3"
   sky_engine:
     dependency: transitive
     description: flutter
