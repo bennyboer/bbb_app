@@ -13,12 +13,12 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/pr
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/presentation_slide.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/slide_bounds.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
+import 'package:vector_math/vector_math.dart';
 
 import 'model/annotation/info/rectangle.dart';
 import 'model/annotation/info/text.dart';
 import 'model/annotation/info/triangle.dart';
 import 'model/presentation.dart';
-import 'package:vector_math/vector_math.dart';
 
 /// Module providing presentation-related stuff.
 class PresentationModule extends Module {
@@ -78,8 +78,7 @@ class PresentationModule extends Module {
   PresentationModule(messageSender, this._meetingInfo)
       : _streamAnnotationsTopic =
             "stream-annotations-${_meetingInfo.meetingID}",
-        _streamCursorTopic =
-        "stream-cursor-${_meetingInfo.meetingID}",
+        _streamCursorTopic = "stream-cursor-${_meetingInfo.meetingID}",
         super(messageSender);
 
   @override
@@ -154,15 +153,12 @@ class PresentationModule extends Module {
   Stream<PresentationEvent> get presentationEventsStream =>
       _presentationEventStreamController.stream;
 
-  /// Hacky-cursor-smoother
-  int _cursorskipper=0;
-
   /// Called when something should be changed for the given [collectionName].
   void _onChanged(String collectionName, Map<String, dynamic> msg) {
     if (collectionName == _streamAnnotationsTopic) {
       _onStreamAnnotationChanged(msg);
     }
-    if (collectionName == _streamCursorTopic){
+    if (collectionName == _streamCursorTopic) {
       _onStreamCursorChanged(msg);
     }
 
@@ -235,13 +231,10 @@ class PresentationModule extends Module {
     String slideId = cursorsJson[cursorsJson.keys.elementAt(0)]["whiteboardId"];
     //PresentationSlide slide = _slides[slideId];
 
-    _currentSlide.cursorpos = Vector2(cursorsJson[cursorId]["xPercent"], cursorsJson[cursorId]["yPercent"]);
-    _cursorskipper=_cursorskipper+1;
-    if( _cursorskipper > 5 ) {
-      _cursorskipper = 0;
-      _slideEventStreamController
-          .add(PresentationSlideEvent(EventType.CHANGED, _currentSlide));
-    }
+    _currentSlide.cursorpos = Vector2(
+        cursorsJson[cursorId]["xPercent"], cursorsJson[cursorId]["yPercent"]);
+    _slideEventStreamController
+        .add(PresentationSlideEvent(EventType.CHANGED, _currentSlide));
   }
 
   /// Called when a stream annotation (paint) should be changed.
