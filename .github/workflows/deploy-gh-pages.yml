@@ -1,0 +1,20 @@
+name: Build and deploy redirect app to GitHub pages
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build angular app and deploy to GitHub pages
+      uses: AhsanAyaz/angular-deploy-gh-pages-actions@v1.3.1
+      with:
+        github_access_token: ${{ secrets.GH_PAGES_TOKEN }}
+        build_configuration: production
+        base_href: https://bennyboer.github.io/bbb_app/
+        deploy_branch: gh-pages
+        angular_dist_build_folder: redirect/dist/redirect
+        angular_project_dir: redirect
