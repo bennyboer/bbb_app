@@ -114,7 +114,6 @@ export class AppComponent {
 		}
 
 		const hasFirstParameter: boolean = keys.length > 0;
-		console.log(keys);
 
 		let result: string = `${AppComponent.BBB_APP_SCHEME}://${normalizedMeetingURL}`;
 		if (!!this._accessCode) {
