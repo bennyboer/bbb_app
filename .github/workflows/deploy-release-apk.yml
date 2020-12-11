@@ -1,0 +1,56 @@
+name: Deploy release APK to GitHub releases
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build Android APK for deployment on GitHub releases
+    runs-on: ubuntu-latest
+    env:
+      BUILD_RELEASE: true
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          echo "${{ secrets.SIGNING_KEYSTORE }}" > release.keystore.asc
+          gpg -d --passphrase "${{ secrets.SIGNING_KEYSTORE_PGP_PASSWORD }}" --batch release.keystore.asc > android/release.keystore
+      - shell: bash
+        run: |
+          cat << EOF > android/key.properties
+          storePassword=${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          keyAlias=key
+          storeFile=release.keystore
+          EOF
+      - uses: actions/setup-java@v1
+        with:
+          java-version: '12.x'
+      - uses: subosito/flutter-action@v1
+        with:
+          flutter-version: '1.22.3'
+          channel: 'stable'
+      - run: flutter pub get
+      - run: flutter test
+      - run: flutter build apk --release
+      - name: Upload app bundle for the subsequent workflow step
+        uses: actions/upload-artifact@v2
+        with:
+          name: release-apk
+          path: build/app/outputs/apk/release/app-release.apk
+  release:
+    name: Release app to GitHub releases page
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Retrieve previously saved APK from artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: release-apk
+      - name: Upload to GitHub releases
+        uses: fnkr/github-action-ghr@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GHR_PATH: app-release.apk
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
