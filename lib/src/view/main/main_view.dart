@@ -165,6 +165,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) {
       return StartView(
         snackBarText: AppLocalizations.of(context).get("main.user-kicked"),
+        processInitialUniLink: false,
       );
     }));
   }
@@ -174,6 +175,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) {
       return StartView(
         snackBarText: AppLocalizations.of(context).get("main.meeting-ended"),
+        processInitialUniLink: false,
       );
     }));
   }
@@ -188,8 +190,6 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     _userEventStreamSubscription.cancel();
     _userChangesStreamSubscription.cancel();
     _muteStreamSubscription.cancel();
-
-    _mainWebSocket.disconnect();
 
     WidgetsBinding.instance.removeObserver(this);
 
@@ -582,11 +582,15 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
               MaterialPageRoute(builder: (context) => SettingsView()),
             );
           } else if (value == "logout") {
-            // Main websocket will be disconnected in the dispose method automatically,
-            // so no need to do it here.
+            _mainWebSocket.disconnect();
+
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => StartView()),
+              MaterialPageRoute(
+                builder: (context) => StartView(
+                  processInitialUniLink: false,
+                ),
+              ),
             );
           } else if (value == "about") {
             showAboutDialog(context: context);

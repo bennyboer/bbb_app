@@ -52,24 +52,31 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
     WaitingRoomStatusUpdater waitingRoomStatusUpdater,
     MeetingNotStartedStatusUpdater meetingNotStartedStatusUpdater,
   }) async {
-    _meetingNotStartedRetries = 0;
-    _waitingRoomPollAttempts = 0;
+    bool isDirectJoinLink =
+        Uri.parse(meetingUrl).queryParameters.containsKey("meetingID");
 
-    _meetingNotStartedStatusUpdater = meetingNotStartedStatusUpdater;
+    String initialJoinUrl;
+    if (isDirectJoinLink) {
+      initialJoinUrl = meetingUrl;
+    } else {
+      _meetingNotStartedRetries = 0;
+      _waitingRoomPollAttempts = 0;
 
-    /// Gets initial csrf-token & sets the greenlight session token
-    String authenticityToken = await _loadAuthenticityToken(meetingUrl);
+      _meetingNotStartedStatusUpdater = meetingNotStartedStatusUpdater;
 
-    /// Posts the access code to url/login
-    await _postLoginForm(meetingUrl, authenticityToken, accessCode);
+      /// Gets initial csrf-token & sets the greenlight session token
+      String authenticityToken = await _loadAuthenticityToken(meetingUrl);
 
-    /// Updates csrf- and greenlight session token
-    /// Simulates the redirect the server seems to expect after the insertion of a valid access code
-    authenticityToken = await _loadAuthenticityToken(meetingUrl);
+      /// Posts the access code to url/login
+      await _postLoginForm(meetingUrl, authenticityToken, accessCode);
 
-    /// Joins with the given name
-    String initialJoinUrl =
-        await _postJoinForm(meetingUrl, authenticityToken, name);
+      /// Updates csrf- and greenlight session token
+      /// Simulates the redirect the server seems to expect after the insertion of a valid access code
+      authenticityToken = await _loadAuthenticityToken(meetingUrl);
+
+      /// Joins with the given name
+      initialJoinUrl = await _postJoinForm(meetingUrl, authenticityToken, name);
+    }
 
     String joinUrl = await _fetchJoinUrl(initialJoinUrl);
 
@@ -367,7 +374,6 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
 
   Future<Map<String, dynamic>> _loadIceServers(String joinUrl) async {
     try {
-
       Uri parsedUri = Uri.parse(joinUrl);
       parsedUri = parsedUri.replace(path: "/bigbluebutton/api/stuns");
       http.Response response =
@@ -377,33 +383,32 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
       List<dynamic> iceServers = [];
 
       List<dynamic> stunServers = responseJson["stunServers"];
-      if(stunServers != null) {
+      if (stunServers != null) {
         stunServers.forEach((e) {
-          Map<String, dynamic> iceServer = _createIceServerEntry(e["url"], null, null);
-          if(iceServer != null) {
+          Map<String, dynamic> iceServer =
+              _createIceServerEntry(e["url"], null, null);
+          if (iceServer != null) {
             iceServers.add(iceServer);
           }
         });
       }
 
       List<dynamic> turnServers = responseJson["turnServers"];
-      if(turnServers != null) {
+      if (turnServers != null) {
         turnServers.forEach((e) {
-          Map<String, dynamic> iceServer = _createIceServerEntry(e["url"], e["username"], e["password"]);
-          if(iceServer != null) {
+          Map<String, dynamic> iceServer =
+              _createIceServerEntry(e["url"], e["username"], e["password"]);
+          if (iceServer != null) {
             iceServers.add(iceServer);
           }
         });
       }
 
-      if(iceServers.isEmpty) {
+      if (iceServers.isEmpty) {
         return _fallbackIceServer();
       }
 
-      return {
-        'iceServers': iceServers
-      };
-
+      return {'iceServers': iceServers};
     } on Exception catch (e) {
       Log.error(e);
       return _fallbackIceServer();
@@ -418,16 +423,17 @@ class BBBMeetingInfoLoader extends MeetingInfoLoader {
     };
   }
 
-  Map<String, dynamic> _createIceServerEntry(String url, String username, String credential) {
+  Map<String, dynamic> _createIceServerEntry(
+      String url, String username, String credential) {
     Map<String, dynamic> iceServer = {};
-    if(url == null) {
+    if (url == null) {
       return null;
     }
     iceServer["url"] = url;
-    if(username != null) {
+    if (username != null) {
       iceServer["username"] = username;
     }
-    if(credential != null) {
+    if (credential != null) {
       iceServer["credential"] = credential;
     }
     return iceServer;

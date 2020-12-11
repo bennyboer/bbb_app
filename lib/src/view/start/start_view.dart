@@ -21,9 +21,14 @@ class StartView extends StatefulWidget {
   /// Text of a snackbar that should be shown when the start view has been built.
   final String _snackBarText;
 
+  /// Whether to process an initial uni link (if there).
+  final bool _processInitialUniLink;
+
   StartView({
     String snackBarText,
-  }) : _snackBarText = snackBarText;
+    bool processInitialUniLink = true,
+  })  : _snackBarText = snackBarText,
+        _processInitialUniLink = processInitialUniLink;
 
   @override
   State<StatefulWidget> createState() => _StartViewState();
@@ -33,6 +38,9 @@ class StartView extends StatefulWidget {
 class _StartViewState extends State<StartView> {
   /// Access code parameter of a uni link the app has been opened with.
   static const String _uniLinkAccessCodeQueryParameter = "accessCode";
+
+  /// Query parameter key that must exist for direct BBB join links.
+  static const String _uniLinkDirectBBBLinkQueryParameter = "meetingID";
 
   /// Duration after the user stopped typing after which to check whether
   /// an access code is needed for the current meeting URL.
@@ -104,12 +112,14 @@ class _StartViewState extends State<StartView> {
 
   /// Initialize uni links (deep linking).
   Future<void> _initUniLinks() async {
-    try {
-      Uri initialLink = await getInitialUri();
+    if (widget._processInitialUniLink) {
+      try {
+        Uri initialLink = await getInitialUri();
 
-      _processUniLink(initialLink);
-    } catch (e) {
-      Log.warning("Deep link processing failed");
+        await _processUniLink(initialLink);
+      } catch (e) {
+        Log.warning("Deep link processing failed");
+      }
     }
 
     _uniLinkSubscription = getUriLinksStream().listen((Uri uri) {
@@ -118,12 +128,24 @@ class _StartViewState extends State<StartView> {
   }
 
   /// Process the passed uni link.
-  void _processUniLink(Uri link) {
+  Future<void> _processUniLink(Uri link) async {
     if (link == null) {
       return;
     }
 
     Uri meetingUrl = link.replace(scheme: "https");
+
+    bool isDirectJoinLink =
+        link.queryParameters.containsKey(_uniLinkDirectBBBLinkQueryParameter);
+    if (isDirectJoinLink) {
+      // Join the meeting directly instead of pre-filling the fields
+      try {
+        await _joinMeeting(meetingUrl.toString());
+      } catch (e) {
+        Log.error("Could not join BBB meeting directly: '$e'");
+      }
+      return;
+    }
 
     if (link.queryParameters.containsKey(_uniLinkAccessCodeQueryParameter)) {
       String accessCode =
@@ -385,46 +407,60 @@ class _StartViewState extends State<StartView> {
 
       //handle input mistakes made by user
       meetingURL = meetingURL.trim();
-      if(!meetingURL.startsWith("http://") && !meetingURL.startsWith("https://")) {
+      if (!meetingURL.startsWith("http://") &&
+          !meetingURL.startsWith("https://")) {
         meetingURL = "https://" + meetingURL;
       }
       _meetingURLController.text = meetingURL;
 
-      // Show a snack bar until all information to join the meeting has been loaded
-      var snackBarController = Scaffold.of(context).showSnackBar(SnackBar(
-        content: Text(AppLocalizations.of(context).get("login.join-trying")),
-      ));
+      await _joinMeeting(
+        meetingURL,
+        username: username,
+        accessCode: accesscode,
+      );
+    }
+  }
 
-      try {
-        MeetingInfo meetingInfo =
-            await tryJoinMeeting(meetingURL, username, accesscode);
+  /// Join a meeting.
+  Future<void> _joinMeeting(
+    String meetingURL, {
+    String username,
+    String accessCode,
+  }) async {
+    // Show a snack bar until all information to join the meeting has been loaded
+    var snackBarController = _scaffoldState.showSnackBar(SnackBar(
+      content: Text(AppLocalizations.of(context).get("login.join-trying")),
+    ));
 
-        // Check if meeting info isn't null (may happen when the waiting room dialog is cancelled).
-        if (meetingInfo != null) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => MainView(meetingInfo)),
-          );
-        }
-      } on WaitingRoomDeclinedException catch (e) {
-        Scaffold.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context).get("login.waiting-room-declined"),
-            ),
-          ),
-        );
-      } catch (e) {
-        Scaffold.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context).get("login.join-failed"),
-            ),
-          ),
+    try {
+      MeetingInfo meetingInfo =
+          await tryJoinMeeting(meetingURL, username, accessCode);
+
+      // Check if meeting info isn't null (may happen when the waiting room dialog is cancelled).
+      if (meetingInfo != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => MainView(meetingInfo)),
         );
       }
-      snackBarController.close(); // Close snack bar.
+    } on WaitingRoomDeclinedException catch (e) {
+      _scaffoldState.showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).get("login.waiting-room-declined"),
+          ),
+        ),
+      );
+    } catch (e) {
+      _scaffoldState.showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).get("login.join-failed"),
+          ),
+        ),
+      );
     }
+    snackBarController.close(); // Close snack bar.
   }
 
   /// Try to join the meeting specified with the passed [meetingUrl], [username] and [accessCode].

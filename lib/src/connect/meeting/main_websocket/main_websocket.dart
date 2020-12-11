@@ -15,7 +15,6 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/voice/call_module.dar
 import 'package:bbb_app/src/connect/meeting/main_websocket/voice/voice_call_states.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/voice/voice_users.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
-import 'package:bbb_app/src/connect/meeting/voice/call_connection.dart';
 import 'package:bbb_app/src/utils/log.dart';
 import 'package:bbb_app/src/utils/websocket.dart';
 import 'package:http/http.dart' as http;
@@ -107,7 +106,8 @@ class MainWebSocket {
     final MessageSender messageSender = (msg) => _sendMessage(msg);
 
     final UserModule userModule = new UserModule(messageSender);
-    final VoiceCallStatesModule voiceCallStatesModule = new VoiceCallStatesModule(messageSender);
+    final VoiceCallStatesModule voiceCallStatesModule =
+        new VoiceCallStatesModule(messageSender);
 
     _modules = {
       "meeting": new MeetingModule(messageSender),
@@ -121,7 +121,8 @@ class MainWebSocket {
       ),
       "presentation": new PresentationModule(messageSender, _meetingInfo),
       "poll": new PollModule(messageSender),
-      "call": new CallModule(messageSender, _meetingInfo, voiceCallStatesModule),
+      "call":
+          new CallModule(messageSender, _meetingInfo, voiceCallStatesModule),
       "voiceUsers": new VoiceUsersModule(messageSender, userModule),
       "voiceCallState": voiceCallStatesModule,
     };
@@ -147,8 +148,10 @@ class MainWebSocket {
             if (method == "connected") {
               _validateAuthTokenMsgCount++;
               _sendValidateAuthTokenMsg();
-            } else if(method == "result" && jsonMsg["id"] != null && jsonMsg["id"] == _validateAuthTokenMsgId) {
-              if(_validateAuthTokenMsgCount == 1) {
+            } else if (method == "result" &&
+                jsonMsg["id"] != null &&
+                jsonMsg["id"] == _validateAuthTokenMsgId) {
+              if (_validateAuthTokenMsgCount == 1) {
                 _sendMessageWithoutID({
                   "msg": "sub",
                   "id": MainWebSocketUtil.getRandomAlphanumericWithCaps(17),
@@ -197,7 +200,7 @@ class MainWebSocket {
         _meetingInfo.meetingID,
         _meetingInfo.internalUserID,
         _meetingInfo.authToken,
-        if(_validateAuthTokenMsgCount == 1) _meetingInfo.externUserID,
+        if (_validateAuthTokenMsgCount == 1) _meetingInfo.externUserID,
       ],
       "id": _validateAuthTokenMsgId,
     });
