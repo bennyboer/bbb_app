@@ -24,9 +24,10 @@ export class AppComponent {
 	private _accessCode: string | null = null;
 
 	/**
-	 * All found URL parameter.
+	 * Whether the meeting URL is a direct BBB meeting join link
+	 * or otherwise a Greenlight meetign link.
 	 */
-	private readonly _urlParams: Map<string, string> = new Map<string, string>();
+	private _isDirectJoinLink: boolean = false;
 
 	constructor(
 		private readonly sanitizer: DomSanitizer
@@ -35,19 +36,20 @@ export class AppComponent {
 
 		const meetingUrlParam = urlParams.get("target");
 		if (!!meetingUrlParam && meetingUrlParam.length > 0) {
-			this._meetingUrl = meetingUrlParam;
+			const meetingURLParams = new URL(meetingUrlParam).searchParams;
+			if (meetingURLParams.has("meetingID")) {
+				// Is a direct join link
+				this._meetingUrl = window.location.search.replace("?target=", "");
+				this._isDirectJoinLink = true;
+			} else {
+				this._meetingUrl = meetingUrlParam;
+			}
 		}
 
 		const accessCodeParam = urlParams.get("accessCode");
 		if (!!accessCodeParam && accessCodeParam.length > 0) {
 			this._accessCode = accessCodeParam;
 		}
-
-		urlParams.forEach((value, key) => {
-			if (key !== "target" && key != "accessCode") {
-				this._urlParams.set(key, value);
-			}
-		});
 	}
 
 	/**
@@ -70,54 +72,18 @@ export class AppComponent {
 	 * Get the open in browser link.
 	 */
 	public get openInBrowserLink(): string {
-		const url: URL = new URL(this._meetingUrl);
-		const keys: string[] = [];
-		if (!!url.searchParams) {
-			url.searchParams.forEach((value, key) => {
-				keys.push(key);
-			});
-		}
-
-		let hasFirstParameter: boolean = keys.length > 0;
-
-		let result: string = this._meetingUrl;
-		for (const entry of this._urlParams.entries()) {
-			const key: string = entry[0];
-			const value: string = entry[1];
-
-			if (hasFirstParameter) {
-				result += `&${key}=${value}`;
-			} else {
-				result += `?${key}=${value}`;
-
-				hasFirstParameter = true;
-			}
-		}
-
-		return result;
+		return this._meetingUrl;
 	}
 
 	/**
 	 * Get the open in app link.
 	 */
 	public get openInAppLink(): SafeUrl {
-		const meetingURL: string = this.openInBrowserLink;
-
-		const url: URL = new URL(meetingURL);
-		const normalizedMeetingURL: string = meetingURL.replace("https://", "");
-
-		const keys: string[] = [];
-		if (!!url.searchParams) {
-			url.searchParams.forEach((value, key) => {
-				keys.push(key);
-			});
-		}
-
-		const hasFirstParameter: boolean = keys.length > 0;
+		const normalizedMeetingURL: string = this._meetingUrl.replace("https://", "");
 
 		let result: string = `${AppComponent.BBB_APP_SCHEME}://${normalizedMeetingURL}`;
 		if (!!this._accessCode) {
-			result += `${hasFirstParameter ? "&" : "?"}accessCode=${this._accessCode}`;
+			result += `${this._isDirectJoinLink ? "&" : "?"}accessCode=${this._accessCode}`;
 		}
 
 		return this.sanitizer.bypassSecurityTrustUrl(result);
