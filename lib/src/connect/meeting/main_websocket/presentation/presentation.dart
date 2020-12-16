@@ -66,11 +66,17 @@ class PresentationModule extends Module {
   /// Currently shown slide (if any).
   PresentationSlide _currentSlide;
 
+  /// Currently shown presentation (if any).
+  Presentation _currentPresentation;
+
   /// The last received poll result annotation.
   Annotation _lastPollResultAnnotation;
 
   /// Subscription to slide events.
   StreamSubscription<PresentationSlideEvent> _slideEventSubscription;
+
+  /// Subscription to presentation events.
+  StreamSubscription<PresentationEvent> _presentationEventSubscription;
 
   /// Topic where stream-cursor messages are published.
   final String _streamCursorTopic;
@@ -109,8 +115,18 @@ class PresentationModule extends Module {
       },
     ]);
 
+    _presentationEventSubscription = presentationEventsStream.listen((event) {
+      if ((event.eventType == EventType.ADDED ||
+              event.eventType == EventType.CHANGED) &&
+          event.presentation.current) {
+        _currentPresentation = event.presentation;
+      }
+    });
+
     _slideEventSubscription = slideEventsStream.listen((event) {
-      if (event.slide.current) {
+      if ((event.eventType == EventType.ADDED ||
+              event.eventType == EventType.CHANGED) &&
+          event.slide.current) {
         _currentSlide = event.slide;
       }
     });
@@ -119,6 +135,7 @@ class PresentationModule extends Module {
   @override
   Future<void> onDisconnect() {
     _slideEventSubscription.cancel();
+    _presentationEventSubscription.cancel();
 
     _presentationEventStreamController.close();
     _slideEventStreamController.close();
@@ -141,6 +158,9 @@ class PresentationModule extends Module {
 
   /// Get the currently shown slide.
   PresentationSlide get currentSlide => _currentSlide;
+
+  /// Get the currently shown presentation.
+  Presentation get currentPresentation => _currentPresentation;
 
   /// Stream of slide events.
   Stream<PresentationSlideEvent> get slideEventsStream =>

@@ -209,6 +209,11 @@ class AppLocalizations {
       en: "You can't share your screen if you are not the current presenter.",
       de: "Sie können Ihren Bildschirm nicht teilen, wenn Sie kein Präsentator sind.",
     ));
+    _addLocalization(_Localization(
+      "reconnect-audio.title",
+      en: "Reconnect audio",
+      de: "Audio neu verbinden",
+    ));
 
     _isInitialized = true;
   }

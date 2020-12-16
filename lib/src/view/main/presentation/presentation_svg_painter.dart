@@ -24,6 +24,10 @@ class PresentationSvgPainter extends CustomPainter {
 
   /// Draw the SVG on the canvas.
   void _drawSVG(Canvas canvas, Size size) {
+    if (_svg == null) {
+      return;
+    }
+
     double zoomFactor = size.width / _bounds.viewBoxWidth;
 
     canvas.scale(zoomFactor, zoomFactor);

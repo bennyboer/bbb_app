@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_links/uni_links.dart';
 
 // Start view of the app where you'll be able to enter a meeting using the invitation link.
@@ -46,6 +47,15 @@ class _StartViewState extends State<StartView> {
   /// an access code is needed for the current meeting URL.
   static const Duration _checkForAccessCodeNeededDuration =
       Duration(seconds: 2);
+
+  /// Key used to get a previously stored meeting URL from shared preferences.
+  static const String _meetingURLPreferencesKey = "start_view.meeting-url";
+
+  /// Key used to get a previously stored user name from shared preferences.
+  static const String _userNamePreferencesKey = "start_view.username";
+
+  /// Key used to get a previously stored access code from shared preferences.
+  static const String _accessCodePreferencesKey = "start_view.access-code";
 
   /// Key of this form used to validate the form later.
   final _formKey = GlobalKey<FormState>();
@@ -90,6 +100,8 @@ class _StartViewState extends State<StartView> {
       Provider.of<AppStateNotifier>(context, listen: false).darkModeEnabled =
           event;
     });
+
+    _restoreInfo();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget._snackBarText != null) {
@@ -438,6 +450,14 @@ class _StartViewState extends State<StartView> {
 
       // Check if meeting info isn't null (may happen when the waiting room dialog is cancelled).
       if (meetingInfo != null) {
+        // Save currently entered info to be remembered for the next login
+        _saveInfo(
+          meetingURL: meetingURL,
+          userName: username,
+          accessCode: accessCode,
+        );
+
+        // Change current view to the meeting view
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => MainView(meetingInfo)),
@@ -461,6 +481,53 @@ class _StartViewState extends State<StartView> {
       );
     }
     snackBarController.close(); // Close snack bar.
+  }
+
+  /// Save the current info for the next time visiting the start view.
+  Future<void> _saveInfo({
+    String meetingURL,
+    String userName,
+    String accessCode,
+  }) async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+
+    if (meetingURL != null) {
+      sharedPreferences.setString(_meetingURLPreferencesKey, meetingURL);
+    } else {
+      sharedPreferences.remove(_meetingURLPreferencesKey);
+    }
+
+    if (userName != null) {
+      sharedPreferences.setString(_userNamePreferencesKey, userName);
+    } else {
+      sharedPreferences.remove(_userNamePreferencesKey);
+    }
+
+    if (accessCode != null) {
+      sharedPreferences.setString(_accessCodePreferencesKey, accessCode);
+    } else {
+      sharedPreferences.remove(_accessCodePreferencesKey);
+    }
+  }
+
+  /// Restore the login info currently stored in shared preferences.
+  Future<void> _restoreInfo() async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+
+    if (sharedPreferences.containsKey(_meetingURLPreferencesKey)) {
+      this._meetingURLController.text =
+          sharedPreferences.getString(_meetingURLPreferencesKey);
+    }
+
+    if (sharedPreferences.containsKey(_userNamePreferencesKey)) {
+      this._usernameTextField.text =
+          sharedPreferences.getString(_userNamePreferencesKey);
+    }
+
+    if (sharedPreferences.containsKey(_accessCodePreferencesKey)) {
+      this._accesscodeTextField.text =
+          sharedPreferences.getString(_accessCodePreferencesKey);
+    }
   }
 
   /// Try to join the meeting specified with the passed [meetingUrl], [username] and [accessCode].

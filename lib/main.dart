@@ -2,6 +2,7 @@ import 'dart:core';
 
 import 'package:bbb_app/src/broadcast/app_state_notifier.dart';
 import 'package:bbb_app/src/locale/app_localizations_delegate.dart';
+import 'package:bbb_app/src/utils/log.dart';
 import 'package:bbb_app/src/view/start/start_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -9,6 +10,10 @@ import 'package:provider/provider.dart';
 
 /// Entry point of the application.
 Future main() async {
+  /// Logging settings
+  Log.allowVerbose = false;
+  Log.allowDebug = true;
+
   runApp(
     ChangeNotifierProvider<AppStateNotifier>(
       create: (context) => AppStateNotifier(),

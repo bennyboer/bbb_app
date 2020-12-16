@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/presentation.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/presentation_slide.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/presentation.dart';
 import 'package:bbb_app/src/view/fullscreen/fullscreen_view.dart';
@@ -39,23 +40,6 @@ class _PresentationWidgetState extends State<PresentationWidget> {
   @override
   void initState() {
     super.initState();
-
-    _currentSlide = widget._mainWebSocket.presentationModule.currentSlide;
-    _slideEventSubscription = widget
-        ._mainWebSocket.presentationModule.slideEventsStream
-        .listen((event) {
-      if (event.slide.current &&
-          (_currentSlide == null || event.slide.id != _currentSlide.id)) {
-        _currentSlide = event.slide;
-        _reloadSVG(_currentSlide.svgUri);
-      } else {
-        setState(() {});
-      }
-    });
-
-    if (_currentSlide != null) {
-      _reloadSVG(_currentSlide.svgUri);
-    }
   }
 
   /// Reload the SVG from the passed [url].
@@ -64,10 +48,7 @@ class _PresentationWidgetState extends State<PresentationWidget> {
 
     _slideSvg = await svg.fromSvgString(response.body, response.body);
 
-    //check if this widget is still in tree. (might have been removed from tree during the http.get)
-    if (mounted) {
-      setState(() {});
-    }
+    setState(() {});
   }
 
   @override
@@ -162,7 +143,34 @@ class _PresentationWidgetState extends State<PresentationWidget> {
         );
       });
     } else {
+      if (_slideEventSubscription == null) {
+        _initializeSlideEventSubscription();
+      }
+
       return Center(child: CircularProgressIndicator());
+    }
+  }
+
+  void _initializeSlideEventSubscription() {
+    _currentSlide = widget._mainWebSocket.presentationModule.currentSlide;
+    _slideEventSubscription = widget
+        ._mainWebSocket.presentationModule.slideEventsStream
+        .listen((event) {
+      Presentation currentPresentation =
+          widget._mainWebSocket.presentationModule.currentPresentation;
+      if (currentPresentation != null) {
+        if ((event.eventType == EventType.ADDED ||
+                event.eventType == EventType.CHANGED) &&
+            event.slide.current &&
+            event.slide.presentationId == currentPresentation.id) {
+          _currentSlide = event.slide;
+          _reloadSVG(_currentSlide.svgUri);
+        }
+      }
+    });
+
+    if (_currentSlide != null) {
+      _reloadSVG(_currentSlide.svgUri);
     }
   }
 }

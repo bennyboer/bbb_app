@@ -1,12 +1,11 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:sip_ua/sip_ua.dart';
-import 'dart:convert';
 
 import '../meeting_info.dart';
 
 class CallManager {
-
   SIPUAHelper _helper;
   MeetingInfo info;
   int _audioSessionNumber = 1;
@@ -16,6 +15,7 @@ class CallManager {
   }
 
   SIPUAHelper get helper => _helper;
+
   int get audioSessionNumber => _audioSessionNumber;
 
   String _getNakedUrl() {
@@ -31,15 +31,20 @@ class CallManager {
   }
 
   Uri _buildWsUri(Uri joinUrl) {
-    return joinUrl.replace(path: "ws").replace(queryParameters: {"sessionToken": info.sessionToken})
-        .replace(scheme: "wss");
+    return joinUrl
+        .replace(path: "ws")
+        .replace(queryParameters: {"sessionToken": info.sessionToken}).replace(
+            scheme: "wss");
   }
 
   Map<String, dynamic> _createCookies() {
     Map<String, dynamic> cookies = new Map();
     Random r = new Random();
 
-    cookies["Cookie"] = info.cookie.split(";").where((element) => element.contains("JSESSIONID")).first;
+    cookies["Cookie"] = info.cookie
+        .split(";")
+        .where((element) => element.contains("JSESSIONID"))
+        .first;
     String key = base64.encode(List<int>.generate(16, (_) => r.nextInt(255)));
     cookies['Sec-WebSocket-Key'] = key.toLowerCase();
     cookies['Sec-WebSocket-Protocol'] = "sip";
@@ -54,12 +59,16 @@ class CallManager {
 
   UaSettings buildSettings() {
     UaSettings settings = UaSettings();
-    List<Map<String, String>> iceServers = [{}];
-    for (var server in info.iceServers["iceServers"]) {
-      Map<String, String> entry = {};
-      entry["url"] = server["url"];
-      iceServers.add(entry);
-    }
+    List<Map<String, String>> iceServers = [
+      {'url': 'stun:stun.l.google.com:19302'}
+    ];
+
+    // TODO: The custom BBB Servers do not work sometimes
+    // for (var server in info.iceServers["iceServers"]) {
+    //   Map<String, String> entry = {};
+    //   entry["url"] = server["url"];
+    //   iceServers.add(entry);
+    // }
 
     settings.webSocketUrl = _buildWsUri(Uri.parse(info.joinUrl)).toString();
     settings.webSocketSettings.extraHeaders = _createCookies();

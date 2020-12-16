@@ -25,6 +25,11 @@ class CallConnection extends CallManager implements SipUaHelperListener {
     _muteStreamController.close();
   }
 
+  void reconnect() {
+    helper.stop();
+    helper.start(super.buildSettings());
+  }
+
   void toggleMute() {
     if (_audioMuted) {
       _call.unmute();
@@ -78,7 +83,7 @@ class CallConnection extends CallManager implements SipUaHelperListener {
   /// Attempts to unmute the echo test
   /// (DTMF tones are the tones you hear when you press on your phone keypad)
   void doEchoTest() {
-    _call.sendDTMF("1", {"duration": 2000});
+    _call.sendDTMF("1", {"duration": 5000});
   }
 
   Stream<bool> get callMuteStream => _muteStreamController.stream;
