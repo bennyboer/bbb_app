@@ -42,6 +42,10 @@ class PresentationPainter extends CustomPainter {
   }
 
   void _drawCursor(Canvas canvas, Size size) {
+    if (_cursorpos == null) {
+      return;
+    }
+
     double thickness = 10; //info.thickness * _bounds.width / 100;
 
     Paint paint = Paint()
