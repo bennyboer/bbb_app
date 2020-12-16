@@ -44,5 +44,9 @@ class CallModule extends Module {
     _connection.toggleMute();
   }
 
+  void reconnectAudio() {
+    _connection.reconnect();
+  }
+
   Stream<bool> get callMuteStream => _connection.callMuteStream;
 }

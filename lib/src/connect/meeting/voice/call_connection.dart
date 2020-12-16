@@ -25,6 +25,11 @@ class CallConnection extends CallManager implements SipUaHelperListener {
     _muteStreamController.close();
   }
 
+  void reconnect() {
+    helper.stop();
+    helper.start(super.buildSettings());
+  }
+
   void toggleMute() {
     if (_audioMuted) {
       _call.unmute();

@@ -599,10 +599,28 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
               context,
               MaterialPageRoute(builder: (context) => PrivacyPolicyView()),
             );
+          } else if (value == "reconnect_audio") {
+            _mainWebSocket.callModule.reconnectAudio();
           }
         },
         itemBuilder: (context) {
           return [
+            PopupMenuItem<String>(
+              value: "reconnect_audio",
+              child: Row(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(right: 10),
+                    child: Icon(
+                      Icons.autorenew,
+                      color: Theme.of(context).textTheme.bodyText1.color,
+                    ),
+                  ),
+                  Text(
+                      AppLocalizations.of(context).get("reconnect-audio.title")),
+                ],
+              ),
+            ),
             PopupMenuItem<String>(
               value: "settings",
               child: Row(
