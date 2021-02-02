@@ -46,8 +46,7 @@ class MainWebSocketUtil {
   static String getRandomHex(int length) {
     return String.fromCharCodes(Iterable.generate(
       length,
-          (_) => _HEX.codeUnitAt(_rng.nextInt(_HEX.length)),
+      (_) => _HEX.codeUnitAt(_rng.nextInt(_HEX.length)),
     ));
   }
-
 }

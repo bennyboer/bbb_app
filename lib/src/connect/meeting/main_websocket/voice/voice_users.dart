@@ -1,6 +1,6 @@
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/user/model/user_model.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
-import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
 
 const String VOICE_USERS = "voiceUsers";
 
@@ -8,6 +8,7 @@ const String VOICE_USERS = "voiceUsers";
 /// Because we want to simplify things, we use the same data for both.
 class VoiceUsersModule extends Module {
   UserModule _userModule;
+
   /// voice users have their own, unique message id which is mapped to the users internal id
   /// on method: "add".
   Map<String, String> _voiceIdToInternalId = {};
@@ -35,7 +36,8 @@ class VoiceUsersModule extends Module {
     UserModel model;
 
     if (method == "added") {
-      model = _userModule.userMapByInternalId.putIfAbsent(fields["intId"], () => UserModel());
+      model = _userModule.userMapByInternalId
+          .putIfAbsent(fields["intId"], () => UserModel());
       model.internalId = fields["intId"];
       model.muted = fields["muted"];
       model.listenOnly = fields["listenOnly"];
@@ -44,8 +46,7 @@ class VoiceUsersModule extends Module {
     } else if (method == "changed") {
       model = _userModule.userMapByInternalId[_voiceIdToInternalId[msg["id"]]];
     }
-    if (fields["talking"] != null)
-      model.talking = fields["talking"];
+    if (fields["talking"] != null) model.talking = fields["talking"];
     _userModule.updateUserForId(model.internalId, model);
   }
 }

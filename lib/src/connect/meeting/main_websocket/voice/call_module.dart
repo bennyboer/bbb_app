@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/voice/call_connection.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/voice/voice_call_states.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
-import 'package:bbb_app/src/connect/meeting/voice/call_connection.dart';
 
 const String ECHO_STATE = "IN_ECHO_TEST";
 

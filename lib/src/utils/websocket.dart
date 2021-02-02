@@ -55,7 +55,6 @@ class SimpleWebSocket {
     if (_socket != null) _socket.close(reason);
   }
 
-
   Future<WebSocket> _connectForSelfSignedCert(
     String url, {
     String cookie,
