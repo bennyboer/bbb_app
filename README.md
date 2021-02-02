@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="assets/icon/icon.png" width="200">
+    <img src="assets/icon/android/icon.png" width="200">
 </p>
 
 <p align="center">
