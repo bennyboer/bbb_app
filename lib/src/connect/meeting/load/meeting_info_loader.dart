@@ -11,8 +11,8 @@ abstract class MeetingInfoLoader {
     String meetingUrl,
     String password,
     String name, {
-        WaitingRoomStatusUpdater waitingRoomStatusUpdater,
-        MeetingNotStartedStatusUpdater meetingNotStartedStatusUpdater,
+    WaitingRoomStatusUpdater waitingRoomStatusUpdater,
+    MeetingNotStartedStatusUpdater meetingNotStartedStatusUpdater,
   });
 
   /// Fired if connect attempt is canceled by user.

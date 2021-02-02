@@ -1,3 +1,4 @@
+/// Representation of a BBB meeting user.
 class UserModel {
   static const String ROLE_MODERATOR = "MODERATOR";
   static const String CONNECTIONSTATUS_ONLINE = "online";

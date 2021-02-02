@@ -1,9 +1,10 @@
 import 'dart:async';
 
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
-import 'package:bbb_app/src/connect/meeting/voice/call_manager.dart';
 import 'package:bbb_app/src/utils/log.dart';
 import 'package:sip_ua/sip_ua.dart';
+
+import 'call_manager.dart';
 
 /// The connection that handles the Sip call itself.
 class CallConnection extends CallManager implements SipUaHelperListener {

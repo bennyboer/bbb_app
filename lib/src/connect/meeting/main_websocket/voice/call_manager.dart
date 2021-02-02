@@ -1,9 +1,8 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:sip_ua/sip_ua.dart';
-
-import '../meeting_info.dart';
 
 class CallManager {
   SIPUAHelper _helper;

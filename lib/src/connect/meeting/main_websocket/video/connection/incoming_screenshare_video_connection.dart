@@ -3,7 +3,6 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'incoming_video_connection.dart';
 
 class IncomingScreenshareVideoConnection extends IncomingVideoConnection {
-
   IncomingScreenshareVideoConnection(meetingInfo) : super(meetingInfo);
 
   @override
@@ -40,5 +39,4 @@ class IncomingScreenshareVideoConnection extends IncomingVideoConnection {
       'voiceBridge': meetingInfo.voiceBridge,
     });
   }
-
 }

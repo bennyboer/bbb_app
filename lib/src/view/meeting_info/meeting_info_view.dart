@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/group.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/user/model/user_model.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
-import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
 import 'package:bbb_app/src/view/chat/chat_view.dart';
 import 'package:flutter/material.dart';
@@ -49,8 +49,8 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
     _userMap = widget._mainWebSocket.userModule.userMapByInternalId;
     _userChangesStreamSubscription =
         widget._mainWebSocket.userModule.changes.listen((userMap) {
-      setState(
-          () => _userMap = Map.of(widget._mainWebSocket.userModule.userMapByInternalId));
+      setState(() => _userMap =
+          Map.of(widget._mainWebSocket.userModule.userMapByInternalId));
     });
 
     _chatGroups.addAll(widget._mainWebSocket.chatModule.activeChatGroups);

@@ -57,6 +57,9 @@ class _StartViewState extends State<StartView> {
   /// Key used to get a previously stored access code from shared preferences.
   static const String _accessCodePreferencesKey = "start_view.access-code";
 
+  /// Path to the app icon to show in the start view.
+  static const String _appIconPath = "assets/icon/android/icon.png";
+
   /// Key of this form used to validate the form later.
   final _formKey = GlobalKey<FormState>();
 
@@ -198,100 +201,9 @@ class _StartViewState extends State<StartView> {
                 padding: EdgeInsets.symmetric(horizontal: 30),
                 child: Column(
                   children: [
-                    if (MediaQuery.of(context).orientation ==
-                        Orientation.portrait)
-                      Image.asset(
-                        "assets/icon/icon.png",
-                        width: 128,
-                      ),
-                    if (MediaQuery.of(context).orientation ==
-                        Orientation.portrait)
-                      Padding(
-                        padding: EdgeInsets.symmetric(vertical: 40),
-                        child: Text(
-                          AppLocalizations.of(context).get("app.title"),
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 32.0),
-                        ),
-                      ),
-                    if (MediaQuery.of(context).orientation ==
-                        Orientation.landscape)
-                      Padding(
-                        padding: EdgeInsets.symmetric(vertical: 10),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(
-                              "assets/icon/icon.png",
-                              width: 64,
-                            ),
-                            Padding(
-                              padding: EdgeInsets.only(left: 15),
-                              child: Text(
-                                AppLocalizations.of(context).get("app.title"),
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 32.0),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    ..._buildHeaderWidgets(context),
                     _buildForm(context),
-                    Padding(
-                      padding: EdgeInsets.only(top: 30, bottom: 0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          DayNightSwitcher(
-                            isDarkModeEnabled: Provider.of<AppStateNotifier>(
-                                    context,
-                                    listen: false)
-                                .darkModeEnabled,
-                            onStateChanged: (isDarkModeEnabled) =>
-                                Provider.of<AppStateNotifier>(context,
-                                        listen: false)
-                                    .darkModeEnabled = isDarkModeEnabled,
-                          ),
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: Icon(Icons.info),
-                                onPressed: () =>
-                                    showAboutDialog(context: context),
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.privacy_tip),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) =>
-                                            PrivacyPolicyView()),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    Divider(),
-                    Padding(
-                      padding: EdgeInsets.only(bottom: 10),
-                      child: Text(
-                        AppLocalizations.of(context).get("start.bbb-trademark"),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Theme.of(context)
-                              .textTheme
-                              .bodyText1
-                              .color
-                              .withOpacity(0.5),
-                          fontSize: 12.0,
-                        ),
-                      ),
-                    ),
+                    ..._buildFooterWidgets(context),
                   ],
                 ),
               ),
@@ -301,6 +213,95 @@ class _StartViewState extends State<StartView> {
       ),
     );
   }
+
+  /// Build the footer widgets for the start view.
+  List<Widget> _buildFooterWidgets(BuildContext context) => [
+        Padding(
+          padding: EdgeInsets.only(top: 30, bottom: 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              DayNightSwitcher(
+                isDarkModeEnabled:
+                    Provider.of<AppStateNotifier>(context, listen: false)
+                        .darkModeEnabled,
+                onStateChanged: (isDarkModeEnabled) =>
+                    Provider.of<AppStateNotifier>(context, listen: false)
+                        .darkModeEnabled = isDarkModeEnabled,
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.info),
+                    onPressed: () => showAboutDialog(context: context),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.privacy_tip),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => PrivacyPolicyView()),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        Divider(),
+        Padding(
+          padding: EdgeInsets.only(bottom: 10),
+          child: Text(
+            AppLocalizations.of(context).get("start.bbb-trademark"),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color:
+                  Theme.of(context).textTheme.bodyText1.color.withOpacity(0.5),
+              fontSize: 12.0,
+            ),
+          ),
+        ),
+      ];
+
+  /// Build the header widgets for the start view.
+  List<Widget> _buildHeaderWidgets(BuildContext context) => [
+        if (MediaQuery.of(context).orientation == Orientation.portrait)
+          Image.asset(
+            _appIconPath,
+            width: 128,
+          ),
+        if (MediaQuery.of(context).orientation == Orientation.portrait)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 40),
+            child: Text(
+              AppLocalizations.of(context).get("app.title"),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 32.0),
+            ),
+          ),
+        if (MediaQuery.of(context).orientation == Orientation.landscape)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  _appIconPath,
+                  width: 64,
+                ),
+                Padding(
+                  padding: EdgeInsets.only(left: 15),
+                  child: Text(
+                    AppLocalizations.of(context).get("app.title"),
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 32.0),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ];
 
   /// Build the login form.
   Widget _buildForm(BuildContext context) {

@@ -4,10 +4,10 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/chat/group.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/message.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/user_typing_info.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/user/model/user_model.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/util/util.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
-import 'package:bbb_app/src/connect/meeting/model/user_model.dart';
 
 /// BBB Chat representation.
 class ChatModule extends Module {

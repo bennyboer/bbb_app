@@ -4,7 +4,6 @@ import 'package:flutter_foreground_plugin/flutter_foreground_plugin.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 class OutgoingScreenshareVideoConnection extends VideoConnection {
-
   /// The screenshare stream.
   MediaStream _localStream;
 
@@ -13,7 +12,7 @@ class OutgoingScreenshareVideoConnection extends VideoConnection {
   @override
   Future<void> init() async {
     _localStream = await _createScreenshareStream();
-    if(_localStream == null) {
+    if (_localStream == null) {
       FlutterForegroundPlugin.stopForegroundService();
       throw Exception("local stream was null");
     }
@@ -50,7 +49,6 @@ class OutgoingScreenshareVideoConnection extends VideoConnection {
 
   @override
   sendOffer(RTCSessionDescription s) {
-
     send({
       'callerName': meetingInfo.internalUserID,
       'id': 'start',
@@ -67,7 +65,8 @@ class OutgoingScreenshareVideoConnection extends VideoConnection {
 
   startForegroundService() async {
     await FlutterForegroundPlugin.setServiceMethodInterval(seconds: 1);
-    await FlutterForegroundPlugin.setServiceMethod(someDummyFunctionDoingExactlyNothing);
+    await FlutterForegroundPlugin.setServiceMethod(
+        someDummyFunctionDoingExactlyNothing);
     await FlutterForegroundPlugin.startForegroundService(
       holdWakeLock: false,
       onStarted: () {
@@ -98,12 +97,15 @@ class OutgoingScreenshareVideoConnection extends VideoConnection {
 
     await startForegroundService();
 
-    MediaStream stream = await navigator.mediaDevices.getDisplayMedia(mediaConstraints).catchError((e) {
-      Log.error("[OutgoingScreenshareVideoConnection] error opening screenshare stream: " + e);
+    MediaStream stream = await navigator.mediaDevices
+        .getDisplayMedia(mediaConstraints)
+        .catchError((e) {
+      Log.error(
+          "[OutgoingScreenshareVideoConnection] error opening screenshare stream: " +
+              e);
       return null;
     });
 
     return stream;
   }
-
 }
