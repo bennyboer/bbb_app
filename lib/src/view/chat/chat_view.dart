@@ -158,72 +158,75 @@ class _ChatViewState extends State<ChatView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              scrollDirection: Axis.vertical,
-              shrinkWrap: true,
-              itemCount: _messages.length,
-              controller: _scrollController,
-              itemBuilder: (BuildContext context, int index) {
-                ChatMessage message = _messages[index];
-                UserModel sender = widget._mainWebSocket.userModule
-                    .userMapByInternalId[message.senderID];
+      body: SafeArea(
+        bottom: true,
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                scrollDirection: Axis.vertical,
+                shrinkWrap: true,
+                itemCount: _messages.length,
+                controller: _scrollController,
+                itemBuilder: (BuildContext context, int index) {
+                  ChatMessage message = _messages[index];
+                  UserModel sender = widget._mainWebSocket.userModule
+                      .userMapByInternalId[message.senderID];
 
-                return _buildChatMessageWidget(
-                  message,
-                  sender,
-                  context,
-                );
-              },
-            ),
-          ),
-          if (_currentlyTypingUsers.isNotEmpty)
-            Container(
-              padding: EdgeInsets.all(5),
-              color: null,
-              child: Text(
-                sprintf(
-                    (_currentlyTypingUsers.length == 1
-                        ? AppLocalizations.of(context)
-                            .get("chat.currently-typing-singular")
-                        : AppLocalizations.of(context)
-                            .get("chat.currently-typing-plural")),
-                    [_currentlyTypingUsers.join(", ")]),
-                style: TextStyle(fontStyle: FontStyle.italic),
+                  return _buildChatMessageWidget(
+                    message,
+                    sender,
+                    context,
+                  );
+                },
               ),
             ),
-          Container(
-            color: Theme.of(context).chipTheme.backgroundColor,
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    maxLines: 5,
-                    minLines: 1,
-                    decoration: InputDecoration(
-                      hintText:
-                          AppLocalizations.of(context).get("chat.text-to-send"),
-                      border: InputBorder.none,
-                      filled: false,
-                      prefixIcon: Icon(Icons.message),
+            if (_currentlyTypingUsers.isNotEmpty)
+              Container(
+                padding: EdgeInsets.all(5),
+                color: null,
+                child: Text(
+                  sprintf(
+                      (_currentlyTypingUsers.length == 1
+                          ? AppLocalizations.of(context)
+                              .get("chat.currently-typing-singular")
+                          : AppLocalizations.of(context)
+                              .get("chat.currently-typing-plural")),
+                      [_currentlyTypingUsers.join(", ")]),
+                  style: TextStyle(fontStyle: FontStyle.italic),
+                ),
+              ),
+            Container(
+              color: Theme.of(context).chipTheme.backgroundColor,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      maxLines: 5,
+                      minLines: 1,
+                      decoration: InputDecoration(
+                        hintText:
+                            AppLocalizations.of(context).get("chat.text-to-send"),
+                        border: InputBorder.none,
+                        filled: false,
+                        prefixIcon: Icon(Icons.message),
+                      ),
+                      style: TextStyle(fontSize: 16.0),
+                      controller: _textFieldController,
                     ),
-                    style: TextStyle(fontSize: 16.0),
-                    controller: _textFieldController,
                   ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.send),
-                  onPressed: () {
-                    _sendMessage(_textFieldController.text);
-                    _textFieldController.clear();
-                  },
-                ),
-              ],
+                  IconButton(
+                    icon: Icon(Icons.send),
+                    onPressed: () {
+                      _sendMessage(_textFieldController.text);
+                      _textFieldController.clear();
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        )
       ),
     );
   }
