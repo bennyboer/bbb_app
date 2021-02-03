@@ -37,8 +37,7 @@ dependencies:
   intl: ^0.16.1
   sprintf: ^5.0.0
   flutter_svg: ^0.19.1
-  sip_ua: # ^0.3.4
-    git: https://github.com/flutter-webrtc/dart-sip-ua.git # TODO Reset to using version number > 0.3.5 after it is released
+  sip_ua: ^0.3.5
   flutter_markdown: ^0.5.2
   uni_links: ^0.4.0
   flutter_foreground_plugin: ^0.6.0

@@ -402,12 +402,10 @@ packages:
   sip_ua:
     dependency: "direct main"
     description:
-      path: "."
-      ref: HEAD
-      resolved-ref: e81b5295ee365831283ebffe3929348d358c47f0
-      url: "https://github.com/flutter-webrtc/dart-sip-ua.git"
-    source: git
-    version: "0.3.4"
+      name: sip_ua
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.3.5"
   sky_engine:
     dependency: transitive
     description: flutter
