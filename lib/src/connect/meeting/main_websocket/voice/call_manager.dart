@@ -4,13 +4,15 @@ import 'dart:math';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:sip_ua/sip_ua.dart';
 
+import 'custom_sip_ua_helper.dart';
+
 class CallManager {
   SIPUAHelper _helper;
   MeetingInfo info;
   int _audioSessionNumber = 1;
 
   CallManager(this.info) {
-    _helper = new SIPUAHelper();
+    _helper = new CustomSIPUAHelper();
   }
 
   SIPUAHelper get helper => _helper;
