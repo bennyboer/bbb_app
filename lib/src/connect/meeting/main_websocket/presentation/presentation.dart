@@ -55,6 +55,9 @@ class PresentationModule extends Module {
   /// Mapping from slide position IDs to slide IDs.
   Map<String, String> _slidePositionIDsToSlideIDs = {};
 
+  /// Slide bounds that have been added before the actual slide is there.
+  Map<String, SlideBounds> _tmpSlideBounds = {};
+
   /// Stream controller publishing presentation events.
   StreamController<PresentationEvent> _presentationEventStreamController =
       StreamController.broadcast();
@@ -666,16 +669,21 @@ class PresentationModule extends Module {
 
     Map<String, dynamic> fields = msg["fields"];
 
-    String slideId = fields["id"];
-    PresentationSlide slide = _slides[slideId];
-
     SlideBounds bounds = _jsonToSlideBounds(fields);
-    slide.bounds = bounds;
 
+    String slideId = fields["id"];
     _slidePositionIDsToSlideIDs[id] = slideId;
 
-    _slideEventStreamController
-        .add(PresentationSlideEvent(EventType.CHANGED, slide));
+    PresentationSlide slide = _slides[slideId];
+    if (slide != null) {
+      slide.bounds = bounds;
+
+      _slideEventStreamController
+          .add(PresentationSlideEvent(EventType.CHANGED, slide));
+    } else {
+      // Slide not yet there -> cache temporarily until slide is there
+      _tmpSlideBounds[id] = bounds;
+    }
   }
 
   /// Called when a slide position should be changed.
@@ -767,6 +775,11 @@ class PresentationModule extends Module {
     _slidesByID[id] = slide;
     _slides[slide.id] = slide;
 
+    // Check if slide bounds are already there
+    if (_tmpSlideBounds.containsKey(slide.id)) {
+      slide.bounds = _tmpSlideBounds.remove(slide.id);
+    }
+
     _slideEventStreamController
         .add(PresentationSlideEvent(EventType.ADDED, slide));
   }
@@ -824,16 +837,18 @@ class PresentationModule extends Module {
     String id = fields["id"];
     String podId = fields["podId"];
     String name = fields["name"];
-    bool current = fields["current"];
+    bool current = fields["current"] ?? false;
     bool downloadable = fields["downloadable"];
 
     Map<String, dynamic> conversion = fields["conversion"];
     ConversionStatus conversionStatus = _jsonToConversionStatus(conversion);
 
-    List<dynamic> jsonPages = fields["pages"];
     List<PresentationPage> pages = [];
-    for (Map<String, dynamic> jsonPage in jsonPages) {
-      pages.add(_jsonToPresentationPage(jsonPage));
+    if (fields.containsKey("pages")) {
+      List<dynamic> jsonPages = fields["pages"];
+      for (Map<String, dynamic> jsonPage in jsonPages) {
+        pages.add(_jsonToPresentationPage(jsonPage));
+      }
     }
 
     return Presentation(
