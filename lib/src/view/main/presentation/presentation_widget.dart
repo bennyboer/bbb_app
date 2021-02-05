@@ -112,27 +112,31 @@ class _PresentationWidgetState extends State<PresentationWidget> {
               child: Stack(
                 children: [
                   presentation,
-                  if (!widget._isFullscreen)
                     Align(
                       alignment: Alignment.topRight,
                       child: IconButton(
-                        icon: Icon(Icons.fullscreen),
+                        icon: Icon(widget._isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen),
                         color: Colors.grey,
                         onPressed: () {
                           setState(() {
-                            widget._isFullscreen = true;
+                            widget._isFullscreen = !widget._isFullscreen;
                           });
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  FullscreenView(child: this.widget),
-                            ),
-                          ).then((_) {
-                            setState(() {
-                              widget._isFullscreen = false;
+
+                          if (widget._isFullscreen) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    FullscreenView(child: this.widget),
+                              ),
+                            ).then((_) {
+                              setState(() {
+                                widget._isFullscreen = false;
+                              });
                             });
-                          });
+                          } else {
+                            Navigator.pop(context);
+                          }
                         },
                       ),
                     ),

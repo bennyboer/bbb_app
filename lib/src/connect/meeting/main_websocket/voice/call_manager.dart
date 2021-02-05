@@ -4,15 +4,13 @@ import 'dart:math';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:sip_ua/sip_ua.dart';
 
-import 'custom_sip_ua_helper.dart';
-
 class CallManager {
   SIPUAHelper _helper;
   MeetingInfo info;
   int _audioSessionNumber = 1;
 
   CallManager(this.info) {
-    _helper = new CustomSIPUAHelper();
+    _helper = new SIPUAHelper();
   }
 
   SIPUAHelper get helper => _helper;
@@ -58,23 +56,28 @@ class CallManager {
     return "echo${info.voiceBridge}@${_getNakedUrl()}";
   }
 
-  UaSettings buildSettings() {
+  /// Build the UaSettings to use for a call.
+  UaSettings buildSettings({String transportScheme}) {
     UaSettings settings = UaSettings();
-    List<Map<String, String>> iceServers = [
-      {'url': 'stun:stun.l.google.com:19302'}
-    ];
+    List<Map<String, String>> iceServers = [];
 
-    // TODO: The custom BBB Servers do not work sometimes
-    // for (var server in info.iceServers["iceServers"]) {
-    //   Map<String, String> entry = {};
-    //   entry["url"] = server["url"];
-    //   iceServers.add(entry);
-    // }
+    for (var server in info.iceServers["iceServers"]) {
+      Map<String, String> entry = {};
+      entry["url"] = server["url"];
+      iceServers.add(entry);
+    }
+
+    iceServers.add({'url': 'stun:stun.l.google.com:19302'});
 
     settings.webSocketUrl = _buildWsUri(Uri.parse(info.joinUrl)).toString();
+
     settings.webSocketSettings.extraHeaders = _createCookies();
     settings.webSocketSettings.allowBadCertificate = true;
     settings.webSocketSettings.userAgent = 'BigBlueButton';
+
+    // Use the set transport scheme (if null the protocol of the URL will be used).
+    settings.webSocketSettings.transport_scheme = transportScheme;
+
     settings.iceServers = iceServers;
     settings.dtmfMode = DtmfMode.RFC2833;
     settings.displayName = _buildDisplayName();
