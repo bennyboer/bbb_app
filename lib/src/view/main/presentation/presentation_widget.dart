@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/presentation.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/presentation_slide.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/slide_bounds.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/presentation.dart';
 import 'package:bbb_app/src/view/fullscreen/fullscreen_view.dart';
 import 'package:bbb_app/src/view/main/presentation/presentation_painter.dart';
@@ -46,9 +47,12 @@ class _PresentationWidgetState extends State<PresentationWidget> {
   Future<void> _reloadSVG(String url) async {
     http.Response response = await http.get(url);
 
-    _slideSvg = await svg.fromSvgString(response.body, response.body);
+    DrawableRoot svgRoot =
+        await svg.fromSvgString(response.body, response.body);
 
-    setState(() {});
+    setState(() {
+      _slideSvg = svgRoot;
+    });
   }
 
   @override
@@ -59,25 +63,26 @@ class _PresentationWidgetState extends State<PresentationWidget> {
   }
 
   /// Build the presentation content widget.
-  Widget _buildPresentation() {
+  Widget _buildPresentation(SlideBounds bounds) {
     return AspectRatio(
-      aspectRatio: _currentSlide.bounds.width / _currentSlide.bounds.height,
+      aspectRatio: bounds.width / bounds.height,
       child: ClipRect(
         child: Stack(
           children: [
             CustomPaint(
               painter: PresentationSvgPainter(
                 _slideSvg,
-                _currentSlide.bounds,
+                bounds,
               ),
               size: Size(
                 MediaQuery.of(context).size.width,
                 MediaQuery.of(context).size.height,
               ),
+              isComplex: true,
             ),
             CustomPaint(
               painter: PresentationPainter(
-                _currentSlide.bounds,
+                bounds,
                 _currentSlide.annotations.values.toList(growable: false)
                   ..sort((o1, o2) => o1.position.compareTo(o2.position)),
                 _currentSlide.cursorpos,
@@ -95,11 +100,9 @@ class _PresentationWidgetState extends State<PresentationWidget> {
 
   @override
   Widget build(BuildContext context) {
-    bool hasSlide = _currentSlide != null && _currentSlide.bounds != null;
-
-    if (hasSlide) {
+    if (_currentSlide != null && _currentSlide.bounds != null) {
       return LayoutBuilder(builder: (context, constraints) {
-        Widget presentation = _buildPresentation();
+        Widget presentation = _buildPresentation(_currentSlide.bounds);
 
         return Center(
           child: Container(
@@ -112,34 +115,36 @@ class _PresentationWidgetState extends State<PresentationWidget> {
               child: Stack(
                 children: [
                   presentation,
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: IconButton(
-                        icon: Icon(widget._isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen),
-                        color: Colors.grey,
-                        onPressed: () {
-                          setState(() {
-                            widget._isFullscreen = !widget._isFullscreen;
-                          });
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: IconButton(
+                      icon: Icon(widget._isFullscreen
+                          ? Icons.fullscreen_exit
+                          : Icons.fullscreen),
+                      color: Colors.grey,
+                      onPressed: () {
+                        setState(() {
+                          widget._isFullscreen = !widget._isFullscreen;
+                        });
 
-                          if (widget._isFullscreen) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    FullscreenView(child: this.widget),
-                              ),
-                            ).then((_) {
-                              setState(() {
-                                widget._isFullscreen = false;
-                              });
+                        if (widget._isFullscreen) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  FullscreenView(child: this.widget),
+                            ),
+                          ).then((_) {
+                            setState(() {
+                              widget._isFullscreen = false;
                             });
-                          } else {
-                            Navigator.pop(context);
-                          }
-                        },
-                      ),
+                          });
+                        } else {
+                          Navigator.pop(context);
+                        }
+                      },
                     ),
+                  ),
                 ],
               ),
             ),
@@ -163,12 +168,17 @@ class _PresentationWidgetState extends State<PresentationWidget> {
       Presentation currentPresentation =
           widget._mainWebSocket.presentationModule.currentPresentation;
       if (currentPresentation != null) {
-        if ((event.eventType == EventType.ADDED ||
-                event.eventType == EventType.CHANGED) &&
+        bool isRelevantEvent = event.eventType == EventType.ADDED ||
+            event.eventType == EventType.CHANGED;
+
+        if (isRelevantEvent &&
             event.slide.current &&
             event.slide.presentationId == currentPresentation.id) {
           _currentSlide = event.slide;
-          _reloadSVG(_currentSlide.svgUri);
+
+          if (_currentSlide.bounds != null) {
+            _reloadSVG(_currentSlide.svgUri);
+          }
         }
       }
     });

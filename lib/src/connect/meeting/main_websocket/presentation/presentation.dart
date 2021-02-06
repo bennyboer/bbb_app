@@ -682,7 +682,7 @@ class PresentationModule extends Module {
           .add(PresentationSlideEvent(EventType.CHANGED, slide));
     } else {
       // Slide not yet there -> cache temporarily until slide is there
-      _tmpSlideBounds[id] = bounds;
+      _tmpSlideBounds[slideId] = bounds;
     }
   }
 
@@ -692,9 +692,18 @@ class PresentationModule extends Module {
     String slideId = _slidePositionIDsToSlideIDs[id];
     PresentationSlide slide = _slides[slideId];
 
+    SlideBounds bounds;
+    if (slide == null) {
+      // Check if slide bounds are already there
+      if (_tmpSlideBounds.containsKey(slideId)) {
+        bounds = _tmpSlideBounds[slideId];
+      }
+    } else {
+      bounds = slide.bounds;
+    }
+
     Map<String, dynamic> fields = msg["fields"];
 
-    SlideBounds bounds = slide.bounds;
     if (fields.containsKey("x")) bounds.x = fields["x"].toDouble();
     if (fields.containsKey("y")) bounds.y = fields["y"].toDouble();
     if (fields.containsKey("viewBoxWidth"))
@@ -702,8 +711,10 @@ class PresentationModule extends Module {
     if (fields.containsKey("viewBoxHeight"))
       bounds.viewBoxHeight = fields["viewBoxHeight"].toDouble();
 
-    _slideEventStreamController
-        .add(PresentationSlideEvent(EventType.CHANGED, slide));
+    if (slide != null) {
+      _slideEventStreamController
+          .add(PresentationSlideEvent(EventType.CHANGED, slide));
+    }
   }
 
   /// Convert the passed JSON to slide bounds.
