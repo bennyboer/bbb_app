@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bbb_app/src/broadcast/snackbar_bloc.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/utils/log.dart';
 import 'package:sip_ua/sip_ua.dart';
@@ -11,6 +12,7 @@ class CallConnection extends CallManager implements SipUaHelperListener {
   MeetingInfo info;
   Call _call;
   bool _audioMuted = false;
+  SnackbarCubit _snackbarCubit;
   StreamController<bool> _muteStreamController = StreamController.broadcast();
 
   /// Whether the echo test has been done.
@@ -19,7 +21,7 @@ class CallConnection extends CallManager implements SipUaHelperListener {
   /// Number of retries after a failed connection.
   int _retryAfterFailedCount = 0;
 
-  CallConnection(this.info) : super(null) {
+  CallConnection(this.info, this._snackbarCubit) : super(null) {
     helper.addSipUaHelperListener(this);
   }
 
@@ -54,6 +56,7 @@ class CallConnection extends CallManager implements SipUaHelperListener {
     switch (state.state) {
       case CallStateEnum.CONFIRMED:
         _call.unmute(true, false);
+        _snackbarCubit.sendSnack("audio.connected.snackbar");
         break;
       case CallStateEnum.MUTED:
         _audioMuted = true;

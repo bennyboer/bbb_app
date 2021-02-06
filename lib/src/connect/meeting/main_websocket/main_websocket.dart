@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:bbb_app/src/broadcast/snackbar_bloc.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/meeting/meeting.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
@@ -42,8 +43,13 @@ class MainWebSocket {
   /// If the user is validated.
   bool _userIsValidated = false;
 
+  SnackbarCubit _snackbarCubit;
+
+  SnackbarCubit get snackbarCubit => _snackbarCubit;
+
   /// Create main web socket connection.
   MainWebSocket(this._meetingInfo) {
+    _snackbarCubit = SnackbarCubit();
     _setupModules();
 
     final uri = Uri.parse(_meetingInfo.joinUrl)
@@ -79,6 +85,7 @@ class MainWebSocket {
   /// Disconnect the web socket.
   Future<void> disconnect() async {
     await logout();
+    _snackbarCubit.close();
   }
 
   /// Logout the user from the meeting.
@@ -121,8 +128,8 @@ class MainWebSocket {
       ),
       "presentation": new PresentationModule(messageSender, _meetingInfo),
       "poll": new PollModule(messageSender),
-      "call":
-          new CallModule(messageSender, _meetingInfo, voiceCallStatesModule),
+      "call": new CallModule(
+          messageSender, _meetingInfo, voiceCallStatesModule, _snackbarCubit),
       "voiceUsers": new VoiceUsersModule(messageSender, userModule),
       "voiceCallState": voiceCallStatesModule,
     };

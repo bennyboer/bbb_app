@@ -43,6 +43,8 @@ dependencies:
   uni_links: ^0.4.0
   flutter_foreground_plugin: ^0.6.0
   logger: ^0.9.4
+  bloc: ^6.1.1
+  flutter_bloc: ^6.1.1
 
 dev_dependencies:
   flutter_test:

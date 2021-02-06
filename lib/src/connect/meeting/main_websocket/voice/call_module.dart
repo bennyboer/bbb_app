@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bbb_app/src/broadcast/snackbar_bloc.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/voice/call_connection.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/voice/voice_call_states.dart';
@@ -13,9 +14,11 @@ class CallModule extends Module {
   CallConnection _connection;
   VoiceCallStatesModule _module;
   StreamSubscription _voiceStateSubscription;
+  SnackbarCubit _snackbarCubit;
 
-  CallModule(messageSender, this._info, this._module) : super(messageSender) {
-    _connection = new CallConnection(_info);
+  CallModule(messageSender, this._info, this._module, this._snackbarCubit)
+      : super(messageSender) {
+    _connection = new CallConnection(_info, _snackbarCubit);
 
     _voiceStateSubscription = _module.voiceCallStateStream.listen(doCallState);
   }

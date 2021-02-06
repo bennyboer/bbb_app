@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bbb_app/src/broadcast/snackbar_bloc.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/meeting/meeting.dart';
@@ -18,6 +19,7 @@ import 'package:bbb_app/src/view/privacy_policy/privacy_policy_view.dart';
 import 'package:bbb_app/src/view/settings/settings_view.dart';
 import 'package:bbb_app/src/view/start/start_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 /// The main view including the current presentation/webcams/screenshare.
@@ -76,6 +78,8 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
 
   /// Subscription to user changes.
   StreamSubscription _userChangesStreamSubscription;
+
+  SnackbarCubit _snackbarCubit;
 
   @override
   void initState() {
@@ -156,6 +160,8 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
         _updateMuteStatus(event);
       });
     });
+
+    _snackbarCubit = _mainWebSocket.snackbarCubit;
 
     WidgetsBinding.instance.addObserver(this);
   }
@@ -244,6 +250,107 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   void _updateMuteStatus(bool status) {
     _muteStatus = status;
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: _buildAppBar(),
+        body: BlocListener<SnackbarCubit, String>(
+          cubit: _snackbarCubit,
+          listener: (context, state) {
+            if (state.isNotEmpty) {
+              var controller = Scaffold.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(AppLocalizations.of(context).get(state)),
+                  )
+              );
+              Future.delayed(
+                  const Duration(seconds: 2), () => {controller.close()});
+            }
+          },
+          child: OrientationBuilder(
+            builder: (context, orientation) {
+              if (orientation == Orientation.portrait) {
+                return Column(
+                  children: [
+                    _buildCurrentlyTalkingUserList(),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: <Widget>[
+                          if (_videoConnections.length > 0)
+                            SizedBox(
+                              height: 160,
+                              child: _buildCameraList(Axis.horizontal),
+                            ),
+                          if (_screenshareVideoConnections.length == 0)
+                            Expanded(
+                              child: _buildPresentationWidget(),
+                            ),
+                          if (_screenshareVideoConnections.length > 0)
+                            Expanded(
+                              child: _buildScreenShareWidget(),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              } else {
+                return Column(
+                  children: [
+                    _buildCurrentlyTalkingUserList(),
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: <Widget>[
+                          if (_videoConnections.length > 0)
+                            SizedBox(
+                              width: 200,
+                              child: _buildCameraList(Axis.vertical),
+                            ),
+                          if (_screenshareVideoConnections.length == 0)
+                            Expanded(
+                              child: _buildPresentationWidget(),
+                            ),
+                          if (_screenshareVideoConnections.length > 0)
+                            Expanded(
+                              child: _buildScreenShareWidget(),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }
+            },
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          child: Icon(
+            _muteStatus ? Icons.mic_off_outlined : Icons.mic_outlined,
+            size: 30,
+            color: Theme.of(context).iconTheme.color,
+          ),
+          onPressed: _micClick,
+          elevation: 4.0,
+          backgroundColor: Theme.of(context).buttonTheme.colorScheme.primary,
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        bottomNavigationBar: Builder(
+          builder: (context) => BottomAppBar(
+            child: Container(
+                margin: EdgeInsets.only(left: 12.0, right: 12.0),
+                child: _buildBottomAppBarRow(context)),
+            //to add a space between the FAB and BottomAppBar
+            shape: CircularNotchedRectangle(),
+            //color of the BottomAppBar
+            color: Theme.of(context).appBarTheme.color,
+          ),
+        ),
+      );
+  }
+
 
   /// Build a list of currently talking users.
   Widget _buildCurrentlyTalkingUserList() {
@@ -393,140 +500,57 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _buildAppBar(),
-      body: OrientationBuilder(
-        builder: (context, orientation) {
-          if (orientation == Orientation.portrait) {
-            return Column(
-              children: [
-                _buildCurrentlyTalkingUserList(),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: <Widget>[
-                      if (_videoConnections.length > 0)
-                        SizedBox(
-                          height: 160,
-                          child: _buildCameraList(Axis.horizontal),
-                        ),
-                      if (_screenshareVideoConnections.length == 0)
-                        Expanded(
-                          child: _buildPresentationWidget(),
-                        ),
-                      if (_screenshareVideoConnections.length > 0)
-                        Expanded(
-                          child: _buildScreenShareWidget(),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          } else {
-            return Column(
-              children: [
-                _buildCurrentlyTalkingUserList(),
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: <Widget>[
-                      if (_videoConnections.length > 0)
-                        SizedBox(
-                          width: 200,
-                          child: _buildCameraList(Axis.vertical),
-                        ),
-                      if (_screenshareVideoConnections.length == 0)
-                        Expanded(
-                          child: _buildPresentationWidget(),
-                        ),
-                      if (_screenshareVideoConnections.length > 0)
-                        Expanded(
-                          child: _buildScreenShareWidget(),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          }
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(
-          _muteStatus ? Icons.mic_off_outlined : Icons.mic_outlined,
-          size: 30,
-          color: Theme.of(context).iconTheme.color,
-        ),
-        onPressed: _micClick,
-        elevation: 4.0,
-        backgroundColor: Theme.of(context).buttonTheme.colorScheme.primary,
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: Builder(
-        builder: (context) => BottomAppBar(
-          child: Container(
-            margin: EdgeInsets.only(left: 12.0, right: 12.0),
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                IconButton(
-                  onPressed: () => _toggleWebcamOnOff(context),
-                  iconSize: 27.0,
-                  icon: Icon(
-                    _mainWebSocket.videoModule.isWebcamActive()
-                        ? Icons.photo_camera
-                        : Icons.photo_camera_outlined,
-                  ),
-                ),
-                IconButton(
-                  onPressed: _mainWebSocket.videoModule.isWebcamActive()
-                      ? () => _toggleWebcamFrontBack(context)
-                      : null,
-                  iconSize: 27.0,
-                  icon: Icon(
-                    _mainWebSocket.videoModule.isWebcamActive()
-                        ? Icons.flip_camera_ios
-                        : Icons.flip_camera_ios_outlined,
-                  ),
-                ),
-                //to leave space in between the bottom app bar items and below the FAB
-                SizedBox(
-                  width: 50.0,
-                ),
-                IconButton(
-                  onPressed: _isPresenter()
-                      ? () => _toggleScreenshareOnOff(context)
-                      : null,
-                  iconSize: 27.0,
-                  icon: Icon(
-                    _mainWebSocket.videoModule.isScreenshareActive()
-                        ? Icons.screen_share
-                        : Icons.screen_share_outlined,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => SettingsView()),
-                  ),
-                  iconSize: 27.0,
-                  icon: Icon(
-                    Icons.settings,
-                  ),
-                ),
-              ],
-            ),
+  /// Builds the Icons for the Bottom Navigation Bar
+  Widget _buildBottomAppBarRow(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.max,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        IconButton(
+          onPressed: () => _toggleWebcamOnOff(context),
+          iconSize: 27.0,
+          icon: Icon(
+            _mainWebSocket.videoModule.isWebcamActive()
+                ? Icons.photo_camera
+                : Icons.photo_camera_outlined,
           ),
-          //to add a space between the FAB and BottomAppBar
-          shape: CircularNotchedRectangle(),
-          //color of the BottomAppBar
-          color: Theme.of(context).appBarTheme.color,
         ),
-      ),
+        IconButton(
+          onPressed: _mainWebSocket.videoModule.isWebcamActive()
+              ? () => _toggleWebcamFrontBack(context)
+              : null,
+          iconSize: 27.0,
+          icon: Icon(
+            _mainWebSocket.videoModule.isWebcamActive()
+                ? Icons.flip_camera_ios
+                : Icons.flip_camera_ios_outlined,
+          ),
+        ),
+        //to leave space in between the bottom app bar items and below the FAB
+        SizedBox(
+          width: 50.0,
+        ),
+        IconButton(
+          onPressed:
+              _isPresenter() ? () => _toggleScreenshareOnOff(context) : null,
+          iconSize: 27.0,
+          icon: Icon(
+            _mainWebSocket.videoModule.isScreenshareActive()
+                ? Icons.screen_share
+                : Icons.screen_share_outlined,
+          ),
+        ),
+        IconButton(
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => SettingsView()),
+          ),
+          iconSize: 27.0,
+          icon: Icon(
+            Icons.settings,
+          ),
+        ),
+      ],
     );
   }
 

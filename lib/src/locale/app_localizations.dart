@@ -214,6 +214,11 @@ class AppLocalizations {
       en: "Reconnect audio",
       de: "Audio neu verbinden",
     ));
+    _addLocalization(_Localization(
+      "audio.connected.snackbar",
+      en: "Audio connected",
+      de: "Audio-Verbindung hergestellt",
+    ));
 
     _isInitialized = true;
   }
