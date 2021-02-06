@@ -1,6 +1,9 @@
 import 'dart:async';
 
+import 'package:bbb_app/src/broadcast/ModuleBlocProvider.dart';
 import 'package:bbb_app/src/broadcast/snackbar_bloc.dart';
+import 'package:bbb_app/src/broadcast/user_interaction_bloc.dart';
+import 'package:bbb_app/src/broadcast/user_voice_status_bloc.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/meeting/meeting.dart';
@@ -72,20 +75,18 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   /// Subscription to user events.
   StreamSubscription<UserEvent> _userEventStreamSubscription;
 
-  StreamSubscription<bool> _muteStreamSubscription;
-
   bool _muteStatus = false;
 
   /// Subscription to user changes.
   StreamSubscription _userChangesStreamSubscription;
 
-  SnackbarCubit _snackbarCubit;
+  ModuleBlocProvider blocProvider = ModuleBlocProvider();
 
   @override
   void initState() {
     super.initState();
 
-    _mainWebSocket = MainWebSocket(widget._meetingInfo);
+    _mainWebSocket = MainWebSocket(widget._meetingInfo, this.blocProvider);
 
     _videoConnections = _mainWebSocket.videoModule.videoConnections;
     _videoConnectionsStreamSubscription = _mainWebSocket
@@ -154,15 +155,6 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
           Map.of(_mainWebSocket.userModule.userMapByInternalId));
     });
 
-    _muteStreamSubscription =
-        _mainWebSocket.callModule.callMuteStream.listen((event) {
-      setState(() {
-        _updateMuteStatus(event);
-      });
-    });
-
-    _snackbarCubit = _mainWebSocket.snackbarCubit;
-
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -195,7 +187,6 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     _meetingEventSubscription.cancel();
     _userEventStreamSubscription.cancel();
     _userChangesStreamSubscription.cancel();
-    _muteStreamSubscription.cancel();
 
     WidgetsBinding.instance.removeObserver(this);
 
@@ -244,26 +235,34 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   }
 
   void _micClick() {
-    _mainWebSocket.callModule.toggleAudio();
-  }
-
-  void _updateMuteStatus(bool status) {
-    _muteStatus = status;
+    blocProvider.muteToggleCubit.toggle();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<SnackbarCubit>(
+          create: (context) =>
+              blocProvider.snackbarCubit = SnackbarCubit(context),
+        ),
+        BlocProvider<UserVoiceStatusBloc>(
+          create: (context) =>
+              blocProvider.userVoiceStatusBloc = UserVoiceStatusBloc(),
+        ),
+        BlocProvider<UserInteractionCubit>(
+          create: (context) =>
+              blocProvider.muteToggleCubit = UserInteractionCubit(),
+        )
+      ],
+      child: Scaffold(
         appBar: _buildAppBar(),
         body: BlocListener<SnackbarCubit, String>(
-          cubit: _snackbarCubit,
           listener: (context, state) {
             if (state.isNotEmpty) {
-              var controller = Scaffold.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(AppLocalizations.of(context).get(state)),
-                  )
-              );
+              var controller = Scaffold.of(context).showSnackBar(SnackBar(
+                content: Text(state),
+              ));
               Future.delayed(
                   const Duration(seconds: 2), () => {controller.close()});
             }
@@ -326,15 +325,24 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
             },
           ),
         ),
-        floatingActionButton: FloatingActionButton(
-          child: Icon(
-            _muteStatus ? Icons.mic_off_outlined : Icons.mic_outlined,
-            size: 30,
-            color: Theme.of(context).iconTheme.color,
-          ),
-          onPressed: _micClick,
-          elevation: 4.0,
-          backgroundColor: Theme.of(context).buttonTheme.colorScheme.primary,
+        floatingActionButton: BlocBuilder<UserVoiceStatusBloc, UserVoiceStatus>(
+          builder: (context, state) {
+            return FloatingActionButton(
+              child: Icon(
+                (state == UserVoiceStatus.unmuted)
+                    ? Icons.mic_outlined
+                    : Icons.mic_off_outlined,
+                size: 30,
+                color: state == UserVoiceStatus.disconnected
+                    ? Theme.of(context).buttonTheme.colorScheme.onError
+                    : Theme.of(context).iconTheme.color,
+              ),
+              onPressed: _micClick,
+              elevation: 4.0,
+              backgroundColor:
+                  Theme.of(context).buttonTheme.colorScheme.primary,
+            );
+          },
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         bottomNavigationBar: Builder(
@@ -348,9 +356,9 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
             color: Theme.of(context).appBarTheme.color,
           ),
         ),
-      );
+      ),
+    );
   }
-
 
   /// Build a list of currently talking users.
   Widget _buildCurrentlyTalkingUserList() {

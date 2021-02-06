@@ -1,6 +1,9 @@
 import 'dart:async';
 
+import 'package:bbb_app/src/broadcast/ModuleBlocProvider.dart';
 import 'package:bbb_app/src/broadcast/snackbar_bloc.dart';
+import 'package:bbb_app/src/broadcast/user_interaction_bloc.dart';
+import 'package:bbb_app/src/broadcast/user_voice_status_bloc.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/utils/log.dart';
 import 'package:sip_ua/sip_ua.dart';
@@ -11,9 +14,11 @@ import 'call_manager.dart';
 class CallConnection extends CallManager implements SipUaHelperListener {
   MeetingInfo info;
   Call _call;
+  ModuleBlocProvider _provider;
+
+  StreamSubscription<UserInteractionEvent> _subscription;
+
   bool _audioMuted = false;
-  SnackbarCubit _snackbarCubit;
-  StreamController<bool> _muteStreamController = StreamController.broadcast();
 
   /// Whether the echo test has been done.
   bool _echoTestDone = false;
@@ -21,17 +26,18 @@ class CallConnection extends CallManager implements SipUaHelperListener {
   /// Number of retries after a failed connection.
   int _retryAfterFailedCount = 0;
 
-  CallConnection(this.info, this._snackbarCubit) : super(null) {
+  CallConnection(this.info, this._provider) : super(null) {
     helper.addSipUaHelperListener(this);
   }
 
   void connect() {
     helper.start(super.buildSettings());
+    _subscription = _provider.muteToggleCubit.listen(toggleMute);
   }
 
   void disconnect() {
     helper.stop();
-    _muteStreamController.close();
+    _subscription.cancel();
   }
 
   /// Attempt a reconnect.
@@ -40,12 +46,13 @@ class CallConnection extends CallManager implements SipUaHelperListener {
     helper.start(super.buildSettings(transportScheme: transportScheme));
   }
 
-  void toggleMute() {
-    if (_audioMuted) {
-      _call.unmute();
-    } else {
-      _call.mute();
-    }
+  void toggleMute(UserInteractionEvent event) {
+    if (event == UserInteractionEvent.mute_toggle)
+      if (_audioMuted) {
+        _call.unmute();
+      } else {
+        _call.mute();
+      }
   }
 
   @override
@@ -56,17 +63,18 @@ class CallConnection extends CallManager implements SipUaHelperListener {
     switch (state.state) {
       case CallStateEnum.CONFIRMED:
         _call.unmute(true, false);
-        _snackbarCubit.sendSnack("audio.connected.snackbar");
+        _provider.snackbarCubit.sendSnack("audio.connected.snackbar");
         break;
       case CallStateEnum.MUTED:
         _audioMuted = true;
-        _muteStreamController.add(_audioMuted);
+        _provider.userVoiceStatusBloc.add(UserVoiceStatusEvent.mute);
         break;
       case CallStateEnum.UNMUTED:
         _audioMuted = false;
-        _muteStreamController.add(_audioMuted);
+        _provider.userVoiceStatusBloc.add(UserVoiceStatusEvent.unmute);
         break;
       case CallStateEnum.FAILED:
+        _provider.userVoiceStatusBloc.add(UserVoiceStatusEvent.disconnect);
         if (!_echoTestDone) {
           if (_retryAfterFailedCount <= 0) {
             _retryAfterFailedCount++;
@@ -118,6 +126,4 @@ class CallConnection extends CallManager implements SipUaHelperListener {
     _call.sendDTMF("1", {"duration": 2000});
     _echoTestDone = true;
   }
-
-  Stream<bool> get callMuteStream => _muteStreamController.stream;
 }

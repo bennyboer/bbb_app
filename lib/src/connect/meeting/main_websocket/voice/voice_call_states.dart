@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bbb_app/src/broadcast/ModuleBlocProvider.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
 
 const String CALL_STATE = "voiceCallStates";
@@ -9,10 +10,9 @@ const String CALL_STATE = "voiceCallStates";
 /// attempt to pass the echo test as soon as the server tells us that we are connected.
 class VoiceCallStatesModule extends Module {
   String _callState;
-  StreamController<String> _voiceStateStreamController =
-      StreamController.broadcast();
+  ModuleBlocProvider _provider;
 
-  VoiceCallStatesModule(messageSender) : super(messageSender);
+  VoiceCallStatesModule(messageSender, this._provider) : super(messageSender);
 
   @override
   void onConnected() {
@@ -21,7 +21,7 @@ class VoiceCallStatesModule extends Module {
 
   @override
   Future<void> onDisconnect() {
-    _voiceStateStreamController.close();
+
   }
 
   @override
@@ -31,9 +31,9 @@ class VoiceCallStatesModule extends Module {
       return;
     }
     final Map<String, dynamic> fields = msg["fields"];
+
     _callState = fields["callState"];
-    _voiceStateStreamController.add(_callState);
+    // TODO map BBB values to UserVoiceStatus
   }
 
-  Stream<String> get voiceCallStateStream => _voiceStateStreamController.stream;
 }
