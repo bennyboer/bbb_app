@@ -11,6 +11,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/inco
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_webcam_video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
+import 'package:bbb_app/src/utils/log.dart';
 import 'package:bbb_app/src/view/fullscreen/fullscreen_view.dart';
 import 'package:bbb_app/src/view/main/presentation/presentation_widget.dart';
 import 'package:bbb_app/src/view/meeting_info/meeting_info_view.dart';
@@ -182,6 +183,8 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    Log.info("[MainView] Disposing MainView");
+
     _videoConnectionsStreamSubscription.cancel();
     _screenshareVideoConnectionsStreamSubscription.cancel();
     _unreadMessageCounterStreamSubscription.cancel();

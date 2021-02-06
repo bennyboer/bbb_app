@@ -26,7 +26,7 @@ class CallModule extends Module {
   }
 
   @override
-  Future<void> onDisconnect() {
+  Future<void> onDisconnect() async {
     _connection.disconnect();
     _voiceStateSubscription.cancel();
   }
