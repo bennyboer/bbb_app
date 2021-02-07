@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bbb_app/src/broadcast/ModuleBlocProvider.dart';
+import 'package:bbb_app/src/broadcast/user_voice_status_bloc.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
 
 const String CALL_STATE = "voiceCallStates";
@@ -20,9 +21,7 @@ class VoiceCallStatesModule extends Module {
   }
 
   @override
-  Future<void> onDisconnect() {
-
-  }
+  Future<void> onDisconnect() {}
 
   @override
   void processMessage(Map<String, dynamic> msg) {
@@ -33,7 +32,7 @@ class VoiceCallStatesModule extends Module {
     final Map<String, dynamic> fields = msg["fields"];
 
     _callState = fields["callState"];
-    // TODO map BBB values to UserVoiceStatus
+    _provider.userVoiceStatusBloc
+        .add(UserVoiceStatusEventExtension.mapStringToEvent(_callState));
   }
-
 }
