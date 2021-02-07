@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
-import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/user/user_module.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_screenshare_video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_webcam_video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/outgoing_screenshare_video_connection.dart';
@@ -134,7 +134,7 @@ class VideoModule extends Module {
       String collectionName = msg["collection"];
 
       if (collectionName == "video-streams") {
-        Log.info("[VideoModule] Removing video stream...]");
+        Log.info("[VideoModule] Removing video stream...");
 
         String streamID = msg["id"];
         String cameraID = _cameraIdByStreamIdLookup[streamID];

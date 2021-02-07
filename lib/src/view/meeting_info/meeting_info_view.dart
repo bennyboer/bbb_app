@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/group.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
-import 'package:bbb_app/src/connect/meeting/main_websocket/user/model/user_model.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/user/model/user.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
 import 'package:bbb_app/src/view/chat/chat_view.dart';
@@ -25,7 +25,7 @@ class MeetingInfoView extends StatefulWidget {
 /// State of the meeting info view.
 class _MeetingInfoViewState extends State<MeetingInfoView> {
   /// Map of users currently in the meeting.
-  Map<String, UserModel> _userMap = {};
+  Map<String, User> _userMap = {};
 
   /// Available chat groups.
   List<ChatGroup> _chatGroups = [];
@@ -88,7 +88,7 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
 
   @override
   Widget build(BuildContext context) {
-    List<UserModel> users = createUserList();
+    List<User> users = createUserList();
 
     return Scaffold(
       appBar: _buildAppBar(),
@@ -207,25 +207,25 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
         },
       );
 
-  List<UserModel> createUserList() {
-    List<UserModel> currentUser = [];
+  List<User> createUserList() {
+    List<User> currentUser = [];
     _userMap.values.forEach((u) {
       if (u.internalId == widget._meetingInfo.internalUserID) {
         currentUser.add(u);
       }
     });
 
-    List<UserModel> moderators = [];
+    List<User> moderators = [];
     _userMap.values.forEach((u) {
-      if (u.role == UserModel.ROLE_MODERATOR &&
+      if (u.role == User.ROLE_MODERATOR &&
           u.internalId != widget._meetingInfo.internalUserID) {
         moderators.add(u);
       }
     });
 
-    List<UserModel> nonModerators = [];
+    List<User> nonModerators = [];
     _userMap.values.forEach((u) {
-      if (u.role != UserModel.ROLE_MODERATOR &&
+      if (u.role != User.ROLE_MODERATOR &&
           u.internalId != widget._meetingInfo.internalUserID) {
         nonModerators.add(u);
       }
@@ -234,22 +234,22 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
     moderators.sort((a, b) => a.sortName.compareTo(b.sortName));
     nonModerators.sort((a, b) => a.sortName.compareTo(b.sortName));
 
-    List<UserModel> allUsers = currentUser + moderators + nonModerators;
+    List<User> allUsers = currentUser + moderators + nonModerators;
 
     allUsers.removeWhere(
-        (u) => u.connectionStatus != UserModel.CONNECTIONSTATUS_ONLINE);
+        (u) => u.connectionStatus != User.CONNECTIONSTATUS_ONLINE);
 
     return allUsers;
   }
 
-  Widget _buildUsers(BuildContext context, List<UserModel> users) {
+  Widget _buildUsers(BuildContext context, List<User> users) {
     return ListView.builder(
         scrollDirection: Axis.vertical,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: users.length,
         itemBuilder: (BuildContext context, int index) {
-          UserModel user = users[index];
+          User user = users[index];
           return Column(
             children: [
               _buildUserEntry(user, context),
@@ -262,7 +262,7 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
         });
   }
 
-  Widget _buildUserEntry(UserModel user, BuildContext context) {
+  Widget _buildUserEntry(User user, BuildContext context) {
     final bool isCurrentUser =
         user.internalId == widget._meetingInfo.internalUserID;
 
@@ -270,7 +270,7 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
       width: 50,
       height: 50,
       decoration: BoxDecoration(
-        borderRadius: user.role == UserModel.ROLE_MODERATOR
+        borderRadius: user.role == User.ROLE_MODERATOR
             ? BorderRadius.circular(10)
             : BorderRadius.circular(99999),
         color: isCurrentUser
@@ -318,7 +318,7 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
   }
 
   /// Create popup menu for a user item.
-  Widget _createItemPopupMenu(UserModel user) => PopupMenuButton<String>(
+  Widget _createItemPopupMenu(User user) => PopupMenuButton<String>(
         onSelected: (result) {
           if (result == "createPrivateChat") {
             widget._mainWebSocket.chatModule.createGroupChat(user);

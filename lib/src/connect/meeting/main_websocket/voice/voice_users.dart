@@ -1,6 +1,6 @@
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
-import 'package:bbb_app/src/connect/meeting/main_websocket/user/model/user_model.dart';
-import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/user/model/user.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/user/user_module.dart';
 
 const String VOICE_USERS = "voiceUsers";
 
@@ -33,11 +33,11 @@ class VoiceUsersModule extends Module {
     }
     final String method = msg["msg"];
     final Map<String, dynamic> fields = msg["fields"];
-    UserModel model;
+    User model;
 
     if (method == "added") {
       model = _userModule.userMapByInternalId
-          .putIfAbsent(fields["intId"], () => UserModel());
+          .putIfAbsent(fields["intId"], () => User());
       model.internalId = fields["intId"];
       model.muted = fields["muted"];
       model.listenOnly = fields["listenOnly"];
