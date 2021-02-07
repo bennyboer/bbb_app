@@ -17,7 +17,9 @@ class VoiceUsersModule extends Module {
   /// on method: "add".
   Map<String, String> _voiceIdToInternalId = {};
 
-  VoiceUsersModule(messageSender, this._userModule, this._provider, this._userIntId) : super(messageSender);
+  VoiceUsersModule(
+      messageSender, this._userModule, this._provider, this._userIntId)
+      : super(messageSender);
 
   @override
   void onConnected() {
@@ -58,7 +60,13 @@ class VoiceUsersModule extends Module {
       } else {
         _provider.userVoiceStatusBloc.add(UserVoiceStatusEvent.unmute);
       }
+      sendMessage({
+        "msg": "method",
+        "method": "toggleVoice",
+        "params": [],
+      });
     }
+
     _userModule.updateUserForId(model.internalId, model);
   }
 }
