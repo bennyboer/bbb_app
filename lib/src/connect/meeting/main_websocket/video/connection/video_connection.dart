@@ -19,7 +19,7 @@ abstract class VideoConnection {
   SimpleWebSocket _socket;
   RTCPeerConnection pc;
 
-  final Map<String, dynamic> _config = {
+  final Map<String, dynamic> _peerConnectionConstraints = {
     'mandatory': {},
     'optional': [
       {'DtlsSrtpKeyAgreement': true},
@@ -111,20 +111,15 @@ abstract class VideoConnection {
 
   createOffer() async {
     try {
-      pc = await createPeerConnection(meetingInfo.iceServers, _config);
+      Map<String, dynamic> config = {"sdpSemantics": "unified-plan"};
+      config.addAll(meetingInfo.iceServers);
+
+      pc = await createPeerConnection(config, _peerConnectionConstraints);
 
       await afterCreatePeerConnection();
 
       pc.onIceCandidate = (candidate) {
         onIceCandidate(candidate);
-      };
-
-      pc.onAddStream = (stream) {
-        onAddStream(stream);
-      };
-
-      pc.onRemoveStream = (stream) {
-        onRemoveStream(stream);
       };
 
       RTCSessionDescription s = await pc.createOffer(_constraints);
@@ -150,10 +145,6 @@ abstract class VideoConnection {
   afterCreatePeerConnection() {}
 
   onIceCandidate(candidate) {}
-
-  onAddStream(stream) {}
-
-  onRemoveStream(stream) {}
 
   sendOffer(RTCSessionDescription s) {}
 }

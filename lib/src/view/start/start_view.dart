@@ -450,6 +450,7 @@ class _StartViewState extends State<StartView> {
         ),
       );
     } catch (e) {
+      Log.error(e);
       _scaffoldState.showSnackBar(
         SnackBar(
           content: Text(

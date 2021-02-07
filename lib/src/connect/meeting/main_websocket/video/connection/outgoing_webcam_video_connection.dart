@@ -72,7 +72,10 @@ class OutgoingWebcamVideoConnection extends VideoConnection {
   afterCreatePeerConnection() async {
     _cameraId =
         meetingInfo.internalUserID + "_" + MainWebSocketUtil.getRandomHex(64);
-    await pc.addStream(_localStream);
+
+    for (MediaStreamTrack track in _localStream.getTracks()) {
+      await pc.addTrack(track, _localStream);
+    }
   }
 
   @override

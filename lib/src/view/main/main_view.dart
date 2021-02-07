@@ -5,12 +5,13 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/meeting/meeting.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/poll/model/option.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/poll/model/poll.dart';
-import 'package:bbb_app/src/connect/meeting/main_websocket/user/model/user_model.dart';
-import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/user/model/user.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/user/user_module.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_screenshare_video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/incoming_webcam_video_connection.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
+import 'package:bbb_app/src/utils/log.dart';
 import 'package:bbb_app/src/view/fullscreen/fullscreen_view.dart';
 import 'package:bbb_app/src/view/main/presentation/presentation_widget.dart';
 import 'package:bbb_app/src/view/meeting_info/meeting_info_view.dart';
@@ -49,7 +50,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   Set<String> _currentlyTalkingUsers = new Set<String>();
 
   /// Map of users currently in the meeting.
-  Map<String, UserModel> _userMapByInternalId = {};
+  Map<String, User> _userMapByInternalId = {};
 
   /// Subscription to video connection list changes.
   StreamSubscription _videoConnectionsStreamSubscription;
@@ -123,7 +124,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     _userEventStreamSubscription =
         _mainWebSocket.userModule.changes.listen((event) {
       if (event.data.internalId == widget._meetingInfo.internalUserID &&
-          !event.data.isOnline()) {
+          event.data.ejected) {
         _onCurrentUserKicked();
       }
 
@@ -182,6 +183,8 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    Log.info("[MainView] Disposing MainView");
+
     _videoConnectionsStreamSubscription.cancel();
     _screenshareVideoConnectionsStreamSubscription.cancel();
     _unreadMessageCounterStreamSubscription.cancel();
@@ -192,6 +195,8 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     _muteStreamSubscription.cancel();
 
     WidgetsBinding.instance.removeObserver(this);
+
+    _cleanupConnection();
 
     super.dispose();
   }
@@ -205,8 +210,14 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
 
   /// Called when the app is closed by the user.
   void _onAppClose() {
+    _cleanupConnection();
+  }
+
+  /// Clean up the server connection.
+  Future<void> _cleanupConnection() async {
     if (_mainWebSocket != null) {
-      _mainWebSocket.disconnect();
+      await _mainWebSocket.disconnect();
+      _mainWebSocket = null;
     }
   }
 
