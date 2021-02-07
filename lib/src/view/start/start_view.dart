@@ -9,6 +9,7 @@ import 'package:bbb_app/src/preference/preferences.dart';
 import 'package:bbb_app/src/utils/log.dart';
 import 'package:bbb_app/src/view/main/main_view.dart';
 import 'package:bbb_app/src/view/privacy_policy/privacy_policy_view.dart';
+import 'package:bbb_app/src/view/start/start_view__text_form_field_widget.dart';
 import 'package:day_night_switcher/day_night_switcher.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -321,75 +322,51 @@ class _StartViewState extends State<StartView> {
 
   /// Build the user name text field.
   Widget _buildUsernameTextField() {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 2),
-      child: TextFormField(
-        decoration: InputDecoration(
-          hintText: AppLocalizations.of(context).get("login.username"),
-          border: InputBorder.none,
-          filled: true,
-          prefixIcon: Icon(Icons.label),
-        ),
-        style: TextStyle(fontSize: 20.0),
-        validator: (value) => value.isEmpty
-            ? AppLocalizations.of(context).get("login.username-missing")
-            : null,
-        controller: _usernameTextField,
-      ),
+    return StartViewTextFormField(
+      controller: _usernameTextField,
+      hintText: AppLocalizations.of(context).get("login.username"),
+      prefixIcon: Icon(Icons.label),
+      validator: (value) => value.isEmpty
+        ? AppLocalizations.of(context).get("login.username-missing")
+        : null,
     );
   }
 
   /// Build the accesscode text field.
   Widget _buildAccessCodeTextField() {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 2),
-      child: TextFormField(
-        decoration: InputDecoration(
-          hintText: AppLocalizations.of(context).get("login.accesscode"),
-          border: InputBorder.none,
-          filled: true,
-          prefixIcon: Icon(Icons.vpn_key),
-        ),
-        style: TextStyle(fontSize: 20.0),
-        validator: (value) => value.isEmpty
-            ? AppLocalizations.of(context).get("login.accesscode-missing")
-            : null,
-        controller: _accesscodeTextField,
-      ),
+    return StartViewTextFormField(
+      controller: _accesscodeTextField,
+      hintText: AppLocalizations.of(context).get("login.accesscode"),
+      prefixIcon: Icon(Icons.vpn_key),
+      validator: (value) => value.isEmpty
+          ? AppLocalizations.of(context).get("login.accesscode-missing")
+          : null,
     );
   }
 
   /// Build the text field where the user should input the BBB URL to join the meeting of.
   Widget _buildURLTextField() {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 2),
-      child: TextFormField(
-        onChanged: (url) {
-          if (_userStoppedEditingMeetingUrlTimer == null) {
-            _userStoppedEditingMeetingUrlTimer =
-                Timer(_checkForAccessCodeNeededDuration, () {
-              _handleUrlUpdate(url);
-            });
-          } else {
-            _userStoppedEditingMeetingUrlTimer.cancel();
-            _userStoppedEditingMeetingUrlTimer =
-                Timer(_checkForAccessCodeNeededDuration, () {
-              _handleUrlUpdate(url);
-            });
-          }
-        },
-        decoration: InputDecoration(
-          hintText: AppLocalizations.of(context).get("login.url"),
-          border: InputBorder.none,
-          filled: true,
-          prefixIcon: Icon(Icons.link),
-        ),
-        style: TextStyle(fontSize: 20.0),
-        validator: (value) => value.isEmpty
-            ? AppLocalizations.of(context).get("login.url-missing")
-            : null,
-        controller: _meetingURLController,
-      ),
+    return StartViewTextFormField(
+      controller: _meetingURLController,
+      hintText:AppLocalizations.of(context).get("login.url"),
+      prefixIcon: Icon(Icons.link),
+      onChanged: (url) {
+        if (_userStoppedEditingMeetingUrlTimer == null) {
+          _userStoppedEditingMeetingUrlTimer =
+              Timer(_checkForAccessCodeNeededDuration, () {
+                _handleUrlUpdate(url);
+              });
+        } else {
+          _userStoppedEditingMeetingUrlTimer.cancel();
+          _userStoppedEditingMeetingUrlTimer =
+              Timer(_checkForAccessCodeNeededDuration, () {
+                _handleUrlUpdate(url);
+              });
+        }
+      },
+      validator: (value) => value.isEmpty
+          ? AppLocalizations.of(context).get("login.url-missing")
+          : null,
     );
   }
 
