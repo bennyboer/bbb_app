@@ -19,7 +19,23 @@ class _FullscreenViewState extends State<FullscreenView> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Center(child: widget._child),
+        child: Center(
+          child: Stack(
+            children: [
+              widget._child,
+              Align(
+                alignment: Alignment.topRight,
+                child: IconButton(
+                  icon: Icon(Icons.fullscreen_exit),
+                  color: Colors.grey,
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

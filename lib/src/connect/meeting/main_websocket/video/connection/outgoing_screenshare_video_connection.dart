@@ -28,7 +28,9 @@ class OutgoingScreenshareVideoConnection extends VideoConnection {
 
   @override
   afterCreatePeerConnection() async {
-    await pc.addStream(_localStream);
+    for (MediaStreamTrack track in _localStream.getTracks()) {
+      await pc.addTrack(track, _localStream);
+    }
   }
 
   @override

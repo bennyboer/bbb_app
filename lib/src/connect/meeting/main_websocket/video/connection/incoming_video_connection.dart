@@ -1,4 +1,5 @@
 import 'package:bbb_app/src/connect/meeting/main_websocket/video/connection/video_connection.dart';
+import 'package:bbb_app/src/utils/log.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 class IncomingVideoConnection extends VideoConnection {
@@ -21,15 +22,5 @@ class IncomingVideoConnection extends VideoConnection {
     Future.delayed(const Duration(seconds: 10), () {
       remoteRenderer.dispose();
     });
-  }
-
-  @override
-  onAddStream(stream) {
-    //remoteRenderer.srcObject = stream;
-  }
-
-  @override
-  onRemoveStream(stream) {
-    remoteRenderer.srcObject = null;
   }
 }

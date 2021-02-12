@@ -4,8 +4,8 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/chat/group.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/message.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/user_typing_info.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
-import 'package:bbb_app/src/connect/meeting/main_websocket/user/model/user_model.dart';
-import 'package:bbb_app/src/connect/meeting/main_websocket/user/user.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/user/model/user.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/user/user_module.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/util/util.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 
@@ -132,7 +132,7 @@ class ChatModule extends Module {
   }
 
   /// Create a private chat group with the passed [other] user.
-  void createGroupChat(UserModel other) {
+  void createGroupChat(User other) {
     // Check if there is already a chat group with the user
     for (ChatGroup group in _chatGroups) {
       if (group.participantIDs.length == 2 &&

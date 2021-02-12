@@ -61,9 +61,13 @@ class CallManager {
     UaSettings settings = UaSettings();
     List<Map<String, String>> iceServers = [];
 
-    for (var server in info.iceServers["iceServers"]) {
+    for (Map<String, dynamic> server in info.iceServers["iceServers"]) {
       Map<String, String> entry = {};
       entry["url"] = server["url"];
+      if (server.containsKey("username")) {
+        entry["username"] = server["username"];
+        entry["credential"] = server["credential"];
+      }
       iceServers.add(entry);
     }
 

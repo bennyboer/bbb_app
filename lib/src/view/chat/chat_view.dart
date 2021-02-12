@@ -5,7 +5,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/chat/group.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/message.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/user_typing_info.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
-import 'package:bbb_app/src/connect/meeting/main_websocket/user/model/user_model.dart';
+import 'package:bbb_app/src/connect/meeting/main_websocket/user/model/user.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -170,7 +170,7 @@ class _ChatViewState extends State<ChatView> {
                   controller: _scrollController,
                   itemBuilder: (BuildContext context, int index) {
                     ChatMessage message = _messages[index];
-                    UserModel sender = widget._mainWebSocket.userModule
+                    User sender = widget._mainWebSocket.userModule
                         .userMapByInternalId[message.senderID];
 
                     return _buildChatMessageWidget(
@@ -244,7 +244,7 @@ class _ChatViewState extends State<ChatView> {
 
   /// Build widget to display a chat message.
   Widget _buildChatMessageWidget(
-      ChatMessage msg, UserModel sender, BuildContext context) {
+      ChatMessage msg, User sender, BuildContext context) {
     final bool isCurrentUser =
         sender.internalId == widget._meetingInfo.internalUserID;
 
@@ -294,7 +294,7 @@ class _ChatViewState extends State<ChatView> {
   }
 
   /// Build bubble for the passed [user].
-  Widget _buildUserBubble(UserModel user, BuildContext context) {
+  Widget _buildUserBubble(User user, BuildContext context) {
     final bool isCurrentUser =
         user.internalId == widget._meetingInfo.internalUserID;
 
@@ -303,7 +303,7 @@ class _ChatViewState extends State<ChatView> {
       height: 50,
       margin: EdgeInsets.symmetric(horizontal: 15),
       decoration: BoxDecoration(
-        borderRadius: user.role == UserModel.ROLE_MODERATOR
+        borderRadius: user.role == User.ROLE_MODERATOR
             ? BorderRadius.circular(10)
             : BorderRadius.circular(99999),
         color: isCurrentUser
