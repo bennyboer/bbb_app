@@ -38,7 +38,7 @@ dependencies:
   sprintf: ^5.0.0
   flutter_svg: ^0.19.1
   sip_ua: #^0.3.5
-    git: https://github.com/bennyboer/dart-sip-ua # TODO Change to ^0.3.6 once it is released
+    git: https://github.com/flutter-webrtc/dart-sip-ua.git
   flutter_markdown: ^0.5.2
   uni_links: ^0.4.0
   flutter_foreground_plugin: ^0.6.0
