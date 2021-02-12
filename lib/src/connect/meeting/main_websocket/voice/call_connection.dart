@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:bbb_app/src/broadcast/ModuleBlocProvider.dart';
-import 'package:bbb_app/src/broadcast/snackbar_bloc.dart';
 import 'package:bbb_app/src/broadcast/user_interaction_bloc.dart';
 import 'package:bbb_app/src/broadcast/user_voice_status_bloc.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
+import 'package:bbb_app/src/preference/preferences.dart';
 import 'package:bbb_app/src/utils/log.dart';
 import 'package:sip_ua/sip_ua.dart';
 
@@ -26,11 +26,18 @@ class CallConnection extends CallManager implements SipUaHelperListener {
   /// Number of retries after a failed connection.
   int _retryAfterFailedCount = 0;
 
+  /// Transport scheme currently using.
+  String _currentTransportScheme;
+
   CallConnection(this.info, this._provider) : super(null) {
     helper.addSipUaHelperListener(this);
   }
 
   void connect() {
+    _currentTransportScheme = Preferences().lastSuccessfulTransportSchemeForSIP;
+    Log.info(
+        "[VoiceConnection] Trying to connect to audio using transport scheme '$_currentTransportScheme'");
+
     helper.start(super.buildSettings());
     _subscription = _provider.muteToggleCubit.listen(toggleMute);
   }
@@ -42,17 +49,19 @@ class CallConnection extends CallManager implements SipUaHelperListener {
 
   /// Attempt a reconnect.
   void reconnect({String transportScheme}) {
+    _currentTransportScheme = transportScheme;
     helper.stop();
     helper.start(super.buildSettings(transportScheme: transportScheme));
   }
 
   void toggleMute(UserInteractionEvent event) {
-    if (event == UserInteractionEvent.mute_toggle)
+    if (event == UserInteractionEvent.mute_toggle) {
       if (_audioMuted) {
         _call.unmute();
       } else {
         _call.mute();
       }
+    }
   }
 
   @override
@@ -64,6 +73,11 @@ class CallConnection extends CallManager implements SipUaHelperListener {
       case CallStateEnum.CONFIRMED:
         _call.unmute(true, false);
         _provider.snackbarCubit.sendSnack("audio.connected.snackbar");
+
+        // Save current transport scheme as last successful transport scheme
+        // for SIP call connections in the app preferences.
+        Preferences().lastSuccessfulTransportSchemeForSIP =
+            _currentTransportScheme;
         break;
       case CallStateEnum.MUTED:
         _audioMuted = true;
@@ -79,8 +93,12 @@ class CallConnection extends CallManager implements SipUaHelperListener {
           if (_retryAfterFailedCount <= 0) {
             _retryAfterFailedCount++;
 
+            // Find other transport scheme to use
+            String otherTransportScheme =
+                _currentTransportScheme == "wss" ? "ws" : "wss";
+
             Log.warning(
-                "[VoiceConnection] Failed before echo test has been done -> Retrying with another configuration");
+                "[VoiceConnection] Failed before echo test has been done -> Retrying with another configuration '$otherTransportScheme'");
 
             /*
             We experienced problems with BBB Server version 2.2.31 where
@@ -91,7 +109,7 @@ class CallConnection extends CallManager implements SipUaHelperListener {
             to the used protocol, which we change by setting transportScheme
             to "ws" to force it sending SIP/2.0/WS.
              */
-            reconnect(transportScheme: "ws");
+            reconnect(transportScheme: otherTransportScheme);
           }
         }
         break;

@@ -7,6 +7,10 @@ class Preferences {
   /// Key of the dark mode enabled preference in the shared preferences.
   static const String _darkModeKey = "dark-mode";
 
+  /// Key of the last successful transport scheme for SIP preference.
+  static const String _lastSuccessfulTransportSchemeForSIPKey =
+      "last-successful-transport-scheme-for-sip";
+
   /// Singleton instance.
   static Preferences _instance;
 
@@ -15,6 +19,9 @@ class Preferences {
 
   /// Whether dark mode is enabled.
   bool _isDarkMode = true;
+
+  /// The last successful transport scheme for SIP (voice connections).
+  String _lastSuccessfulTransportSchemeForSIP = "wss";
 
   /// Stream controller emitting dark mode change events.
   StreamController<bool> _darkModeStreamController =
@@ -33,7 +40,13 @@ class Preferences {
   Preferences._internal() {
     _getSharedPreferences().then((sp) {
       if (sp.containsKey(_darkModeKey)) {
-        isDarkMode = sp.getBool(_darkModeKey);
+        _isDarkMode = sp.getBool(_darkModeKey);
+        _darkModeStreamController.add(_isDarkMode);
+      }
+
+      if (sp.containsKey(_lastSuccessfulTransportSchemeForSIPKey)) {
+        _lastSuccessfulTransportSchemeForSIP =
+            sp.getString(_lastSuccessfulTransportSchemeForSIPKey);
       }
     });
   }
@@ -62,4 +75,18 @@ class Preferences {
 
   /// Get dark mode enabled changes.
   Stream<bool> get darkModeEnabledChanges => _darkModeStreamController.stream;
+
+  /// Get the last successful transport scheme to use for SIP (voice connections).
+  String get lastSuccessfulTransportSchemeForSIP =>
+      _lastSuccessfulTransportSchemeForSIP;
+
+  /// Set the last successful transport scheme to use for SIP (voice connections).
+  set lastSuccessfulTransportSchemeForSIP(String value) {
+    if (value != _lastSuccessfulTransportSchemeForSIP) {
+      _lastSuccessfulTransportSchemeForSIP = value;
+
+      _getSharedPreferences().then(
+          (sp) => sp.setString(_lastSuccessfulTransportSchemeForSIPKey, value));
+    }
+  }
 }
