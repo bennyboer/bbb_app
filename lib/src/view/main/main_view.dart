@@ -339,15 +339,25 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
         floatingActionButton: BlocBuilder<UserVoiceStatusBloc, UserVoiceStatus>(
           builder: (context, state) {
             return FloatingActionButton(
-              child: Icon(
-                (state == UserVoiceStatus.unmuted)
-                    ? Icons.mic_outlined
-                    : Icons.mic_off_outlined,
-                size: 30,
-                color: state == UserVoiceStatus.disconnected
-                    ? Theme.of(context).buttonTheme.colorScheme.onError
-                    : Theme.of(context).iconTheme.color,
-              ),
+              child: state == UserVoiceStatus.connected
+                  ? Icon(
+                      (state == UserVoiceStatus.unmuted)
+                          ? Icons.mic_outlined
+                          : Icons.mic_off_outlined,
+                      size: 30,
+                      color: state == UserVoiceStatus.disconnected
+                          ? Theme.of(context).buttonTheme.colorScheme.onError
+                          : Theme.of(context).iconTheme.color,
+                    )
+                  : SizedBox(
+                      width: 25,
+                      height: 25,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor:
+                            new AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
               onPressed: _micClick,
               elevation: 4.0,
               backgroundColor:
