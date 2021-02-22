@@ -185,6 +185,10 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   void dispose() {
     Log.info("[MainView] Disposing MainView");
 
+    blocProvider.snackbarCubit.close();
+    blocProvider.muteBloc.close();
+    blocProvider.userVoiceStatusBloc.close();
+
     _videoConnectionsStreamSubscription.cancel();
     _screenshareVideoConnectionsStreamSubscription.cancel();
     _unreadMessageCounterStreamSubscription.cancel();

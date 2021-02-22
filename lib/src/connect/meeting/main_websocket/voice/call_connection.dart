@@ -51,7 +51,7 @@ class CallConnection extends CallManager implements SipUaHelperListener {
     Log.info(
         "[VoiceConnection] Trying to connect to audio using transport scheme '$_currentTransportScheme'");
 
-    helper.start(super.buildSettings());
+    helper.start(super.buildSettings(transportScheme: _currentTransportScheme));
 
     _muteEventSub = _provider.muteBloc.listen(_onMuteStateChange);
     _userVoiceStatusStreamSub =
@@ -114,6 +114,9 @@ class CallConnection extends CallManager implements SipUaHelperListener {
             Log.warning(
                 "[VoiceConnection] Failed before echo test has been done -> Retrying with another configuration '$otherTransportScheme'");
 
+            _provider.snackbarCubit
+                .sendSnack("audio.connection-failed.retry.snackbar");
+
             /*
             We experienced problems with BBB Server version 2.2.31 where
             the official web app would make the request using the WSS protocol,
@@ -124,6 +127,9 @@ class CallConnection extends CallManager implements SipUaHelperListener {
             to "ws" to force it sending SIP/2.0/WS.
              */
             reconnect(transportScheme: otherTransportScheme);
+          } else {
+            _provider.snackbarCubit
+                .sendSnack("audio.connection-failed.snackbar");
           }
         }
         break;
