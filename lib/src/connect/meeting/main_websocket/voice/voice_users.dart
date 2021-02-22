@@ -1,5 +1,4 @@
-import 'package:bbb_app/src/broadcast/ModuleBlocProvider.dart';
-import 'package:bbb_app/src/broadcast/user_voice_status_bloc.dart';
+import 'package:bbb_app/src/broadcast/module_bloc_provider.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/user/model/user.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/user/user_module.dart';
@@ -53,19 +52,7 @@ class VoiceUsersModule extends Module {
       model = _userModule.userMapByInternalId[_voiceIdToInternalId[msg["id"]]];
     }
     if (fields["talking"] != null) model.talking = fields["talking"];
-    if (fields["muted"] != null) model.talking = fields["talking"];
-    if (model.internalId == _userIntId) {
-      if (model.muted) {
-        _provider.userVoiceStatusBloc.add(UserVoiceStatusEvent.mute);
-      } else {
-        _provider.userVoiceStatusBloc.add(UserVoiceStatusEvent.unmute);
-      }
-      sendMessage({
-        "msg": "method",
-        "method": "toggleVoice",
-        "params": [],
-      });
-    }
+    if (fields["muted"] != null) model.muted = fields["muted"];
 
     _userModule.updateUserForId(model.internalId, model);
   }

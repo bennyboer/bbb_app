@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:bbb_app/src/broadcast/ModuleBlocProvider.dart';
-import 'package:bbb_app/src/broadcast/user_interaction_bloc.dart';
+import 'package:bbb_app/src/broadcast/module_bloc_provider.dart';
+import 'package:bbb_app/src/broadcast/mute_bloc.dart';
 import 'package:bbb_app/src/broadcast/user_voice_status_bloc.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/preference/preferences.dart';
@@ -16,10 +16,6 @@ class CallConnection extends CallManager implements SipUaHelperListener {
   Call _call;
   ModuleBlocProvider _provider;
 
-  StreamSubscription<UserInteractionEvent> _subscription;
-
-  bool _audioMuted = false;
-
   /// Whether the echo test has been done.
   bool _echoTestDone = false;
 
@@ -29,8 +25,25 @@ class CallConnection extends CallManager implements SipUaHelperListener {
   /// Transport scheme currently using.
   String _currentTransportScheme;
 
+  /// Subscription to user voice status events.
+  StreamSubscription<UserVoiceStatus> _userVoiceStatusStreamSub;
+
+  /// Subscription to mute state changes.
+  StreamSubscription<MuteState> _muteEventSub;
+
   CallConnection(this.info, this._provider) : super(null) {
     helper.addSipUaHelperListener(this);
+  }
+
+  /// Called when the user voice status changes.
+  void _onUserVoiceStatusChanged(UserVoiceStatus status) {
+    if (status == UserVoiceStatus.echo_test) {
+      _doEchoTest();
+    } else if (status == UserVoiceStatus.connected) {
+      _call.mute(true, false);
+
+      _provider.snackbarCubit.sendSnack("audio.connected.snackbar");
+    }
   }
 
   void connect() {
@@ -39,12 +52,26 @@ class CallConnection extends CallManager implements SipUaHelperListener {
         "[VoiceConnection] Trying to connect to audio using transport scheme '$_currentTransportScheme'");
 
     helper.start(super.buildSettings());
-    _subscription = _provider.muteToggleCubit.listen(toggleMute);
+
+    _muteEventSub = _provider.muteBloc.listen(_onMuteStateChange);
+    _userVoiceStatusStreamSub =
+        _provider.userVoiceStatusBloc.listen(_onUserVoiceStatusChanged);
+  }
+
+  /// Called when the mute state is changed.
+  void _onMuteStateChange(MuteState state) {
+    if (state == MuteState.MUTING) {
+      _call.mute();
+    } else if (state == MuteState.UNMUTING) {
+      _call.unmute(true, false);
+    }
   }
 
   void disconnect() {
     helper.stop();
-    _subscription.cancel();
+
+    _muteEventSub.cancel();
+    _userVoiceStatusStreamSub.cancel();
   }
 
   /// Attempt a reconnect.
@@ -54,16 +81,6 @@ class CallConnection extends CallManager implements SipUaHelperListener {
     helper.start(super.buildSettings(transportScheme: transportScheme));
   }
 
-  void toggleMute(UserInteractionEvent event) {
-    if (event == UserInteractionEvent.mute_toggle) {
-      if (_audioMuted) {
-        _call.unmute();
-      } else {
-        _call.mute();
-      }
-    }
-  }
-
   @override
   void callStateChanged(Call call, CallState state) {
     Log.info("[VoiceConnection] SIP call state changed to ${state.state}");
@@ -71,21 +88,18 @@ class CallConnection extends CallManager implements SipUaHelperListener {
     _call = call;
     switch (state.state) {
       case CallStateEnum.CONFIRMED:
-        _call.unmute(true, false);
-        _provider.snackbarCubit.sendSnack("audio.connected.snackbar");
-
         // Save current transport scheme as last successful transport scheme
         // for SIP call connections in the app preferences.
         Preferences().lastSuccessfulTransportSchemeForSIP =
             _currentTransportScheme;
+        Log.info(
+            "[CallConnection] Saved last successful transport scheme for the voice connection to '${Preferences().lastSuccessfulTransportSchemeForSIP}'");
         break;
       case CallStateEnum.MUTED:
-        _audioMuted = true;
-        _provider.userVoiceStatusBloc.add(UserVoiceStatusEvent.mute);
+        _provider.muteBloc.add(MuteEvent.MUTED);
         break;
       case CallStateEnum.UNMUTED:
-        _audioMuted = false;
-        _provider.userVoiceStatusBloc.add(UserVoiceStatusEvent.unmute);
+        _provider.muteBloc.add(MuteEvent.UNMUTED);
         break;
       case CallStateEnum.FAILED:
         _provider.userVoiceStatusBloc.add(UserVoiceStatusEvent.disconnect);
@@ -140,7 +154,7 @@ class CallConnection extends CallManager implements SipUaHelperListener {
 
   /// Attempts to unmute the echo test
   /// (DTMF tones are the tones you hear when you press on your phone keypad)
-  void doEchoTest() {
+  void _doEchoTest() {
     _call.sendDTMF("1", {"duration": 2000});
     _echoTestDone = true;
   }

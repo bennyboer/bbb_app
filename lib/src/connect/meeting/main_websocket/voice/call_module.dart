@@ -1,12 +1,9 @@
 import 'dart:async';
 
-import 'package:bbb_app/src/broadcast/ModuleBlocProvider.dart';
-import 'package:bbb_app/src/broadcast/snackbar_bloc.dart';
+import 'package:bbb_app/src/broadcast/module_bloc_provider.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/voice/call_connection.dart';
-import 'package:bbb_app/src/connect/meeting/main_websocket/voice/voice_call_states.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 const String ECHO_STATE = "IN_ECHO_TEST";
 
@@ -33,14 +30,7 @@ class CallModule extends Module {
   @override
   void processMessage(Map<String, dynamic> msg) {}
 
-  void doCallState(String state) {
-    if (state == ECHO_STATE) {
-      _connection.doEchoTest();
-    }
-  }
-
   void reconnectAudio() {
     _connection.reconnect();
   }
-
 }

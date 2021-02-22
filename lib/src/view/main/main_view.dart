@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:bbb_app/src/broadcast/ModuleBlocProvider.dart';
+import 'package:bbb_app/src/broadcast/module_bloc_provider.dart';
+import 'package:bbb_app/src/broadcast/mute_bloc.dart';
 import 'package:bbb_app/src/broadcast/snackbar_bloc.dart';
-import 'package:bbb_app/src/broadcast/user_interaction_bloc.dart';
 import 'package:bbb_app/src/broadcast/user_voice_status_bloc.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/main_websocket.dart';
@@ -76,8 +76,6 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   /// Subscription to user events.
   StreamSubscription<UserEvent> _userEventStreamSubscription;
 
-  bool _muteStatus = false;
-
   /// Subscription to user changes.
   StreamSubscription _userChangesStreamSubscription;
 
@@ -86,6 +84,10 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+
+    blocProvider.snackbarCubit = SnackbarCubit(context);
+    blocProvider.muteBloc = MuteBloc();
+    blocProvider.userVoiceStatusBloc = UserVoiceStatusBloc();
 
     _mainWebSocket = MainWebSocket(widget._meetingInfo, this.blocProvider);
 
@@ -246,7 +248,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
   }
 
   void _micClick() {
-    blocProvider.muteToggleCubit.toggle();
+    blocProvider.muteBloc.toggle();
   }
 
   @override
@@ -254,17 +256,10 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     return MultiBlocProvider(
       providers: [
         BlocProvider<SnackbarCubit>(
-          create: (context) =>
-              blocProvider.snackbarCubit = SnackbarCubit(context),
-        ),
+            create: (context) => blocProvider.snackbarCubit),
         BlocProvider<UserVoiceStatusBloc>(
-          create: (context) =>
-              blocProvider.userVoiceStatusBloc = UserVoiceStatusBloc(),
-        ),
-        BlocProvider<UserInteractionCubit>(
-          create: (context) =>
-              blocProvider.muteToggleCubit = UserInteractionCubit(),
-        )
+            create: (context) => blocProvider.userVoiceStatusBloc),
+        BlocProvider<MuteBloc>(create: (context) => blocProvider.muteBloc)
       ],
       child: Scaffold(
         appBar: _buildAppBar(),
@@ -337,17 +332,15 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
           ),
         ),
         floatingActionButton: BlocBuilder<UserVoiceStatusBloc, UserVoiceStatus>(
-          builder: (context, state) {
-            return FloatingActionButton(
-              child: state == UserVoiceStatus.connected
+          builder: (context, voiceState) => BlocBuilder<MuteBloc, MuteState>(
+            builder: (context, muteState) => FloatingActionButton(
+              child: voiceState == UserVoiceStatus.connected
                   ? Icon(
-                      (state == UserVoiceStatus.unmuted)
+                      (muteState == MuteState.UNMUTED)
                           ? Icons.mic_outlined
                           : Icons.mic_off_outlined,
                       size: 30,
-                      color: state == UserVoiceStatus.disconnected
-                          ? Theme.of(context).buttonTheme.colorScheme.onError
-                          : Theme.of(context).iconTheme.color,
+                      color: Theme.of(context).iconTheme.color,
                     )
                   : SizedBox(
                       width: 25,
@@ -362,8 +355,8 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
               elevation: 4.0,
               backgroundColor:
                   Theme.of(context).buttonTheme.colorScheme.primary,
-            );
-          },
+            ),
+          ),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         bottomNavigationBar: Builder(

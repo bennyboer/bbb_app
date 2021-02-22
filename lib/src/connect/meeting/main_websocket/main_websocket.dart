@@ -2,8 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:bbb_app/src/broadcast/ModuleBlocProvider.dart';
-import 'package:bbb_app/src/broadcast/snackbar_bloc.dart';
+import 'package:bbb_app/src/broadcast/module_bloc_provider.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/meeting/meeting.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
@@ -124,7 +123,8 @@ class MainWebSocket {
       "presentation": PresentationModule(messageSender, _meetingInfo),
       "poll": PollModule(messageSender),
       "call": CallModule(messageSender, _meetingInfo, _provider),
-      "voiceUsers": VoiceUsersModule(messageSender, userModule, _provider, _meetingInfo.internalUserID),
+      "voiceUsers": VoiceUsersModule(
+          messageSender, userModule, _provider, _meetingInfo.internalUserID),
       "voiceCallState": VoiceCallStatesModule(messageSender, _provider),
     };
   }
