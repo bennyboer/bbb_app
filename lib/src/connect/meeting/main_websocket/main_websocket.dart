@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:bbb_app/src/broadcast/module_bloc_provider.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/chat.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/meeting/meeting.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
@@ -42,8 +43,10 @@ class MainWebSocket {
   /// If the user is validated.
   bool _userIsValidated = false;
 
+  ModuleBlocProvider _provider;
+
   /// Create main web socket connection.
-  MainWebSocket(this._meetingInfo) {
+  MainWebSocket(this._meetingInfo, this._provider) {
     _setupModules();
 
     final uri = Uri.parse(_meetingInfo.joinUrl)
@@ -106,25 +109,23 @@ class MainWebSocket {
     final MessageSender messageSender = (msg) => _sendMessage(msg);
 
     final UserModule userModule = new UserModule(messageSender);
-    final VoiceCallStatesModule voiceCallStatesModule =
-        new VoiceCallStatesModule(messageSender);
 
     _modules = {
-      "meeting": new MeetingModule(messageSender),
-      "ping": new PingModule(messageSender),
-      "video": new VideoModule(messageSender, _meetingInfo, userModule),
+      "meeting": MeetingModule(messageSender),
+      "ping": PingModule(messageSender),
+      "video": VideoModule(messageSender, _meetingInfo, userModule),
       "user": userModule,
-      "chat": new ChatModule(
+      "chat": ChatModule(
         messageSender,
         _meetingInfo,
         userModule,
       ),
-      "presentation": new PresentationModule(messageSender, _meetingInfo),
-      "poll": new PollModule(messageSender),
-      "call":
-          new CallModule(messageSender, _meetingInfo, voiceCallStatesModule),
-      "voiceUsers": new VoiceUsersModule(messageSender, userModule),
-      "voiceCallState": voiceCallStatesModule,
+      "presentation": PresentationModule(messageSender, _meetingInfo),
+      "poll": PollModule(messageSender),
+      "call": CallModule(messageSender, _meetingInfo, _provider),
+      "voiceUsers": VoiceUsersModule(
+          messageSender, userModule, _provider, _meetingInfo.internalUserID),
+      "voiceCallState": VoiceCallStatesModule(messageSender, _provider),
     };
   }
 

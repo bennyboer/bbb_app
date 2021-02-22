@@ -214,6 +214,21 @@ class AppLocalizations {
       en: "Reconnect audio",
       de: "Audio neu verbinden",
     ));
+    _addLocalization(_Localization(
+      "audio.connected.snackbar",
+      en: "Audio connected",
+      de: "Audio-Verbindung hergestellt",
+    ));
+    _addLocalization(_Localization(
+      "audio.connection-failed.retry.snackbar",
+      en: "Audio connection failed. We will retry with another configuration!",
+      de: "Audio-Verbindung fehlgeschlagen. Wir versuchen es erneut mit einer anderen Konfiguration!",
+    ));
+    _addLocalization(_Localization(
+      "audio.connection-failed.snackbar",
+      en: "Audio connection failed",
+      de: "Audio-Verbindung fehlgeschlagen",
+    ));
 
     _isInitialized = true;
   }

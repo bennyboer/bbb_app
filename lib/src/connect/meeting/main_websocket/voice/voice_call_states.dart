@@ -1,6 +1,9 @@
 import 'dart:async';
 
+import 'package:bbb_app/src/broadcast/module_bloc_provider.dart';
+import 'package:bbb_app/src/broadcast/user_voice_status_bloc.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/module.dart';
+import 'package:bbb_app/src/utils/log.dart';
 
 const String CALL_STATE = "voiceCallStates";
 
@@ -8,11 +11,9 @@ const String CALL_STATE = "voiceCallStates";
 /// for other parts of the server, however we just broadcast the state so we can
 /// attempt to pass the echo test as soon as the server tells us that we are connected.
 class VoiceCallStatesModule extends Module {
-  String _callState;
-  StreamController<String> _voiceStateStreamController =
-      StreamController.broadcast();
+  ModuleBlocProvider _provider;
 
-  VoiceCallStatesModule(messageSender) : super(messageSender);
+  VoiceCallStatesModule(messageSender, this._provider) : super(messageSender);
 
   @override
   void onConnected() {
@@ -20,9 +21,7 @@ class VoiceCallStatesModule extends Module {
   }
 
   @override
-  Future<void> onDisconnect() {
-    _voiceStateStreamController.close();
-  }
+  Future<void> onDisconnect() {}
 
   @override
   void processMessage(Map<String, dynamic> msg) {
@@ -31,9 +30,13 @@ class VoiceCallStatesModule extends Module {
       return;
     }
     final Map<String, dynamic> fields = msg["fields"];
-    _callState = fields["callState"];
-    _voiceStateStreamController.add(_callState);
-  }
 
-  Stream<String> get voiceCallStateStream => _voiceStateStreamController.stream;
+    String callStateStr = fields["callState"];
+
+    Log.info(
+        "[VoiceCallStatesModule] Noticed change in call state '$callStateStr'");
+
+    _provider.userVoiceStatusBloc
+        .add(UserVoiceStatusEventExtension.mapStringToEvent(callStateStr));
+  }
 }
