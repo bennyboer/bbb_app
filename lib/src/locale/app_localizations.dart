@@ -229,6 +229,11 @@ class AppLocalizations {
       en: "Audio connection failed",
       de: "Audio-Verbindung fehlgeschlagen",
     ));
+    _addLocalization(_Localization(
+      "chat.public-chat-cleared",
+      en: "Public chat history has been cleared by a moderator",
+      de: "Der öffentliche Chatverlauf wurde von einem Moderator gelöscht",
+    ));
 
     _isInitialized = true;
   }

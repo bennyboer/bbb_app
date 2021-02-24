@@ -115,11 +115,7 @@ class MainWebSocket {
       "ping": PingModule(messageSender),
       "video": VideoModule(messageSender, _meetingInfo, userModule),
       "user": userModule,
-      "chat": ChatModule(
-        messageSender,
-        _meetingInfo,
-        userModule,
-      ),
+      "chat": ChatModule(messageSender, _meetingInfo, userModule, _provider),
       "presentation": PresentationModule(messageSender, _meetingInfo),
       "poll": PollModule(messageSender),
       "call": CallModule(messageSender, _meetingInfo, _provider),

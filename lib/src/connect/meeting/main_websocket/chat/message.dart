@@ -1,5 +1,8 @@
 /// A chat message representation.
 class ChatMessage {
+  /// ID of the message.
+  final String _messageID;
+
   /// ID of the chat.
   final String _chatID;
 
@@ -13,6 +16,7 @@ class ChatMessage {
   final DateTime _timestamp;
 
   ChatMessage(
+    this._messageID,
     this._content, {
     String senderID,
     String chatID,
@@ -20,6 +24,8 @@ class ChatMessage {
   })  : this._chatID = chatID,
         this._senderID = senderID,
         this._timestamp = timestamp;
+
+  String get messageID => _messageID;
 
   String get content => _content;
 

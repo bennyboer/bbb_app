@@ -40,7 +40,7 @@ class _ChatViewState extends State<ChatView> {
   List<String> _currentlyTypingUsers = [];
 
   /// Subscription to incoming chat messages.
-  StreamSubscription<ChatMessage> _chatMessageStreamSubscription;
+  StreamSubscription<ChatMessageEvent> _chatMessageStreamSubscription;
 
   /// Subscription to user is typing status updates.
   StreamSubscription<UserTypingInfo> _userTypingInfoStreamSubscription;
@@ -65,14 +65,19 @@ class _ChatViewState extends State<ChatView> {
     _messages.addAll(
         widget._mainWebSocket.chatModule.getMessages(widget._chatGroup.id));
     _chatMessageStreamSubscription =
-        widget._mainWebSocket.chatModule.messageStream.listen((msg) {
-      if (msg.chatID == widget._chatGroup.id) {
+        widget._mainWebSocket.chatModule.messageStream.listen((event) {
+      if (event.target.chatID == widget._chatGroup.id) {
         // Reset unread message counter as the user is currently actively viewing the chat.
         widget._mainWebSocket.chatModule
             .resetUnreadMessageCounter(widget._chatGroup.id);
 
         setState(() {
-          _messages.add(msg);
+          if (event.added) {
+            _messages.add(event.target);
+          } else {
+            _messages
+                .removeWhere((msg) => msg.messageID == event.target.messageID);
+          }
         });
 
         _scrollToEnd();
@@ -234,6 +239,7 @@ class _ChatViewState extends State<ChatView> {
   Future<void> _sendMessage(String message) async {
     if (message.isNotEmpty) {
       await widget._mainWebSocket.chatModule.sendGroupChatMsg(ChatMessage(
+        "OUTGOING",
         message,
         chatID: widget._chatGroup.id,
       ));

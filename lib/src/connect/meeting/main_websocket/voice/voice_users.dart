@@ -45,15 +45,20 @@ class VoiceUsersModule extends Module {
       model = _userModule.userMapByInternalId
           .putIfAbsent(fields["intId"], () => User());
       model.internalId = fields["intId"];
+      model.name = fields["callerName"];
       model.listenOnly = fields["listenOnly"];
       model.joined = fields["joined"];
       _voiceIdToInternalId[msg["id"]] = model.internalId;
     } else if (method == "changed") {
-      model = _userModule.userMapByInternalId[_voiceIdToInternalId[msg["id"]]];
+      String internalId = fields["voiceUserId"];
+      model = _userModule.userMapByInternalId[_voiceIdToInternalId[internalId]];
     }
-    if (fields["talking"] != null) model.talking = fields["talking"];
-    if (fields["muted"] != null) model.muted = fields["muted"];
 
-    _userModule.updateUserForId(model.internalId, model);
+    if (model != null) {
+      if (fields["talking"] != null) model.talking = fields["talking"];
+      if (fields["muted"] != null) model.muted = fields["muted"];
+
+      _userModule.updateUserForId(model.internalId, model);
+    }
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bbb_app/src/broadcast/module_bloc_provider.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/group.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/message.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/chat/user_typing_info.dart';
@@ -23,17 +24,28 @@ class ChatModule extends Module {
   /// Topic where "user is typing" status updates are published.
   static const String _usersTypingTopic = "users-typing";
 
+  /// Sender ID of chat message that is sent from the BBB system itself
+  /// rather than from an actual user.
+  /// These messages might contain something like "Chat message has been cleared", etc.
+  static const String _systemMessageSenderID = "SYSTEM_MESSAGE";
+
+  /// System message of when the public chat has been cleared.
+  static const String _systemMessagePublicChatCleared = "PUBLIC_CHAT_CLEAR";
+
   /// Info for the current meeting.
   final MeetingInfo _meetingInfo;
 
   /// User module of the main websocket connection.
   final UserModule _userModule;
 
+  /// Provider for the module blocs.
+  final ModuleBlocProvider _provider;
+
   /// Message counter.
   int _messageCounter = 1;
 
   /// Controller publishing chat messages.
-  StreamController<ChatMessage> _chatMessageController =
+  StreamController<ChatMessageEvent> _chatMessageController =
       StreamController.broadcast();
 
   /// Controller publishing chat groups.
@@ -50,6 +62,9 @@ class ChatModule extends Module {
 
   /// Messages already received.
   Map<String, List<ChatMessage>> _messages = {};
+
+  /// Mapping of message IDs to their chat ID.
+  Map<String, String> _messageIDToChatID = {};
 
   /// Already received chat groups.
   List<ChatGroup> _chatGroups = [];
@@ -73,11 +88,9 @@ class ChatModule extends Module {
   /// Saved text drafts per chat ID.
   Map<String, String> _savedTextDraftsPerChatID = {};
 
-  ChatModule(
-    MessageSender messageSender,
-    this._meetingInfo,
-    this._userModule,
-  ) : super(messageSender);
+  ChatModule(MessageSender messageSender, this._meetingInfo, this._userModule,
+      this._provider)
+      : super(messageSender);
 
   /// Send a chat message.
   Future<void> sendGroupChatMsg(ChatMessage msg) async {
@@ -227,6 +240,7 @@ class ChatModule extends Module {
       if (collectionName == "group-chat-msg") {
         Map<String, dynamic> fields = msg["fields"];
 
+        String id = msg["id"];
         String chatID = fields["chatId"];
         DateTime timestamp =
             new DateTime.fromMillisecondsSinceEpoch(fields["timestamp"]);
@@ -234,7 +248,7 @@ class ChatModule extends Module {
         String content = fields["message"];
         String correlationID = fields["correlationId"];
 
-        _onChatMessage(chatID, timestamp, senderID, content, correlationID);
+        _onChatMessage(id, chatID, timestamp, senderID, content, correlationID);
       } else if (collectionName == "group-chat") {
         Map<String, dynamic> fields = msg["fields"];
 
@@ -279,7 +293,11 @@ class ChatModule extends Module {
     } else if (method == "removed") {
       String collectionName = msg["collection"];
 
-      if (collectionName == "users-typing") {
+      if (collectionName == "group-chat-msg") {
+        String messageID = msg["id"];
+
+        _onChatMessageRemoval(messageID);
+      } else if (collectionName == "users-typing") {
         String id = msg["id"];
 
         // Remove typing user
@@ -296,8 +314,26 @@ class ChatModule extends Module {
     }
   }
 
+  /// Handle a chat message remove event for the given message [id].
+  void _onChatMessageRemoval(String id) {
+    // Retrieve chat ID the message belongs to
+    String chatID = _messageIDToChatID[id];
+
+    // Remove the message for this chat
+    List<ChatMessage> chatMessages = _messages[chatID];
+
+    int index = chatMessages.indexWhere((msg) => msg.messageID == id);
+    if (index != -1) {
+      ChatMessage msg = chatMessages.removeAt(index);
+
+      // Publish event
+      _chatMessageController.add(ChatMessageEvent(msg, false));
+    }
+  }
+
   /// Called when a chat message has been received.
   void _onChatMessage(
+    String id,
     String chatID,
     DateTime timestamp,
     String senderID,
@@ -309,7 +345,22 @@ class ChatModule extends Module {
       completer.complete(null); // Confirmation that message has been sent
     }
 
+    bool isSystemMessage = senderID == _systemMessageSenderID;
+    if (isSystemMessage) {
+      // Check if system message is new or just replayed when joining the meeting
+      bool isNew =
+          DateTime.now().toUtc().difference(timestamp.toUtc()).inSeconds <= 60;
+      if (isNew) {
+        if (content == _systemMessagePublicChatCleared) {
+          _provider.snackbarCubit.sendSnack("chat.public-chat-cleared");
+        }
+      }
+
+      return; // Do not deal with those, as they aren't real chat messages
+    }
+
     ChatMessage message = ChatMessage(
+      id,
       content,
       chatID: chatID,
       senderID: senderID,
@@ -317,7 +368,7 @@ class ChatModule extends Module {
     );
 
     if (!_activeChatGroups.contains(chatID)) {
-      // We need to reactive that chat group as it has been removed from the user previously.
+      // We need to reactivate that chat group as it has been removed from the user previously.
       _activeChatGroups.add(chatID);
       _chatGroupController.add(ChatGroupEvent(
           _chatGroups.firstWhere((element) => element.id == chatID), true));
@@ -330,7 +381,9 @@ class ChatModule extends Module {
         .add(UnreadMessageCounterEvent(chatID, counter));
 
     _messages.putIfAbsent(chatID, () => []).add(message);
-    _chatMessageController.add(message);
+    _messageIDToChatID[id] = chatID; // Save what chat ID the message belongs to
+
+    _chatMessageController.add(ChatMessageEvent(message, true));
   }
 
   /// Called on a new incoming chat group.
@@ -395,7 +448,7 @@ class ChatModule extends Module {
   }
 
   /// Get a stream of incoming messages.
-  Stream<ChatMessage> get messageStream => _chatMessageController.stream;
+  Stream<ChatMessageEvent> get messageStream => _chatMessageController.stream;
 
   /// Get already received messages for the passed chat ID.
   List<ChatMessage> getMessages(String chatID) =>
@@ -452,4 +505,15 @@ class UnreadMessageCounterEvent {
   int counter;
 
   UnreadMessageCounterEvent(this.chatID, this.counter);
+}
+
+/// Event signaling that something chat-message related happened.
+class ChatMessageEvent {
+  /// Target the event refers to.
+  ChatMessage target;
+
+  /// Whether the chat message has been added or removed.
+  bool added;
+
+  ChatMessageEvent(this.target, this.added);
 }

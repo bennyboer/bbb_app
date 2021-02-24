@@ -8,7 +8,7 @@ import 'model/user.dart';
 class UserModule extends Module {
   /// Stream controller to publish participant changes with.
   StreamController<UserEvent> _userStreamController =
-  StreamController.broadcast();
+      StreamController.broadcast();
 
   /// Map of users we currently have fetched from the web socket.
   Map<String, User> _userMapByInternalId = {};
@@ -51,27 +51,23 @@ class UserModule extends Module {
       Map<String, dynamic> fields = jsonMsg['fields'];
 
       // this has to id, not internal ID (internalID is not included in all received messages relating this user)
-      String internalId = _idToInternalId.putIfAbsent(
-          jsonMsg['id'], () => fields['intId']);
+      String internalId =
+          _idToInternalId.putIfAbsent(jsonMsg['id'], () => fields['userId']);
       _internalIdToId.putIfAbsent(internalId, () => jsonMsg['id']);
-      User u = _userMapByInternalId.putIfAbsent(
-          internalId, () => User());
+      User u = _userMapByInternalId.putIfAbsent(internalId, () => User());
 
       // TODO create some nicer mapper
       if (internalId != null) u.internalId = internalId;
 
       if (fields['name'] != null) u.name = fields['name'];
 
-      if (fields['sortName'] != null)
-        u.sortName = fields['sortName'];
+      if (fields['sortName'] != null) u.sortName = fields['sortName'];
 
-      if (fields['color'] != null)
-        u.color = fields['color'];
+      if (fields['color'] != null) u.color = fields['color'];
 
       if (fields['role'] != null) u.role = fields['role'];
 
-      if (fields['presenter'] != null)
-        u.isPresenter = fields['presenter'];
+      if (fields['presenter'] != null) u.isPresenter = fields['presenter'];
 
       if (fields['connectionStatus'] != null)
         u.connectionStatus = fields['connectionStatus'];
