@@ -24,9 +24,6 @@ class MeetingInfoView extends StatefulWidget {
 
 /// State of the meeting info view.
 class _MeetingInfoViewState extends State<MeetingInfoView> {
-  /// Map of users currently in the meeting.
-  Map<String, User> _userMap = {};
-
   /// Available chat groups.
   List<ChatGroup> _chatGroups = [];
 
@@ -46,11 +43,9 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
   void initState() {
     super.initState();
 
-    _userMap = widget._mainWebSocket.userModule.userMapByInternalId;
     _userChangesStreamSubscription =
         widget._mainWebSocket.userModule.changes.listen((userMap) {
-      setState(() => _userMap =
-          Map.of(widget._mainWebSocket.userModule.userMapByInternalId));
+      setState(() {});
     });
 
     _chatGroups.addAll(widget._mainWebSocket.chatModule.activeChatGroups);
@@ -88,7 +83,7 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
 
   @override
   Widget build(BuildContext context) {
-    List<User> users = createUserList();
+    List<User> users = _createSortedUserList();
 
     return Scaffold(
       appBar: _buildAppBar(),
@@ -207,39 +202,33 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
         },
       );
 
-  List<User> createUserList() {
+  /// Create a sorted user list for display in this widget.
+  List<User> _createSortedUserList() {
+    List<User> users = widget._mainWebSocket.userModule.users;
+
     List<User> currentUser = [];
-    _userMap.values.forEach((u) {
-      if (u.internalId == widget._meetingInfo.internalUserID) {
-        currentUser.add(u);
-      }
-    });
-
     List<User> moderators = [];
-    _userMap.values.forEach((u) {
-      if (u.role == User.ROLE_MODERATOR &&
-          u.internalId != widget._meetingInfo.internalUserID) {
-        moderators.add(u);
-      }
-    });
-
     List<User> nonModerators = [];
-    _userMap.values.forEach((u) {
-      if (u.role != User.ROLE_MODERATOR &&
-          u.internalId != widget._meetingInfo.internalUserID) {
-        nonModerators.add(u);
+    for (User user in users) {
+      if (user.connectionStatus != User.CONNECTIONSTATUS_ONLINE) {
+        continue;
       }
-    });
+
+      if (user.id == widget._meetingInfo.internalUserID) {
+        currentUser.add(user);
+      } else if (user.role == User.ROLE_MODERATOR &&
+          user.id != widget._meetingInfo.internalUserID) {
+        moderators.add(user);
+      } else if (user.role != User.ROLE_MODERATOR &&
+          user.id != widget._meetingInfo.internalUserID) {
+        nonModerators.add(user);
+      }
+    }
 
     moderators.sort((a, b) => a.sortName.compareTo(b.sortName));
     nonModerators.sort((a, b) => a.sortName.compareTo(b.sortName));
 
-    List<User> allUsers = currentUser + moderators + nonModerators;
-
-    allUsers.removeWhere(
-        (u) => u.connectionStatus != User.CONNECTIONSTATUS_ONLINE);
-
-    return allUsers;
+    return currentUser + moderators + nonModerators;
   }
 
   Widget _buildUsers(BuildContext context, List<User> users) {
@@ -263,8 +252,7 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
   }
 
   Widget _buildUserEntry(User user, BuildContext context) {
-    final bool isCurrentUser =
-        user.internalId == widget._meetingInfo.internalUserID;
+    final bool isCurrentUser = user.id == widget._meetingInfo.internalUserID;
 
     final Widget bubble = Container(
       width: 50,

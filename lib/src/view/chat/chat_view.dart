@@ -176,7 +176,7 @@ class _ChatViewState extends State<ChatView> {
                   itemBuilder: (BuildContext context, int index) {
                     ChatMessage message = _messages[index];
                     User sender = widget._mainWebSocket.userModule
-                        .userMapByInternalId[message.senderID];
+                        .getUserByID(message.senderID);
 
                     return _buildChatMessageWidget(
                       message,
@@ -251,8 +251,7 @@ class _ChatViewState extends State<ChatView> {
   /// Build widget to display a chat message.
   Widget _buildChatMessageWidget(
       ChatMessage msg, User sender, BuildContext context) {
-    final bool isCurrentUser =
-        sender.internalId == widget._meetingInfo.internalUserID;
+    final bool isCurrentUser = sender.id == widget._meetingInfo.internalUserID;
 
     final Widget nameWidget =
         Text(sender.name, style: TextStyle(fontWeight: FontWeight.bold));
@@ -301,8 +300,7 @@ class _ChatViewState extends State<ChatView> {
 
   /// Build bubble for the passed [user].
   Widget _buildUserBubble(User user, BuildContext context) {
-    final bool isCurrentUser =
-        user.internalId == widget._meetingInfo.internalUserID;
+    final bool isCurrentUser = user.id == widget._meetingInfo.internalUserID;
 
     return Container(
       width: 50,

@@ -4,11 +4,13 @@ class User {
   static const String CONNECTIONSTATUS_ONLINE = "online";
   static const String CONNECTIONSTATUS_OFFLINE = "offline";
 
+  /// ID of the user.
+  /// Sometimes referred to as "internal" ID.
+  final String id;
+
   String name = "";
 
   String sortName = "";
-
-  String internalId = "";
 
   String color = "";
 
@@ -30,7 +32,7 @@ class User {
 
   String connectionStatus = CONNECTIONSTATUS_OFFLINE;
 
-  User();
+  User(this.id);
 
   /// Check whether the user is currently online.
   bool isOnline() => connectionStatus == CONNECTIONSTATUS_ONLINE;

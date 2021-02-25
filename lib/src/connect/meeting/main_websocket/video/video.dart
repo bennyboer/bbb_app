@@ -55,8 +55,8 @@ class VideoModule extends Module {
   VideoModule(messageSender, this._meetingInfo, this._userModule)
       : super(messageSender) {
     _userChangesStreamSubscription = _userModule.changes.listen((userEvent) {
-      if (userEvent.data.internalId != null &&
-          userEvent.data.internalId == _meetingInfo.internalUserID &&
+      if (userEvent.data.id != null &&
+          userEvent.data.id == _meetingInfo.internalUserID &&
           !userEvent.data.isPresenter) {
         _unshareScreen();
       }

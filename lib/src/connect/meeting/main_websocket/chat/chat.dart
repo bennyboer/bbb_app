@@ -149,7 +149,7 @@ class ChatModule extends Module {
     // Check if there is already a chat group with the user
     for (ChatGroup group in _chatGroups) {
       if (group.participantIDs.length == 2 &&
-          group.participantIDs.contains(other.internalId)) {
+          group.participantIDs.contains(other.id)) {
         // Check if not in active chat groups -> then add it
         if (!_activeChatGroups.contains(group.id)) {
           _activeChatGroups.add(group.id);
@@ -166,7 +166,7 @@ class ChatModule extends Module {
         {
           "_id": MainWebSocketUtil.getRandomAlphanumericWithCaps(17),
           "meetingId": _meetingInfo.meetingID,
-          "userId": other.internalId,
+          "userId": other.id,
           "clientType": "HTML5",
           "validated": true,
           "connectionId": MainWebSocketUtil.getRandomAlphanumericWithCaps(17),
@@ -183,7 +183,7 @@ class ChatModule extends Module {
           "effectiveConnectionType": null,
           "responseDelay": 0,
           "loggedOut": false,
-          "intId": other.internalId,
+          "intId": other.id,
           "extId": "none",
           "name": other.name,
           "role": other.role,
@@ -391,10 +391,10 @@ class ChatModule extends Module {
     if (chatID != defaultChatID && participantIDs.length == 2) {
       // Only for private chats
       // For some reason the chat name is always the name of the other participant (even for the participant).
-      name = _userModule
-          .userMapByInternalId[participantIDs
-              .firstWhere((element) => element != _meetingInfo.internalUserID)]
-          .name;
+      String otherParticipantID = participantIDs
+          .firstWhere((element) => element != _meetingInfo.internalUserID);
+
+      name = _userModule.getUserByID(otherParticipantID).name;
     }
 
     ChatGroup group = ChatGroup(chatID, name, participantIDs);

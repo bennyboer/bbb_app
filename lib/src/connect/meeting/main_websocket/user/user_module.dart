@@ -10,10 +10,20 @@ class UserModule extends Module {
   StreamController<UserEvent> _userStreamController =
       StreamController.broadcast();
 
-  /// Map of users we currently have fetched from the web socket.
-  Map<String, User> _userMapByInternalId = {};
-  Map<String, String> _internalIdToId = {};
-  Map<String, String> _idToInternalId = {};
+  /// Map of users we currently have fetched from the web socket
+  /// mapped by their user ID.
+  Map<String, User> _usersByID = {};
+
+  /// Mapping of the user ID to the message ID.
+  Map<String, String> _userIDToMsgID = {};
+
+  /// Mapping of the message ID to the user ID.
+  Map<String, String> _msgIDToUserID = {};
+
+  /// Information for users that have been received from another place
+  /// (for example VoiceUsersModule) for a user ID that has not yet
+  /// been received.
+  Map<String, User> _tmpUserInfo = {};
 
   UserModule(messageSender) : super(messageSender);
 
@@ -23,7 +33,7 @@ class UserModule extends Module {
   }
 
   @override
-  Future<void> onDisconnect() {
+  Future<void> onDisconnect() async {
     _userStreamController.close();
   }
 
@@ -50,49 +60,57 @@ class UserModule extends Module {
     if (jsonMsg['id'] != null) {
       Map<String, dynamic> fields = jsonMsg['fields'];
 
-      // this has to id, not internal ID (internalID is not included in all received messages relating this user)
-      String internalId =
-          _idToInternalId.putIfAbsent(jsonMsg['id'], () => fields['userId']);
-      _internalIdToId.putIfAbsent(internalId, () => jsonMsg['id']);
-      User u = _userMapByInternalId.putIfAbsent(internalId, () => User());
+      String userID =
+          _msgIDToUserID.putIfAbsent(jsonMsg['id'], () => fields['userId']);
+      _userIDToMsgID.putIfAbsent(userID, () => jsonMsg['id']);
 
-      // TODO create some nicer mapper
-      if (internalId != null) u.internalId = internalId;
+      // Fetch existing user or create new one
+      User user = _usersByID.putIfAbsent(userID, () {
+        if (_tmpUserInfo.containsKey(userID)) {
+          // Received user info before receiving it via the users topic.
+          // Now we need to use the early data for the new user object.
+          return _tmpUserInfo.remove(userID);
+        } else {
+          return User(userID); // Just create an empty user
+        }
+      });
 
-      if (fields['name'] != null) u.name = fields['name'];
-
-      if (fields['sortName'] != null) u.sortName = fields['sortName'];
-
-      if (fields['color'] != null) u.color = fields['color'];
-
-      if (fields['role'] != null) u.role = fields['role'];
-
-      if (fields['presenter'] != null) u.isPresenter = fields['presenter'];
-
+      if (fields['name'] != null) user.name = fields['name'];
+      if (fields['sortName'] != null) user.sortName = fields['sortName'];
+      if (fields['color'] != null) user.color = fields['color'];
+      if (fields['role'] != null) user.role = fields['role'];
+      if (fields['presenter'] != null) user.isPresenter = fields['presenter'];
       if (fields['connectionStatus'] != null)
-        u.connectionStatus = fields['connectionStatus'];
-
-      if (fields.containsKey("ejected")) {
-        u.ejected = fields["ejected"];
-      }
-
-      if (u.internalId != null) _userMapByInternalId[u.internalId] = u;
+        user.connectionStatus = fields['connectionStatus'];
+      if (fields.containsKey("ejected")) user.ejected = fields["ejected"];
+      if (user.id != null) _usersByID[user.id] = user;
 
       // Publish changed user map
-      _userStreamController.add(UserEvent(type, u));
+      _userStreamController.add(UserEvent(type, user));
     }
   }
 
-  void updateUserForId(String internalUserId, User model) {
-    _userMapByInternalId[internalUserId] = model;
-    _userStreamController.add(UserEvent(UserEventType.CHANGED, model));
+  /// Add temporary user info that has been received for a user
+  /// despite not yet being received from the users topic.
+  /// This data will be added later to the regular user data when the
+  /// users topic will send it to us.
+  void addTmpUserInfo(User user) {
+    _tmpUserInfo[user.id] = user;
+  }
+
+  /// Emit an update event for the given user.
+  void emitUpdateEvent(User user) {
+    _userStreamController.add(UserEvent(UserEventType.CHANGED, user));
   }
 
   /// Get changes of the current meetings users.
   Stream<UserEvent> get changes => _userStreamController.stream;
 
-  /// Get the current user map by internal ID.
-  Map<String, User> get userMapByInternalId => _userMapByInternalId;
+  /// Get a list of all current users.
+  List<User> get users => List.of(_usersByID.values);
+
+  /// Get a user by its ID.
+  User getUserByID(String id) => _usersByID[id];
 }
 
 /// Event for users.
