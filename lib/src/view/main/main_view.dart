@@ -29,7 +29,7 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 /// The main view including the current presentation/webcams/screenshare.
 class MainView extends StatefulWidget {
   /// Info of the meeting to display.
-  MeetingInfo _meetingInfo;
+  final MeetingInfo _meetingInfo;
 
   MainView(this._meetingInfo);
 
@@ -53,9 +53,6 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
 
   /// Users currently taling.
   Set<String> _currentlyTalkingUsers = new Set<String>();
-
-  /// Map of users currently in the meeting.
-  Map<String, User> _userMapByInternalId = {};
 
   /// Subscription to video connection list changes.
   StreamSubscription _videoConnectionsStreamSubscription;
@@ -130,7 +127,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
 
     _userEventStreamSubscription =
         _mainWebSocket.userModule.changes.listen((event) {
-      if (event.data.internalId == widget._meetingInfo.internalUserID &&
+      if (event.data.id == widget._meetingInfo.internalUserID &&
           event.data.ejected) {
         _onCurrentUserKicked();
       }
@@ -151,11 +148,9 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
       }
     });
 
-    _userMapByInternalId = _mainWebSocket.userModule.userMapByInternalId;
     _userChangesStreamSubscription =
         _mainWebSocket.userModule.changes.listen((userMap) {
-      setState(() => _userMapByInternalId =
-          Map.of(_mainWebSocket.userModule.userMapByInternalId));
+      setState(() {}); // Update widget
     });
 
     WidgetsBinding.instance.addObserver(this);
@@ -495,8 +490,8 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                       color: Colors.white.withOpacity(0.7),
                     ),
                     child: Text(
-                      _userMapByInternalId[
-                              _videoConnections[key].internalUserId]
+                      _mainWebSocket.userModule
+                          .getUserByID(_videoConnections[key].internalUserId)
                           .name,
                       style: TextStyle(color: Colors.black),
                     ),
@@ -596,9 +591,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    _totalUnreadMessages < 100
-                        ? "${_totalUnreadMessages}"
-                        : "∗",
+                    _totalUnreadMessages < 100 ? "$_totalUnreadMessages" : "∗",
                     softWrap: false,
                     style: TextStyle(
                         color:
@@ -765,8 +758,11 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
     }
   }
 
+  /// Check if the current user is the presenter.
   bool _isPresenter() {
-    return _userMapByInternalId[widget._meetingInfo.internalUserID] != null &&
-        _userMapByInternalId[widget._meetingInfo.internalUserID].isPresenter;
+    User currentUser = _mainWebSocket.userModule
+        .getUserByID(widget._meetingInfo.internalUserID);
+
+    return currentUser != null && currentUser.isPresenter;
   }
 }

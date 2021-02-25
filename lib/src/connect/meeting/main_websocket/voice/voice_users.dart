@@ -10,23 +10,21 @@ const String VOICE_USERS = "voiceUsers";
 class VoiceUsersModule extends Module {
   UserModule _userModule;
   ModuleBlocProvider _provider;
-  String _userIntId;
 
-  /// voice users have their own, unique message id which is mapped to the users internal id
-  /// on method: "add".
-  Map<String, String> _voiceIdToInternalId = {};
+  /// Mapping of voice User IDs (those that come with the messages)
+  /// and the actual user ID.
+  Map<String, String> _voiceUserIDToUserID = {};
 
-  VoiceUsersModule(
-      messageSender, this._userModule, this._provider, this._userIntId)
+  VoiceUsersModule(messageSender, this._userModule, this._provider)
       : super(messageSender);
 
   @override
   void onConnected() {
-    subscribe("voiceUsers");
+    subscribe(VOICE_USERS);
   }
 
   @override
-  Future<void> onDisconnect() {
+  Future<void> onDisconnect() async {
     // Nothing to do
   }
 
@@ -39,26 +37,45 @@ class VoiceUsersModule extends Module {
 
     final String method = msg["msg"];
     final Map<String, dynamic> fields = msg["fields"];
-    User model;
 
+    // Fetch user ID from message
+    String userID;
     if (method == "added") {
-      model = _userModule.userMapByInternalId
-          .putIfAbsent(fields["intId"], () => User());
-      model.internalId = fields["intId"];
-      model.name = fields["callerName"];
-      model.listenOnly = fields["listenOnly"];
-      model.joined = fields["joined"];
-      _voiceIdToInternalId[msg["id"]] = model.internalId;
+      userID = fields["intId"];
     } else if (method == "changed") {
-      String internalId = fields["voiceUserId"];
-      model = _userModule.userMapByInternalId[_voiceIdToInternalId[internalId]];
+      userID = fields["voiceUserId"];
     }
 
-    if (model != null) {
-      if (fields["talking"] != null) model.talking = fields["talking"];
-      if (fields["muted"] != null) model.muted = fields["muted"];
-
-      _userModule.updateUserForId(model.internalId, model);
+    // If the userID is not defined by now, we need to map it another way
+    String voiceUserID = msg["id"];
+    if (userID != null) {
+      if (!_voiceUserIDToUserID.containsKey(voiceUserID)) {
+        _voiceUserIDToUserID[voiceUserID] = userID;
+      }
+    } else {
+      userID = _voiceUserIDToUserID[voiceUserID];
     }
+
+    // Check if user with given user ID is present, otherwise add as temporary
+    // data in the user module to be added later to the actual user model.
+    User user = _userModule.getUserByID(userID);
+    if (user != null) {
+      _addFieldsToUser(fields, user);
+      _userModule.emitUpdateEvent(user);
+    } else {
+      user = User(userID);
+      _addFieldsToUser(fields, user);
+
+      _userModule.addTmpUserInfo(user);
+    }
+  }
+
+  /// Add the given fields to the passed user object.
+  void _addFieldsToUser(final Map<String, dynamic> fields, User user) {
+    if (fields.containsKey("listenOnly"))
+      user.listenOnly = fields["listenOnly"];
+    if (fields.containsKey("joined")) user.joined = fields["joined"];
+    if (fields.containsKey("talking")) user.talking = fields["talking"];
+    if (fields.containsKey("muted")) user.muted = fields["muted"];
   }
 }
