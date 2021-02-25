@@ -274,7 +274,7 @@ class _MainViewState extends State<MainView> with WidgetsBindingObserver {
                 content: Text(state),
               ));
               Future.delayed(
-                  const Duration(seconds: 2), () => {controller.close()});
+                  const Duration(seconds: 4), () => {controller.close()});
             }
           },
           child: OrientationBuilder(
