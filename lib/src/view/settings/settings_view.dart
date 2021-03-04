@@ -1,5 +1,6 @@
 import 'package:bbb_app/src/broadcast/app_state_notifier.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
+import 'package:bbb_app/src/view/app_notice/app_notice_widget.dart';
 import 'package:day_night_switcher/day_night_switcher.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -39,6 +40,7 @@ class _SettingsViewState extends State<SettingsView> {
                 onStateChanged: (isDarkModeEnabled) =>
                     Provider.of<AppStateNotifier>(context, listen: false)
                         .darkModeEnabled = isDarkModeEnabled),
+            Padding(padding: EdgeInsets.all(10.0), child: AppNoticeWidget()),
           ],
         ),
       ),

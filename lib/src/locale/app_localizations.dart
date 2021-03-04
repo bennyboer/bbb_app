@@ -30,6 +30,11 @@ class AppLocalizations {
       de: "BBB App",
     ));
     _addLocalization(_Localization(
+      "app.notice",
+      en: "Want to share feedback? Having problems? Click on the below GitHub link!",
+      de: "Feedback oder Probleme? Klicken Sie auf den nachfolgenden GitHub Link!",
+    ));
+    _addLocalization(_Localization(
       "load-error",
       en: "Content could not be loaded",
       de: "Inhalt konnte nicht geladen werden",

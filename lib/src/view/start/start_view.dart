@@ -7,6 +7,7 @@ import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
 import 'package:bbb_app/src/locale/app_localizations.dart';
 import 'package:bbb_app/src/preference/preferences.dart';
 import 'package:bbb_app/src/utils/log.dart';
+import 'package:bbb_app/src/view/app_notice/app_notice_widget.dart';
 import 'package:bbb_app/src/view/main/main_view.dart';
 import 'package:bbb_app/src/view/privacy_policy/privacy_policy_view.dart';
 import 'package:bbb_app/src/view/start/start_view__text_form_field_widget.dart';
@@ -264,21 +265,21 @@ class _StartViewState extends State<StartView> {
             ),
           ),
         ),
+        Divider(),
+        Padding(
+          padding: EdgeInsets.only(bottom: 10),
+          child: AppNoticeWidget(),
+        ),
       ];
 
   /// Build the header widgets for the start view.
   List<Widget> _buildHeaderWidgets(BuildContext context) => [
         if (MediaQuery.of(context).orientation == Orientation.portrait)
-          Image.asset(
-            _appIconPath,
-            width: 128,
-          ),
-        if (MediaQuery.of(context).orientation == Orientation.portrait)
           Padding(
-            padding: EdgeInsets.symmetric(vertical: 40),
-            child: Text(
-              AppLocalizations.of(context).get("app.title"),
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 32.0),
+            padding: EdgeInsets.all(20.0),
+            child: Image.asset(
+              _appIconPath,
+              width: 128,
             ),
           ),
         if (MediaQuery.of(context).orientation == Orientation.landscape)
@@ -327,8 +328,8 @@ class _StartViewState extends State<StartView> {
       hintText: AppLocalizations.of(context).get("login.username"),
       prefixIcon: Icon(Icons.label),
       validator: (value) => value.isEmpty
-        ? AppLocalizations.of(context).get("login.username-missing")
-        : null,
+          ? AppLocalizations.of(context).get("login.username-missing")
+          : null,
     );
   }
 
@@ -348,20 +349,20 @@ class _StartViewState extends State<StartView> {
   Widget _buildURLTextField() {
     return StartViewTextFormField(
       controller: _meetingURLController,
-      hintText:AppLocalizations.of(context).get("login.url"),
+      hintText: AppLocalizations.of(context).get("login.url"),
       prefixIcon: Icon(Icons.link),
       onChanged: (url) {
         if (_userStoppedEditingMeetingUrlTimer == null) {
           _userStoppedEditingMeetingUrlTimer =
               Timer(_checkForAccessCodeNeededDuration, () {
-                _handleUrlUpdate(url);
-              });
+            _handleUrlUpdate(url);
+          });
         } else {
           _userStoppedEditingMeetingUrlTimer.cancel();
           _userStoppedEditingMeetingUrlTimer =
               Timer(_checkForAccessCodeNeededDuration, () {
-                _handleUrlUpdate(url);
-              });
+            _handleUrlUpdate(url);
+          });
         }
       },
       validator: (value) => value.isEmpty

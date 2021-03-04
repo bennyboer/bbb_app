@@ -45,6 +45,7 @@ dependencies:
   logger: ^0.9.4
   bloc: ^6.1.1
   flutter_bloc: ^6.1.1
+  url_launcher: ^5.7.10
 
 dev_dependencies:
   flutter_test:
@@ -65,6 +66,7 @@ flutter:
 
   assets:
     - assets/icon/icon.png
+    - assets/GitHub_Logo.png
     - assets/privacy_policy/de.md
     - assets/privacy_policy/en.md
 
