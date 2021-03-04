@@ -119,7 +119,8 @@ class MainWebSocket {
       "presentation": PresentationModule(messageSender, _meetingInfo),
       "poll": PollModule(messageSender),
       "call": CallModule(messageSender, _meetingInfo, _provider),
-      "voiceUsers": VoiceUsersModule(messageSender, userModule, _provider),
+      "voiceUsers":
+          VoiceUsersModule(messageSender, _meetingInfo, userModule, _provider),
       "voiceCallState": VoiceCallStatesModule(messageSender, _provider),
     };
   }
