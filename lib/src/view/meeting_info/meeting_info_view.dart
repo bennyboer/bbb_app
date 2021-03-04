@@ -251,55 +251,105 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
         });
   }
 
+  /// Get the current UI audio state representation for the given [user].
+  AudioState _getAudioState(User user) {
+    if (user.joined) {
+      if (user.listenOnly) {
+        return AudioState(Icons.headset, Colors.blueAccent);
+      } else if (user.muted) {
+        return AudioState(Icons.mic_off, Colors.redAccent);
+      } else {
+        return AudioState(Icons.mic, Color(0xFF66CC66));
+      }
+    }
+
+    return AudioState(Icons.close, Colors.blueGrey);
+  }
+
+  /// Build the status bubble that is shown beside the "user image".
+  Widget _buildAudioStatusBubble(User user) {
+    AudioState state = _getAudioState(user);
+
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(99999),
+          color: state.color.withOpacity(0.9)),
+      child: Center(
+          child: Icon(
+        state.icon,
+        color: Colors.white,
+        size: 16.0,
+      )),
+    );
+  }
+
   Widget _buildUserEntry(User user, BuildContext context) {
     final bool isCurrentUser = user.id == widget._meetingInfo.internalUserID;
 
-    final Widget bubble = Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        borderRadius: user.role == User.ROLE_MODERATOR
-            ? BorderRadius.circular(10)
-            : BorderRadius.circular(99999),
-        color: isCurrentUser
-            ? Theme.of(context).disabledColor
-            : Theme.of(context).accentColor,
-      ),
-      child: Center(
-        child: Text(
-          user.name.length > 2 ? user.name.substring(0, 2) : user.name,
-          style: TextStyle(
-              color: isCurrentUser
-                  ? Theme.of(context).textTheme.bodyText1.color
-                  : Theme.of(context).accentTextTheme.bodyText1.color),
-        ),
+    final Widget bubble = SizedBox(
+      width: 70,
+      height: 70,
+      child: Stack(
+        children: [
+          Center(
+            child: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                borderRadius: user.role == User.ROLE_MODERATOR
+                    ? BorderRadius.circular(10)
+                    : BorderRadius.circular(99999),
+                color: isCurrentUser
+                    ? Theme.of(context).disabledColor
+                    : Theme.of(context).accentColor,
+              ),
+              child: Center(
+                child: Text(
+                  user.name.length > 2 ? user.name.substring(0, 2) : user.name,
+                  style: TextStyle(
+                      color: isCurrentUser
+                          ? Theme.of(context).textTheme.bodyText1.color
+                          : Theme.of(context).accentTextTheme.bodyText1.color),
+                ),
+              ),
+            ),
+          ),
+          Align(
+              alignment: Alignment.bottomRight,
+              child: _buildAudioStatusBubble(user)),
+        ],
       ),
     );
 
     return ListTile(
       leading: bubble,
       contentPadding: const EdgeInsets.only(left: 15.0, top: 0.0, bottom: 0.0),
-      title: Row(
-        children: [
-          if (user.isPresenter)
-            Container(
-                margin: const EdgeInsets.only(right: 15.0),
-                child: Icon(
-                  Icons.desktop_windows,
-                  size: 20.0,
-                )),
-          Expanded(
-            child: Text(
-              user.name,
-              overflow: TextOverflow.fade,
-              softWrap: false,
+      title: Padding(
+        padding: EdgeInsets.only(left: 0.0, right: 10.0),
+        child: Row(
+          children: [
+            if (user.isPresenter)
+              Container(
+                  margin: const EdgeInsets.only(right: 15.0),
+                  child: Icon(
+                    Icons.desktop_windows,
+                    size: 20.0,
+                  )),
+            Expanded(
+              child: Text(
+                user.name,
+                overflow: TextOverflow.fade,
+                softWrap: false,
+              ),
             ),
-          ),
-          if (isCurrentUser)
-            Text(" (" +
-                AppLocalizations.of(context).get("meeting-info.you") +
-                ")"),
-        ],
+            if (isCurrentUser)
+              Text(" (" +
+                  AppLocalizations.of(context).get("meeting-info.you") +
+                  ")"),
+          ],
+        ),
       ),
       trailing: !isCurrentUser ? _createItemPopupMenu(user) : null,
     );
@@ -331,4 +381,11 @@ class _MeetingInfoViewState extends State<MeetingInfoView> {
           Navigator.pop(context);
         },
       ));
+}
+
+class AudioState {
+  IconData icon;
+  Color color;
+
+  AudioState(this.icon, this.color);
 }
