@@ -1,6 +1,7 @@
+import 'dart:math';
+
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/annotation.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/slide_bounds.dart';
-import 'package:vector_math/vector_math.dart';
 
 /// Slide of a presentation.
 class PresentationSlide {
@@ -50,7 +51,7 @@ class PresentationSlide {
   Map<String, Annotation> annotations = {};
 
   /// To hold the cursor position
-  Vector2 cursorpos;
+  Point<double> cursorPos;
 
   PresentationSlide({
     this.id,

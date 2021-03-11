@@ -26,4 +26,16 @@ class SlideBounds {
     this.viewBoxWidth,
     this.viewBoxHeight,
   });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SlideBounds &&
+          runtimeType == other.runtimeType &&
+          x == other.x &&
+          y == other.y &&
+          width == other.width &&
+          height == other.height &&
+          viewBoxWidth == other.viewBoxWidth &&
+          viewBoxHeight == other.viewBoxHeight;
 }

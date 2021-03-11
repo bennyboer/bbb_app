@@ -9,44 +9,37 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/an
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/rectangle.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/text.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/annotation/info/triangle.dart';
-import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/slide_bounds.dart';
+import 'package:bbb_app/src/view/main/presentation/presentation_painter_controller.dart';
 import 'package:flutter/material.dart';
-import 'package:vector_math/vector_math.dart' hide Colors;
 
 /// Painter for the presentation.
 class PresentationPainter extends CustomPainter {
-  /// Bounds of the slide.
-  final SlideBounds _bounds;
+  /// Controller for the painter.
+  final PresentationPainterController controller;
 
-  /// Annotations to draw.
-  final List<Annotation> _annotations;
-
-  /// Hold the cursor position
-  Vector2 _cursorpos;
-
-  PresentationPainter(
-    this._bounds,
-    this._annotations,
-    this._cursorpos,
-  );
+  PresentationPainter(this.controller) : super(repaint: controller);
 
   @override
   void paint(Canvas canvas, Size size) {
-    double zoomFactor = size.width / _bounds.viewBoxWidth;
+    if (controller.bounds == null) {
+      return;
+    }
+
+    double zoomFactor = size.width / controller.bounds.viewBoxWidth;
 
     canvas.scale(zoomFactor, zoomFactor);
-    canvas.translate(-_bounds.x, -_bounds.y);
+    canvas.translate(-controller.bounds.x, -controller.bounds.y);
 
     _drawAnnotations(canvas, size);
     _drawCursor(canvas, size);
   }
 
   void _drawCursor(Canvas canvas, Size size) {
-    if (_cursorpos == null) {
+    if (controller.cursorPos == null) {
       return;
     }
 
-    double thickness = 10; //info.thickness * _bounds.width / 100;
+    double thickness = 10; //info.thickness * controller.bounds.width / 100;
 
     Paint paint = Paint()
       ..strokeWidth = thickness
@@ -54,21 +47,25 @@ class PresentationPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..color = Color(70 | 0xFFF00000);
 
-    //canvas.drawOval(Rect.fromLTWH(_cursorpos.x,_cursorpos.y,3,3),paint);
+    //canvas.drawOval(Rect.fromLTWH(controller.cursorPos.x,controller.cursorPos.y,3,3),paint);
 
     canvas.drawOval(
         Rect.fromLTWH(
-          _cursorpos.x * _bounds.width / 100,
-          _cursorpos.y * _bounds.height / 100,
-          3, // * _bounds.width / 100,
-          3, // * _bounds.height / 100,
+          controller.cursorPos.x * controller.bounds.width / 100,
+          controller.cursorPos.y * controller.bounds.height / 100,
+          3, // * controller.bounds.width / 100,
+          3, // * controller.bounds.height / 100,
         ),
         paint);
   }
 
   /// Draw the annotations.
   void _drawAnnotations(Canvas canvas, Size size) {
-    for (Annotation annotation in _annotations) {
+    if (controller.annotations == null) {
+      return;
+    }
+
+    for (Annotation annotation in controller.annotations) {
       _drawAnnotation(annotation, canvas, size);
     }
   }
@@ -103,24 +100,25 @@ class PresentationPainter extends CustomPainter {
 
   /// Draw a poll result from the passed [info].
   void _drawPollResult(PollResult info, Canvas canvas, Size size) {
-    double marginBottomRight = _bounds.width / 100;
+    double marginBottomRight = controller.bounds.width / 100;
 
-    double x = info.bounds.left * _bounds.width / 100;
-    double y = info.bounds.top * _bounds.height / 100;
-    double width = info.bounds.width * _bounds.width / 100 - marginBottomRight;
+    double x = info.bounds.left * controller.bounds.width / 100;
+    double y = info.bounds.top * controller.bounds.height / 100;
+    double width =
+        info.bounds.width * controller.bounds.width / 100 - marginBottomRight;
     double height =
-        info.bounds.height * _bounds.height / 100 - marginBottomRight;
+        info.bounds.height * controller.bounds.height / 100 - marginBottomRight;
 
     double entryHeight = height / info.entries.length;
 
     // Draw box around poll result
     Paint paint = Paint()
-      ..strokeWidth = _bounds.width / 500
+      ..strokeWidth = controller.bounds.width / 500
       ..color = Color(0xFF778899);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(x, y, width, height),
-        Radius.circular(_bounds.width / 200),
+        Radius.circular(controller.bounds.width / 200),
       ),
       paint,
     );
@@ -176,7 +174,7 @@ class PresentationPainter extends CustomPainter {
     Canvas canvas,
     Size size,
   ) {
-    final double padding = _bounds.width / 200;
+    final double padding = controller.bounds.width / 200;
     double x = rect.left + padding;
 
     // Draw entry key
@@ -196,7 +194,7 @@ class PresentationPainter extends CustomPainter {
       rect.top + padding / 2,
       max(
         maxBarWidth * widthFactor,
-        _bounds.width / 500,
+        controller.bounds.width / 500,
       ),
       rect.height - padding,
     );
@@ -236,23 +234,23 @@ class PresentationPainter extends CustomPainter {
       text: TextSpan(
         text: info.text,
         style: TextStyle(
-          fontSize: info.fontSize * _bounds.height / 100,
+          fontSize: info.fontSize * controller.bounds.height / 100,
           color: Color(info.fontColor | 0xFF000000),
         ),
       ),
       textDirection: TextDirection.ltr,
     );
-    tp.layout(maxWidth: info.bounds.width * _bounds.width / 100);
+    tp.layout(maxWidth: info.bounds.width * controller.bounds.width / 100);
 
     tp.paint(
         canvas,
-        Offset(info.bounds.left * _bounds.width / 100,
-            info.bounds.top * _bounds.height / 100));
+        Offset(info.bounds.left * controller.bounds.width / 100,
+            info.bounds.top * controller.bounds.height / 100));
   }
 
   /// Draw a line annotation from the passed [info].
   void _drawLineAnnotation(LineInfo info, Canvas canvas, Size size) {
-    double thickness = info.thickness * _bounds.width / 100;
+    double thickness = info.thickness * controller.bounds.width / 100;
 
     Paint paint = Paint()
       ..strokeWidth = thickness
@@ -261,12 +259,12 @@ class PresentationPainter extends CustomPainter {
 
     canvas.drawLine(
       Offset(
-        info.p1.x * _bounds.width / 100,
-        info.p1.y * _bounds.height / 100,
+        info.p1.x * controller.bounds.width / 100,
+        info.p1.y * controller.bounds.height / 100,
       ),
       Offset(
-        info.p2.x * _bounds.width / 100,
-        info.p2.y * _bounds.height / 100,
+        info.p2.x * controller.bounds.width / 100,
+        info.p2.y * controller.bounds.height / 100,
       ),
       paint,
     );
@@ -274,7 +272,7 @@ class PresentationPainter extends CustomPainter {
 
   /// Draw an ellipsis annotation from the passed [info].
   void _drawEllipsisAnnotation(EllipsisInfo info, Canvas canvas, Size size) {
-    double thickness = info.thickness * _bounds.width / 100;
+    double thickness = info.thickness * controller.bounds.width / 100;
 
     Paint paint = Paint()
       ..strokeWidth = thickness
@@ -284,17 +282,17 @@ class PresentationPainter extends CustomPainter {
 
     canvas.drawOval(
         Rect.fromLTWH(
-          info.bounds.left * _bounds.width / 100,
-          info.bounds.top * _bounds.height / 100,
-          info.bounds.width * _bounds.width / 100,
-          info.bounds.height * _bounds.height / 100,
+          info.bounds.left * controller.bounds.width / 100,
+          info.bounds.top * controller.bounds.height / 100,
+          info.bounds.width * controller.bounds.width / 100,
+          info.bounds.height * controller.bounds.height / 100,
         ),
         paint);
   }
 
   /// Draw a triangle annotation from the passed [info].
   void _drawTriangleAnnotation(TriangleInfo info, Canvas canvas, Size size) {
-    double thickness = info.thickness * _bounds.width / 100;
+    double thickness = info.thickness * controller.bounds.width / 100;
 
     Paint paint = Paint()
       ..strokeWidth = thickness
@@ -304,16 +302,16 @@ class PresentationPainter extends CustomPainter {
 
     Path path = Path();
     path.moveTo(
-      info.p1.x * _bounds.width / 100,
-      info.p1.y * _bounds.height / 100,
+      info.p1.x * controller.bounds.width / 100,
+      info.p1.y * controller.bounds.height / 100,
     );
     path.lineTo(
-      info.p2.x * _bounds.width / 100,
-      info.p2.y * _bounds.height / 100,
+      info.p2.x * controller.bounds.width / 100,
+      info.p2.y * controller.bounds.height / 100,
     );
     path.lineTo(
-      info.p3.x * _bounds.width / 100,
-      info.p3.y * _bounds.height / 100,
+      info.p3.x * controller.bounds.width / 100,
+      info.p3.y * controller.bounds.height / 100,
     );
     path.close();
 
@@ -322,7 +320,7 @@ class PresentationPainter extends CustomPainter {
 
   /// Draw a rectangle annotation from the passed [info].
   void _drawRectangleAnnotation(RectangleInfo info, Canvas canvas, Size size) {
-    double thickness = info.thickness * _bounds.width / 100;
+    double thickness = info.thickness * controller.bounds.width / 100;
 
     Paint paint = Paint()
       ..strokeWidth = thickness
@@ -332,17 +330,17 @@ class PresentationPainter extends CustomPainter {
 
     canvas.drawRect(
         Rect.fromLTWH(
-          info.bounds.left * _bounds.width / 100,
-          info.bounds.top * _bounds.height / 100,
-          info.bounds.width * _bounds.width / 100,
-          info.bounds.height * _bounds.height / 100,
+          info.bounds.left * controller.bounds.width / 100,
+          info.bounds.top * controller.bounds.height / 100,
+          info.bounds.width * controller.bounds.width / 100,
+          info.bounds.height * controller.bounds.height / 100,
         ),
         paint);
   }
 
   /// Draw a pencil annotation from the passed [info].
   void _drawPencilAnnotation(PencilInfo info, Canvas canvas, Size size) {
-    double thickness = info.thickness * _bounds.width / 100;
+    double thickness = info.thickness * controller.bounds.width / 100;
 
     Paint paint = Paint()
       ..strokeWidth = thickness
@@ -371,15 +369,15 @@ class PresentationPainter extends CustomPainter {
     Path path = Path();
     if (info.points.isNotEmpty) {
       path.moveTo(
-        info.points.first.x * _bounds.width / 100,
-        info.points.first.y * _bounds.height / 100,
+        info.points.first.x * controller.bounds.width / 100,
+        info.points.first.y * controller.bounds.height / 100,
       );
 
       for (int i = 1; i < info.points.length; i++) {
         Point point = info.points[i];
         path.lineTo(
-          point.x * _bounds.width / 100,
-          point.y * _bounds.height / 100,
+          point.x * controller.bounds.width / 100,
+          point.y * controller.bounds.height / 100,
         );
       }
     }
@@ -402,37 +400,37 @@ class PresentationPainter extends CustomPainter {
       switch (command) {
         case PencilCommand.MOVE_TO:
           path.moveTo(
-            info.points[i].x * _bounds.width / 100,
-            info.points[i].y * _bounds.height / 100,
+            info.points[i].x * controller.bounds.width / 100,
+            info.points[i].y * controller.bounds.height / 100,
           );
           i++;
           break;
 
         case PencilCommand.LINE_TO:
           path.lineTo(
-            info.points[i].x * _bounds.width / 100,
-            info.points[i].y * _bounds.height / 100,
+            info.points[i].x * controller.bounds.width / 100,
+            info.points[i].y * controller.bounds.height / 100,
           );
           break;
 
         case PencilCommand.QUADRATIC_CURVE_TO:
           path.quadraticBezierTo(
-            info.points[i].x * _bounds.width / 100,
-            info.points[i].y * _bounds.height / 100,
-            info.points[i + 1].x * _bounds.width / 100,
-            info.points[i + 1].y * _bounds.height / 100,
+            info.points[i].x * controller.bounds.width / 100,
+            info.points[i].y * controller.bounds.height / 100,
+            info.points[i + 1].x * controller.bounds.width / 100,
+            info.points[i + 1].y * controller.bounds.height / 100,
           );
           i += 2;
           break;
 
         case PencilCommand.CUBIC_CURVE_TO:
           path.cubicTo(
-            info.points[i].x * _bounds.width / 100,
-            info.points[i].y * _bounds.height / 100,
-            info.points[i + 1].x * _bounds.width / 100,
-            info.points[i + 1].y * _bounds.height / 100,
-            info.points[i + 2].x * _bounds.width / 100,
-            info.points[i + 2].y * _bounds.height / 100,
+            info.points[i].x * controller.bounds.width / 100,
+            info.points[i].y * controller.bounds.height / 100,
+            info.points[i + 1].x * controller.bounds.width / 100,
+            info.points[i + 1].y * controller.bounds.height / 100,
+            info.points[i + 2].x * controller.bounds.width / 100,
+            info.points[i + 2].y * controller.bounds.height / 100,
           );
           i += 3;
           break;
