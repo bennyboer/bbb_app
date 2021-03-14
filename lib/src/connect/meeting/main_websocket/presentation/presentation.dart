@@ -13,7 +13,6 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/pr
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/presentation_slide.dart';
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/slide/slide_bounds.dart';
 import 'package:bbb_app/src/connect/meeting/meeting_info.dart';
-import 'package:vector_math/vector_math.dart';
 
 import 'model/annotation/info/rectangle.dart';
 import 'model/annotation/info/text.dart';
@@ -127,8 +126,8 @@ class PresentationModule extends Module {
     });
 
     _slideEventSubscription = slideEventsStream.listen((event) {
-      if ((event.eventType == EventType.ADDED ||
-              event.eventType == EventType.CHANGED) &&
+      if ((event.eventType == SlideEventType.ADDED ||
+              event.eventType == SlideEventType.CHANGED) &&
           event.slide.current) {
         _currentSlide = event.slide;
       }
@@ -136,7 +135,7 @@ class PresentationModule extends Module {
   }
 
   @override
-  Future<void> onDisconnect() {
+  Future<void> onDisconnect() async {
     _slideEventSubscription.cancel();
     _presentationEventSubscription.cancel();
 
@@ -240,8 +239,8 @@ class PresentationModule extends Module {
       _lastPollResultAnnotation = annotation;
     }
 
-    _slideEventStreamController
-        .add(PresentationSlideEvent(EventType.CHANGED, slide));
+    _slideEventStreamController.add(
+        PresentationSlideEvent(SlideEventType.ANNOTATIONS_ONLY_CHANGED, slide));
   }
 
   /// Reads x and yPercent from cursor-stream and adds it to _currentSlide
@@ -251,13 +250,11 @@ class PresentationModule extends Module {
     Map<String, dynamic> argJson = argsJson[0];
     Map<String, dynamic> cursorsJson = argJson["cursors"];
     String cursorId = cursorsJson.keys.elementAt(0);
-    String slideId = cursorsJson[cursorsJson.keys.elementAt(0)]["whiteboardId"];
-    //PresentationSlide slide = _slides[slideId];
 
-    _currentSlide.cursorpos = Vector2(
+    _currentSlide.cursorPos = Point(
         cursorsJson[cursorId]["xPercent"], cursorsJson[cursorId]["yPercent"]);
-    _slideEventStreamController
-        .add(PresentationSlideEvent(EventType.CHANGED, _currentSlide));
+    _slideEventStreamController.add(PresentationSlideEvent(
+        SlideEventType.ANNOTATIONS_ONLY_CHANGED, _currentSlide));
   }
 
   /// Called when a stream annotation (paint) should be changed.
@@ -305,8 +302,8 @@ class PresentationModule extends Module {
       }
 
       if (shouldPublishEvent) {
-        _slideEventStreamController
-            .add(PresentationSlideEvent(EventType.CHANGED, slideChanged));
+        _slideEventStreamController.add(PresentationSlideEvent(
+            SlideEventType.ANNOTATIONS_ONLY_CHANGED, slideChanged));
       }
     } else if (eventName == "removed") {
       PresentationSlide slideChanged;
@@ -326,8 +323,8 @@ class PresentationModule extends Module {
         slideChanged = slide;
       }
 
-      _slideEventStreamController
-          .add(PresentationSlideEvent(EventType.CHANGED, slideChanged));
+      _slideEventStreamController.add(PresentationSlideEvent(
+          SlideEventType.ANNOTATIONS_ONLY_CHANGED, slideChanged));
     }
   }
 
@@ -388,6 +385,8 @@ class PresentationModule extends Module {
       case "poll_result":
         return _jsonToPollResult(fields, existing as PollResult);
     }
+
+    throw Exception("Annotation info type '$type' unknown");
   }
 
   /// Convert the passed JSON map to a poll result representation.
@@ -659,7 +658,7 @@ class PresentationModule extends Module {
       case 4:
         return PencilCommand.CUBIC_CURVE_TO;
       default:
-        throw new Exception("Pencil command with number ${num} unknown");
+        throw new Exception("Pencil command with number $num unknown");
     }
   }
 
@@ -679,7 +678,7 @@ class PresentationModule extends Module {
       slide.bounds = bounds;
 
       _slideEventStreamController
-          .add(PresentationSlideEvent(EventType.CHANGED, slide));
+          .add(PresentationSlideEvent(SlideEventType.CHANGED, slide));
     } else {
       // Slide not yet there -> cache temporarily until slide is there
       _tmpSlideBounds[slideId] = bounds;
@@ -713,7 +712,7 @@ class PresentationModule extends Module {
 
     if (slide != null) {
       _slideEventStreamController
-          .add(PresentationSlideEvent(EventType.CHANGED, slide));
+          .add(PresentationSlideEvent(SlideEventType.CHANGED, slide));
     }
   }
 
@@ -792,7 +791,7 @@ class PresentationModule extends Module {
     }
 
     _slideEventStreamController
-        .add(PresentationSlideEvent(EventType.ADDED, slide));
+        .add(PresentationSlideEvent(SlideEventType.ADDED, slide));
   }
 
   /// Called when a slide should be changed.
@@ -805,7 +804,7 @@ class PresentationModule extends Module {
     if (fields.containsKey("current")) slide.current = fields["current"];
 
     _slideEventStreamController
-        .add(PresentationSlideEvent(EventType.CHANGED, slide));
+        .add(PresentationSlideEvent(SlideEventType.CHANGED, slide));
   }
 
   /// Convert the passed JSON to a presentation slide.
@@ -931,7 +930,7 @@ class PresentationEvent {
 
 /// Event published by the presentation slide stream controller.
 class PresentationSlideEvent {
-  final EventType eventType;
+  final SlideEventType eventType;
   final PresentationSlide slide;
 
   PresentationSlideEvent(this.eventType, this.slide);
@@ -941,5 +940,15 @@ class PresentationSlideEvent {
 enum EventType {
   ADDED,
   CHANGED,
+  REMOVED,
+}
+
+/// Available event types.
+enum SlideEventType {
+  ADDED,
+  CHANGED,
+
+  /// Whether only the annotations changed
+  ANNOTATIONS_ONLY_CHANGED,
   REMOVED,
 }

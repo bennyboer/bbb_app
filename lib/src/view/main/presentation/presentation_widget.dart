@@ -7,6 +7,7 @@ import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/model/sl
 import 'package:bbb_app/src/connect/meeting/main_websocket/presentation/presentation.dart';
 import 'package:bbb_app/src/view/fullscreen/fullscreen_view.dart';
 import 'package:bbb_app/src/view/main/presentation/presentation_painter.dart';
+import 'package:bbb_app/src/view/main/presentation/presentation_painter_controller.dart';
 import 'package:bbb_app/src/view/main/presentation/presentation_svg_painter.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -17,9 +18,6 @@ import 'package:http/http.dart' as http;
 class PresentationWidget extends StatefulWidget {
   /// Main websocket connection of the meeting.
   final MainWebSocket _mainWebSocket;
-
-  /// Whether the widget is currently shown in fullscreen mode.
-  bool _isFullscreen = false;
 
   PresentationWidget(this._mainWebSocket);
 
@@ -32,11 +30,21 @@ class _PresentationWidgetState extends State<PresentationWidget> {
   /// Currently shown slide.
   PresentationSlide _currentSlide;
 
+  /// Current slide bounds.
+  SlideBounds _slideBounds;
+
   /// SVG to paint.
   DrawableRoot _slideSvg;
 
+  /// Controller for the presentation painter.
+  PresentationPainterController _painterController =
+      PresentationPainterController();
+
   /// Subscription to slide events.
   StreamSubscription<PresentationSlideEvent> _slideEventSubscription;
+
+  /// Whether the widget is currently shown in fullscreen mode.
+  bool _isFullscreen = false;
 
   @override
   void initState() {
@@ -81,12 +89,7 @@ class _PresentationWidgetState extends State<PresentationWidget> {
               isComplex: true,
             ),
             CustomPaint(
-              painter: PresentationPainter(
-                bounds,
-                _currentSlide.annotations.values.toList(growable: false)
-                  ..sort((o1, o2) => o1.position.compareTo(o2.position)),
-                _currentSlide.cursorpos,
-              ),
+              painter: PresentationPainter(_painterController),
               size: Size(
                 MediaQuery.of(context).size.width,
                 MediaQuery.of(context).size.height,
@@ -118,16 +121,16 @@ class _PresentationWidgetState extends State<PresentationWidget> {
                   Align(
                     alignment: Alignment.topRight,
                     child: IconButton(
-                      icon: Icon(widget._isFullscreen
+                      icon: Icon(_isFullscreen
                           ? Icons.fullscreen_exit
                           : Icons.fullscreen),
                       color: Colors.grey,
                       onPressed: () {
                         setState(() {
-                          widget._isFullscreen = !widget._isFullscreen;
+                          _isFullscreen = !_isFullscreen;
                         });
 
-                        if (widget._isFullscreen) {
+                        if (_isFullscreen) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -136,7 +139,7 @@ class _PresentationWidgetState extends State<PresentationWidget> {
                             ),
                           ).then((_) {
                             setState(() {
-                              widget._isFullscreen = false;
+                              _isFullscreen = false;
                             });
                           });
                         } else {
@@ -168,23 +171,51 @@ class _PresentationWidgetState extends State<PresentationWidget> {
       Presentation currentPresentation =
           widget._mainWebSocket.presentationModule.currentPresentation;
       if (currentPresentation != null) {
-        bool isRelevantEvent = event.eventType == EventType.ADDED ||
-            event.eventType == EventType.CHANGED;
+        bool isRelevantEvent = event.eventType == SlideEventType.ADDED ||
+            event.eventType == SlideEventType.CHANGED ||
+            event.eventType == SlideEventType.ANNOTATIONS_ONLY_CHANGED;
 
         if (isRelevantEvent &&
             event.slide.current &&
             event.slide.presentationId == currentPresentation.id) {
-          _currentSlide = event.slide;
+          // Check if slide to show changed
+          if (event.slide != _currentSlide) {
+            _currentSlide = event.slide;
+            _updateAnnotations();
+          }
 
-          if (_currentSlide.bounds != null) {
-            _reloadSVG(_currentSlide.svgUri);
+          // Check if slide bounds changed
+          if (_currentSlide.bounds != _slideBounds) {
+            _slideBounds = _currentSlide.bounds;
+            _painterController.bounds = _slideBounds;
+          }
+
+          if (event.eventType == SlideEventType.ANNOTATIONS_ONLY_CHANGED) {
+            _updateAnnotations();
+          } else {
+            if (_slideBounds != null) {
+              _reloadSVG(_currentSlide.svgUri);
+            }
           }
         }
       }
     });
 
     if (_currentSlide != null) {
+      _slideBounds = _currentSlide.bounds;
+      _painterController.bounds = _slideBounds;
+
+      _updateAnnotations();
+
       _reloadSVG(_currentSlide.svgUri);
     }
+  }
+
+  /// Update the shown annotations.
+  void _updateAnnotations() {
+    _painterController.cursorPos = _currentSlide.cursorPos;
+    _painterController.annotations = _currentSlide.annotations.values
+        .toList(growable: false)
+          ..sort((o1, o2) => o1.position.compareTo(o2.position));
   }
 }
