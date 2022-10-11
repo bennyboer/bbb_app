@@ -154,7 +154,7 @@ class CallConnection extends CallManager implements SipUaHelperListener {
 
     /// As soon as we are connected, connect to the echo call
     if (state.state == TransportStateEnum.CONNECTED) {
-      helper.call(super.buildEcho(), true);
+      helper.call(super.buildEcho(), voiceonly: true);
     }
   }
 
@@ -163,5 +163,10 @@ class CallConnection extends CallManager implements SipUaHelperListener {
   void _doEchoTest() {
     _call.sendDTMF("1", {"duration": 2000});
     _echoTestDone = true;
+  }
+
+  @override
+  void onNewNotify(Notify ntf) {
+    // TODO: implement onNewNotify
   }
 }
